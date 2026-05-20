@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, type Carrier, type ContractorType } from "@/lib/contractor-data";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { Check, Copy, PhoneCall, ShieldCheck } from "lucide-react";
 
@@ -57,7 +58,7 @@ function Onboarding() {
   async function next() {
     if (!bizId) return;
     // Persist progress on each step
-    const patch: Partial<Record<string, unknown>> = {};
+    const patch: TablesUpdate<"businesses"> = {};
     if (step === 0) patch.business_name = state.business_name;
     if (step === 1) patch.contractor_type = state.contractor_type || null;
     if (step === 2) patch.business_phone = state.business_phone;

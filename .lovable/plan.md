@@ -1,87 +1,67 @@
-# CallRescue AI — Build Plan
+# Phase 2 — AI Lead Qualification
 
-Replace the placeholder hello page and ship a modern SaaS platform that helps contractors recover missed calls via AI voicemail transcription + instant SMS recovery.
+Builds on the existing `calls`, `sms_threads`, `sms_messages` tables. Twilio webhooks are still pending campaign approval — we'll scaffold logic now and wire to live SMS later. AI uses Lovable AI Gateway (no key needed).
 
-## 1. Foundation
+## 1. Database changes (single migration)
 
-- Delete the hello content in `src/routes/index.tsx`; turn it into a marketing landing page (hero, value props, CTA → `/signup`).
-- Enable Lovable Cloud (Supabase) for DB, Auth, and Edge Functions.
-- Design system in `src/styles.css` (oklch tokens): clean white surfaces, deep slate text, single saturated accent (electric blue), subtle gradients, soft shadows, generous spacing. Typography: Inter-alternative pair (e.g. `space-grotesk-dm-sans`). Framer-motion for subtle entrance + card hovers.
-- App shell: sidebar nav (Dashboard, Leads, Settings), top bar with business switcher + user menu.
+- `calls`: add `lead_status` enum (`open`, `contacted`, `scheduled`, `closed`) defaulting `open`; add `priority` enum (`normal`, `high`) defaulting `normal`; add `qualification jsonb` (service, urgency, callback_time, address, insurance_claim); add `ai_summary_short text`.
+- New `callbacks` table: `id, business_id, call_id, caller_number, requested_at, scheduled_for, type (immediate|scheduled), status (pending|done|missed)`.
+- New `notifications` table: `id, business_id, call_id, kind (sms|email|dashboard), title, body, read, created_at`. RLS: members read/update own business.
+- New `suggested_replies` ephemeral table (or store inline on `sms_threads` as `jsonb suggestions`). Choice: inline on thread to keep simple.
+- Add `notify_sms`, `notify_email`, `notify_dashboard` booleans on `businesses` + `notify_email_address text`.
+- Enable realtime on `notifications` and `sms_messages`.
 
-## 2. Auth & Multi-Tenancy
+## 2. Server functions (`src/lib/*.functions.ts`)
 
-- Email/password + Google sign-in via Lovable broker.
-- Tables (all RLS-on, scoped via `business_members.user_id = auth.uid()`):
-  - `businesses` (id, business_name, contractor_type, business_phone, owner_phone, business_hours jsonb, carrier, twilio_number, onboarding_complete)
-  - `business_members` (business_id, user_id, role) — role isolated from profiles
-  - `user_roles` enum `app_role` (`admin`, `staff`) + `has_role()` SECURITY DEFINER fn
-  - `calls` (business_id, caller_number, recording_url, transcript, ai_summary jsonb, urgency, callback_requested, status, created_at)
-  - `sms_threads` (business_id, caller_number, last_message_at) + `sms_messages` (thread_id, direction, body, created_at)
-  - `forwarding_tests` (business_id, completed, timestamp)
-- Policies: members read/write their business rows only; admin role required for settings mutations.
+- `qualifyLead` — given a call/thread, run Lovable AI (`google/gemini-3-flash-preview`) with structured output to extract `{ service_needed, urgency, callback_time, address, insurance_claim, summary_short }` from transcript + SMS history; updates `calls.qualification`, `ai_summary_short`, `urgency`.
+- `detectEmergency` — keyword scan (leak, flooding, no AC, burst pipe, burning smell, gas, sparks, no heat) + AI confirm; sets `priority='high'` + `urgency='emergency'`, fires notification.
+- `aiSmsReply` — generates next conversational SMS asking for the missing qualification field; returns draft (auto-send or contractor-approved based on business setting).
+- `suggestReplies` — returns 3 contractor quick-reply options for the active thread.
+- `scheduleCallback` — insert into `callbacks`, notify contractor.
+- `updateLeadStatus` — change `lead_status`, write audit.
+- `sendNotification` — fan-out to SMS (Twilio, stubbed), email (Resend connector — ask later), and dashboard realtime row.
 
-## 3. Onboarding Wizard (`/onboarding`)
+All protected by `requireSupabaseAuth` except inbound webhook handlers.
 
-Stepper component with progress bar + framer-motion transitions:
-1. Business name
-2. Contractor type (17-option dropdown)
-3. Business phone (E.164 input)
-4. Owner cell phone
-5. Carrier dropdown (7 options)
-6. Carrier-specific forwarding instructions — dial codes table keyed by carrier (e.g. Verizon `*72`, AT&T `**21*`, T-Mobile `**21*`, Google Voice in-app, etc.) with copy buttons + step list. Twilio number provisioned for business shown here.
-7. "Test My Setup" — calls server fn that polls `forwarding_tests` for an incoming Twilio test call to the assigned number; green success state when detected.
-- Final: "Your missed calls are now protected." → `/dashboard`.
-- Persist progress so refresh resumes at last step.
+## 3. Twilio webhook updates (scaffolded, deploy when SMS ready)
 
-## 4. Dashboard (`/dashboard`)
+- `/api/public/twilio/sms` (incoming): append message → call `qualifyLead` + `detectEmergency` → if AI auto-reply enabled, call `aiSmsReply` and send via Twilio → emit `notifications` row.
+- `/api/public/twilio/voice` (recording done): existing transcript flow → call `qualifyLead`.
 
-- Top stat cards (animated count-up): Recovered Calls, Potential Revenue Saved (configurable avg ticket × recovered), Response Rate %, Open Leads.
-- Live Activity Feed (Supabase realtime on `calls`): cards with caller name, phone, AI summary, urgency badge (low/med/high/emergency colors), timestamp (relative), callback-requested chip.
-- Per-card actions: Call Now (`tel:`), Send Text (opens SMS drawer with thread + quick-replies), Mark Resolved (status update).
-- Empty + loading states.
+## 4. UI
 
-## 5. Missed-Call Workflow (Edge Functions)
+### Dashboard (`/dashboard`)
+- Lead cards show: `ai_summary_short` (one-line), priority badge (red for HIGH), lead status pill, qualification chips (service, urgency, callback time, address).
+- High-priority leads pinned top with subtle red accent.
+- New top-right bell icon → dropdown of unread `notifications` (realtime).
 
-Public Twilio webhooks under `src/routes/api/public/twilio/*`:
-- `incoming-call` — TwiML: dial owner for 20s, on no-answer → record voicemail with contractor-friendly prompt.
-- `recording-complete` — store recording URL, insert `calls` row, enqueue AI processing.
-- `process-voicemail` (server fn / edge) — call OpenAI Whisper to transcribe, then GPT to extract `{ name, service_needed, urgency, callback_requested, summary }`; update row.
-- `send-recovery-sms` — lookup carrier line type (Twilio Lookup); if mobile, send contractor-type-specific template with quick-reply keywords (CALL/SCHEDULE/TEXT). Skip if landline.
-- `incoming-sms` — append to `sms_messages`, route quick replies, notify dashboard via realtime.
-- `forwarding-test` — marks `forwarding_tests.completed=true` for the business when a test call arrives.
+### Lead detail drawer (new component, opens from card click)
+- Full SMS thread (left), qualification panel (right).
+- "Suggested replies" row — 3 AI buttons + free-text input → sends SMS.
+- Status selector: Open / Contacted / Scheduled / Closed.
+- "Schedule callback" — immediate or pick time.
+- AI summary block at top.
 
-SMS templates table seeded per contractor_type (roofing/plumbing/HVAC examples in spec, generic fallback for others).
+### Settings (`/settings`)
+- Notification preferences: SMS / Email / Dashboard toggles + email address field.
+- "Auto-send AI replies" toggle (default on).
 
-## 6. Settings (`/settings`)
+## 5. Notifications system
 
-- Business profile, owner phone, carrier (re-show forwarding instructions).
-- SMS template overrides per contractor type.
-- Team members (admin invites staff).
-- Average job value (drives revenue stat).
-
-## 7. Secrets Required
-
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_NUMBER_POOL` (or auto-provision via API)
-- `OPENAI_API_KEY` (or use Lovable AI Gateway — preferred; ask if user wants OpenAI direct vs gateway)
-
-## 8. Polish
-
-- Mobile-first responsive (sidebar collapses to bottom nav).
-- Skeletons everywhere, toast feedback (sonner), error boundaries already wired.
-- SEO meta per route, single H1, semantic HTML.
+- Realtime subscription on `notifications` in `_authenticated` layout → toast + bell badge.
+- Email via Resend connector (ask user to connect when ready).
+- SMS via existing Twilio number (queued, sends when Twilio approved).
 
 ## Technical Notes
 
-- All Twilio + OpenAI work happens server-side (TanStack server fns + `/api/public/*` for Twilio webhooks with signature verification using `TWILIO_AUTH_TOKEN`).
-- Use `requireSupabaseAuth` middleware for dashboard server fns; `supabaseAdmin` only in webhooks after signature verification.
-- Realtime subscription on `calls` table filtered by `business_id` powers live feed.
-- File structure: `src/routes/(marketing)/index.tsx`, `src/routes/_authenticated/{dashboard,leads,settings}.tsx`, `src/routes/onboarding.tsx`, `src/routes/api/public/twilio/*.ts`, `src/lib/{calls,sms,onboarding}.functions.ts`.
+- AI calls: streaming not needed; use `generateText` + `Output.object` with Zod schema for qualification.
+- Emergency keywords stored in `src/lib/emergency-keywords.ts` for fast pre-check before AI call.
+- Lead status transitions enforced server-side (open→contacted→scheduled→closed; can reopen).
+- Keep card UI dense but scannable — single line summary + chips, drawer for depth.
+- No CRM-style pipelines, kanban, or reporting views.
 
-## Open Questions
+## Open questions
 
-1. **AI provider**: use Lovable AI Gateway (default, no key needed) or your own OpenAI key?
-2. **Twilio numbers**: auto-provision a new number per business on signup, or use a shared pool?
-3. **Pricing/avg job value** for "Potential Revenue Saved" — fixed default ($500) or per-business setting?
-
-I'll assume Lovable AI Gateway + auto-provision Twilio numbers + per-business avg job value (default $500) unless you say otherwise.
+1. Auto-send AI SMS replies, or always contractor-approved drafts? (default: auto-send, toggle in settings)
+2. Email notifications now (requires Resend connector) or skip until you ask?
+3. Should callback scheduling create a calendar event (ICS download) or just an in-app reminder?

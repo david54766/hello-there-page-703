@@ -45,6 +45,7 @@ export type Database = {
       }
       businesses: {
         Row: {
+          auto_send_ai_replies: boolean
           avg_job_value: number
           business_hours: Json
           business_name: string
@@ -53,6 +54,10 @@ export type Database = {
           contractor_type: Database["public"]["Enums"]["contractor_type"] | null
           created_at: string
           id: string
+          notify_dashboard: boolean
+          notify_email: boolean
+          notify_email_address: string | null
+          notify_sms: boolean
           onboarding_complete: boolean
           owner_id: string
           owner_phone: string | null
@@ -60,6 +65,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_send_ai_replies?: boolean
           avg_job_value?: number
           business_hours?: Json
           business_name?: string
@@ -70,6 +76,10 @@ export type Database = {
             | null
           created_at?: string
           id?: string
+          notify_dashboard?: boolean
+          notify_email?: boolean
+          notify_email_address?: string | null
+          notify_sms?: boolean
           onboarding_complete?: boolean
           owner_id: string
           owner_phone?: string | null
@@ -77,6 +87,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_send_ai_replies?: boolean
           avg_job_value?: number
           business_hours?: Json
           business_name?: string
@@ -87,6 +98,10 @@ export type Database = {
             | null
           created_at?: string
           id?: string
+          notify_dashboard?: boolean
+          notify_email?: boolean
+          notify_email_address?: string | null
+          notify_sms?: boolean
           onboarding_complete?: boolean
           owner_id?: string
           owner_phone?: string | null
@@ -95,9 +110,49 @@ export type Database = {
         }
         Relationships: []
       }
+      callbacks: {
+        Row: {
+          business_id: string
+          call_id: string | null
+          caller_number: string
+          created_at: string
+          id: string
+          requested_at: string
+          scheduled_for: string | null
+          status: Database["public"]["Enums"]["callback_status"]
+          type: Database["public"]["Enums"]["callback_type"]
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          call_id?: string | null
+          caller_number: string
+          created_at?: string
+          id?: string
+          requested_at?: string
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["callback_status"]
+          type?: Database["public"]["Enums"]["callback_type"]
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          call_id?: string | null
+          caller_number?: string
+          created_at?: string
+          id?: string
+          requested_at?: string
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["callback_status"]
+          type?: Database["public"]["Enums"]["callback_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       calls: {
         Row: {
           ai_summary: string | null
+          ai_summary_short: string | null
           business_id: string
           callback_requested: boolean
           caller_name: string | null
@@ -105,6 +160,9 @@ export type Database = {
           created_at: string
           id: string
           is_mobile: boolean | null
+          lead_status: Database["public"]["Enums"]["lead_status"]
+          priority: Database["public"]["Enums"]["lead_priority"]
+          qualification: Json
           recording_url: string | null
           service_needed: string | null
           status: Database["public"]["Enums"]["call_status"]
@@ -115,6 +173,7 @@ export type Database = {
         }
         Insert: {
           ai_summary?: string | null
+          ai_summary_short?: string | null
           business_id: string
           callback_requested?: boolean
           caller_name?: string | null
@@ -122,6 +181,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_mobile?: boolean | null
+          lead_status?: Database["public"]["Enums"]["lead_status"]
+          priority?: Database["public"]["Enums"]["lead_priority"]
+          qualification?: Json
           recording_url?: string | null
           service_needed?: string | null
           status?: Database["public"]["Enums"]["call_status"]
@@ -132,6 +194,7 @@ export type Database = {
         }
         Update: {
           ai_summary?: string | null
+          ai_summary_short?: string | null
           business_id?: string
           callback_requested?: boolean
           caller_name?: string | null
@@ -139,6 +202,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_mobile?: boolean | null
+          lead_status?: Database["public"]["Enums"]["lead_status"]
+          priority?: Database["public"]["Enums"]["lead_priority"]
+          qualification?: Json
           recording_url?: string | null
           service_needed?: string | null
           status?: Database["public"]["Enums"]["call_status"]
@@ -189,6 +255,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          business_id: string
+          call_id: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          read: boolean
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          business_id: string
+          call_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          read?: boolean
+          title: string
+        }
+        Update: {
+          body?: string | null
+          business_id?: string
+          call_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          read?: boolean
+          title?: string
+        }
+        Relationships: []
+      }
       sms_messages: {
         Row: {
           body: string
@@ -228,6 +327,7 @@ export type Database = {
           created_at: string
           id: string
           last_message_at: string
+          suggestions: Json
         }
         Insert: {
           business_id: string
@@ -235,6 +335,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string
+          suggestions?: Json
         }
         Update: {
           business_id?: string
@@ -242,6 +343,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string
+          suggestions?: Json
         }
         Relationships: [
           {
@@ -307,6 +409,8 @@ export type Database = {
       app_role: "admin" | "staff"
       call_status: "new" | "contacted" | "resolved"
       call_urgency: "low" | "medium" | "high" | "emergency"
+      callback_status: "pending" | "done" | "missed"
+      callback_type: "immediate" | "scheduled"
       carrier:
         | "verizon"
         | "att"
@@ -333,6 +437,9 @@ export type Database = {
         | "handyman"
         | "solar"
         | "fencing"
+      lead_priority: "normal" | "high"
+      lead_status: "open" | "contacted" | "scheduled" | "closed"
+      notification_kind: "sms" | "email" | "dashboard"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -463,6 +570,8 @@ export const Constants = {
       app_role: ["admin", "staff"],
       call_status: ["new", "contacted", "resolved"],
       call_urgency: ["low", "medium", "high", "emergency"],
+      callback_status: ["pending", "done", "missed"],
+      callback_type: ["immediate", "scheduled"],
       carrier: [
         "verizon",
         "att",
@@ -491,6 +600,9 @@ export const Constants = {
         "solar",
         "fencing",
       ],
+      lead_priority: ["normal", "high"],
+      lead_status: ["open", "contacted", "scheduled", "closed"],
+      notification_kind: ["sms", "email", "dashboard"],
     },
   },
 } as const
