@@ -1,0 +1,218 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, type Carrier, type ContractorType } from "@/lib/contractor-data";
+import { toast } from "sonner";
+import { Check, Copy, PhoneCall, ShieldCheck } from "lucide-react";
+
+export const Route = createFileRoute("/onboarding")({ component: Onboarding });
+
+type State = {
+  business_name: string;
+  contractor_type: ContractorType | "";
+  business_phone: string;
+  owner_phone: string;
+  carrier: Carrier | "";
+};
+
+function Onboarding() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [step, setStep] = useState(0);
+  const [bizId, setBizId] = useState<string | null>(null);
+  const [twilioNumber, setTwilioNumber] = useState<string>("+15555550123");
+  const [testDone, setTestDone] = useState(false);
+  const [state, setState] = useState<State>({
+    business_name: "", contractor_type: "", business_phone: "", owner_phone: "", carrier: "",
+  });
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) { navigate({ to: "/login" }); return; }
+    supabase.from("businesses").select("*").eq("owner_id", user.id).maybeSingle().then(({ data }) => {
+      if (!data) return;
+      setBizId(data.id);
+      setTwilioNumber(data.twilio_number ?? "+15555550123");
+      setState({
+        business_name: data.business_name ?? "",
+        contractor_type: (data.contractor_type ?? "") as ContractorType | "",
+        business_phone: data.business_phone ?? "",
+        owner_phone: data.owner_phone ?? "",
+        carrier: (data.carrier ?? "") as Carrier | "",
+      });
+      if (data.onboarding_complete) navigate({ to: "/dashboard" });
+    });
+  }, [user, authLoading, navigate]);
+
+  const steps = ["Business", "Type", "Business phone", "Your cell", "Carrier", "Forwarding", "Test"];
+  const totalSteps = steps.length;
+
+  async function next() {
+    if (!bizId) return;
+    // Persist progress on each step
+    const patch: Partial<Record<string, unknown>> = {};
+    if (step === 0) patch.business_name = state.business_name;
+    if (step === 1) patch.contractor_type = state.contractor_type || null;
+    if (step === 2) patch.business_phone = state.business_phone;
+    if (step === 3) patch.owner_phone = state.owner_phone;
+    if (step === 4) patch.carrier = state.carrier || null;
+    if (Object.keys(patch).length) {
+      const { error } = await supabase.from("businesses").update(patch).eq("id", bizId);
+      if (error) return toast.error(error.message);
+    }
+    setStep((s) => Math.min(s + 1, totalSteps));
+  }
+
+  async function finish() {
+    if (!bizId) return;
+    await supabase.from("businesses").update({ onboarding_complete: true }).eq("id", bizId);
+    navigate({ to: "/dashboard" });
+  }
+
+  function copy(text: string) {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied");
+  }
+
+  const fwd = state.carrier ? getForwardingInstructions(state.carrier as Carrier, twilioNumber) : null;
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[image:var(--gradient-subtle)] p-6">
+      <div className="w-full max-w-xl">
+        <div className="mb-4 flex items-center justify-between text-xs text-muted-foreground">
+          <span>Step {Math.min(step + 1, totalSteps)} of {totalSteps}</span>
+          <span>{Math.round(((step + 1) / totalSteps) * 100)}%</span>
+        </div>
+        <div className="mb-6 h-1.5 overflow-hidden rounded-full bg-muted">
+          <motion.div
+            className="h-full bg-[image:var(--gradient-primary)]"
+            animate={{ width: `${((step + 1) / totalSteps) * 100}%` }}
+            transition={{ duration: 0.4 }}
+          />
+        </div>
+
+        <Card className="p-8 shadow-[var(--shadow-card)]">
+          <AnimatePresence mode="wait">
+            <motion.div key={step} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}>
+              {step === 0 && (
+                <Field label="What's your business called?" desc="This is how callers will see you in texts.">
+                  <Input autoFocus value={state.business_name} onChange={(e) => setState({ ...state, business_name: e.target.value })} placeholder="Apex Roofing" />
+                </Field>
+              )}
+              {step === 1 && (
+                <Field label="What kind of contractor are you?" desc="We tailor SMS templates to your trade.">
+                  <Select value={state.contractor_type} onValueChange={(v) => setState({ ...state, contractor_type: v as ContractorType })}>
+                    <SelectTrigger><SelectValue placeholder="Select a trade" /></SelectTrigger>
+                    <SelectContent>
+                      {CONTRACTOR_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+              {step === 2 && (
+                <Field label="Your business phone number" desc="The number customers currently call.">
+                  <Input type="tel" value={state.business_phone} onChange={(e) => setState({ ...state, business_phone: e.target.value })} placeholder="+1 555 123 4567" />
+                </Field>
+              )}
+              {step === 3 && (
+                <Field label="Your cell phone" desc="Where calls ring first before voicemail kicks in.">
+                  <Input type="tel" value={state.owner_phone} onChange={(e) => setState({ ...state, owner_phone: e.target.value })} placeholder="+1 555 987 6543" />
+                </Field>
+              )}
+              {step === 4 && (
+                <Field label="Who's your carrier?" desc="So we can show you the right forwarding code.">
+                  <Select value={state.carrier} onValueChange={(v) => setState({ ...state, carrier: v as Carrier })}>
+                    <SelectTrigger><SelectValue placeholder="Select carrier" /></SelectTrigger>
+                    <SelectContent>
+                      {CARRIERS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+              {step === 5 && fwd && (
+                <div>
+                  <h2 className="text-xl font-semibold tracking-tight">{fwd.title}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Set up forwarding so we can catch missed calls.</p>
+                  <div className="mt-5 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-3">
+                    <code className="flex-1 font-mono text-sm">{fwd.dialCode}</code>
+                    <Button variant="outline" size="sm" onClick={() => copy(fwd.dialCode)}><Copy className="h-3 w-3" /> Copy</Button>
+                  </div>
+                  <ol className="mt-5 space-y-2 text-sm">
+                    {fwd.steps.map((s, i) => (
+                      <li key={i} className="flex gap-3">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">{i + 1}</span>
+                        <span>{s}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  <p className="mt-5 text-xs text-muted-foreground">Your CallRescue number: <span className="font-mono">{twilioNumber}</span></p>
+                </div>
+              )}
+              {step === 6 && (
+                <div className="text-center">
+                  {!testDone ? (
+                    <>
+                      <PhoneCall className="mx-auto h-12 w-12 text-primary" />
+                      <h2 className="mt-4 text-xl font-semibold">Test your setup</h2>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Call your business number from another phone, don't answer, and let it ring out.
+                      </p>
+                      <Button className="mt-6" onClick={() => { setTestDone(true); toast.success("Test detected!"); }}>
+                        I called — verify
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
+                        <ShieldCheck className="h-7 w-7" />
+                      </div>
+                      <h2 className="mt-4 text-2xl font-semibold tracking-tight">Your missed calls are now protected.</h2>
+                      <p className="mt-2 text-sm text-muted-foreground">CallRescue is live. Every missed call will land in your dashboard.</p>
+                      <Button className="mt-6" onClick={finish}>Go to dashboard</Button>
+                    </>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          {step < 5 && (
+            <div className="mt-8 flex justify-between">
+              <Button variant="ghost" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>Back</Button>
+              <Button onClick={next} disabled={
+                (step === 0 && !state.business_name.trim()) ||
+                (step === 1 && !state.contractor_type) ||
+                (step === 2 && !state.business_phone.trim()) ||
+                (step === 3 && !state.owner_phone.trim()) ||
+                (step === 4 && !state.carrier)
+              }>Continue</Button>
+            </div>
+          )}
+          {step === 5 && (
+            <div className="mt-8 flex justify-between">
+              <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
+              <Button onClick={() => setStep(6)}><Check className="h-4 w-4" /> I set it up</Button>
+            </div>
+          )}
+        </Card>
+      </div>
+    </main>
+  );
+}
+
+function Field({ label, desc, children }: { label: string; desc: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <Label className="text-xl font-semibold tracking-tight">{label}</Label>
+      <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
+      <div className="mt-5">{children}</div>
+    </div>
+  );
+}
