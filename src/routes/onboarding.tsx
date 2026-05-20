@@ -57,7 +57,7 @@ function Onboarding() {
   async function next() {
     if (!bizId) return;
     // Persist progress on each step
-    const patch: Partial<Record<string, unknown>> = {};
+    const patch: Record<string, string | null> = {};
     if (step === 0) patch.business_name = state.business_name;
     if (step === 1) patch.contractor_type = state.contractor_type || null;
     if (step === 2) patch.business_phone = state.business_phone;
