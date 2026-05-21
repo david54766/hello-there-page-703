@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          business_id: string
+          call_id: string | null
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          provider: Database["public"]["Enums"]["appointment_provider"]
+          provider_ref: string | null
+          scheduled_for: string
+          service: string | null
+          status: Database["public"]["Enums"]["appointment_status"]
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          call_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          provider?: Database["public"]["Enums"]["appointment_provider"]
+          provider_ref?: string | null
+          scheduled_for: string
+          service?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          call_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          provider?: Database["public"]["Enums"]["appointment_provider"]
+          provider_ref?: string | null
+          scheduled_for?: string
+          service?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       business_members: {
         Row: {
           business_id: string
@@ -45,6 +90,8 @@ export type Database = {
       }
       businesses: {
         Row: {
+          agent_prompt_override: string | null
+          agent_voice_id: string | null
           auto_send_ai_replies: boolean
           avg_job_value: number
           business_hours: Json
@@ -53,7 +100,9 @@ export type Database = {
           carrier: Database["public"]["Enums"]["carrier"] | null
           contractor_type: Database["public"]["Enums"]["contractor_type"] | null
           created_at: string
+          hcp_api_key: string | null
           id: string
+          jobber_refresh_token: string | null
           notify_dashboard: boolean
           notify_email: boolean
           notify_email_address: string | null
@@ -61,10 +110,15 @@ export type Database = {
           onboarding_complete: boolean
           owner_id: string
           owner_phone: string | null
+          scheduling_provider:
+            | Database["public"]["Enums"]["appointment_provider"]
+            | null
           twilio_number: string | null
           updated_at: string
         }
         Insert: {
+          agent_prompt_override?: string | null
+          agent_voice_id?: string | null
           auto_send_ai_replies?: boolean
           avg_job_value?: number
           business_hours?: Json
@@ -75,7 +129,9 @@ export type Database = {
             | Database["public"]["Enums"]["contractor_type"]
             | null
           created_at?: string
+          hcp_api_key?: string | null
           id?: string
+          jobber_refresh_token?: string | null
           notify_dashboard?: boolean
           notify_email?: boolean
           notify_email_address?: string | null
@@ -83,10 +139,15 @@ export type Database = {
           onboarding_complete?: boolean
           owner_id: string
           owner_phone?: string | null
+          scheduling_provider?:
+            | Database["public"]["Enums"]["appointment_provider"]
+            | null
           twilio_number?: string | null
           updated_at?: string
         }
         Update: {
+          agent_prompt_override?: string | null
+          agent_voice_id?: string | null
           auto_send_ai_replies?: boolean
           avg_job_value?: number
           business_hours?: Json
@@ -97,7 +158,9 @@ export type Database = {
             | Database["public"]["Enums"]["contractor_type"]
             | null
           created_at?: string
+          hcp_api_key?: string | null
           id?: string
+          jobber_refresh_token?: string | null
           notify_dashboard?: boolean
           notify_email?: boolean
           notify_email_address?: string | null
@@ -105,6 +168,9 @@ export type Database = {
           onboarding_complete?: boolean
           owner_id?: string
           owner_phone?: string | null
+          scheduling_provider?:
+            | Database["public"]["Enums"]["appointment_provider"]
+            | null
           twilio_number?: string | null
           updated_at?: string
         }
@@ -255,6 +321,50 @@ export type Database = {
           },
         ]
       }
+      lead_assignments: {
+        Row: {
+          accepted_at: string | null
+          assigned_at: string
+          business_id: string
+          call_id: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["assignment_status"]
+          team_member_id: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          assigned_at?: string
+          business_id: string
+          call_id: string
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["assignment_status"]
+          team_member_id: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          assigned_at?: string
+          business_id?: string
+          call_id?: string
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["assignment_status"]
+          team_member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_assignments_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -355,6 +465,48 @@ export type Database = {
           },
         ]
       }
+      team_members: {
+        Row: {
+          active: boolean
+          business_id: string
+          created_at: string
+          email: string | null
+          id: string
+          last_assigned_at: string | null
+          name: string
+          phone: string | null
+          role: Database["public"]["Enums"]["dispatch_role"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          business_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_assigned_at?: string | null
+          name: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["dispatch_role"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          business_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_assigned_at?: string | null
+          name?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["dispatch_role"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           business_id: string
@@ -407,6 +559,9 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff"
+      appointment_provider: "hcp" | "jobber" | "internal"
+      appointment_status: "booked" | "completed" | "cancelled"
+      assignment_status: "pending" | "accepted" | "completed" | "reassigned"
       call_status: "new" | "contacted" | "resolved"
       call_urgency: "low" | "medium" | "high" | "emergency"
       callback_status: "pending" | "done" | "missed"
@@ -437,9 +592,10 @@ export type Database = {
         | "handyman"
         | "solar"
         | "fencing"
+      dispatch_role: "emergency" | "office" | "sales"
       lead_priority: "normal" | "high"
       lead_status: "open" | "contacted" | "scheduled" | "closed"
-      notification_kind: "sms" | "email" | "dashboard"
+      notification_kind: "sms" | "email" | "dashboard" | "emergency"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -568,6 +724,9 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff"],
+      appointment_provider: ["hcp", "jobber", "internal"],
+      appointment_status: ["booked", "completed", "cancelled"],
+      assignment_status: ["pending", "accepted", "completed", "reassigned"],
       call_status: ["new", "contacted", "resolved"],
       call_urgency: ["low", "medium", "high", "emergency"],
       callback_status: ["pending", "done", "missed"],
@@ -600,9 +759,10 @@ export const Constants = {
         "solar",
         "fencing",
       ],
+      dispatch_role: ["emergency", "office", "sales"],
       lead_priority: ["normal", "high"],
       lead_status: ["open", "contacted", "scheduled", "closed"],
-      notification_kind: ["sms", "email", "dashboard"],
+      notification_kind: ["sms", "email", "dashboard", "emergency"],
     },
   },
 } as const
