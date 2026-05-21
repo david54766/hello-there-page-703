@@ -1,67 +1,136 @@
-# Phase 2 — AI Lead Qualification
+# Phase 3 — AI Contractor Front Desk
 
-Builds on the existing `calls`, `sms_threads`, `sms_messages` tables. Twilio webhooks are still pending campaign approval — we'll scaffold logic now and wire to live SMS later. AI uses Lovable AI Gateway (no key needed).
+Extends the missed-call recovery base with **live AI answering**, **booking**, **multi-user dispatch**, **instant emergency alerts**, and a **revenue dashboard**. Stays focused: recover and convert leads. No CRM bloat.
 
-## 1. Database changes (single migration)
+## 1. AI Voice Answering (ElevenLabs)
 
-- `calls`: add `lead_status` enum (`open`, `contacted`, `scheduled`, `closed`) defaulting `open`; add `priority` enum (`normal`, `high`) defaulting `normal`; add `qualification jsonb` (service, urgency, callback_time, address, insurance_claim); add `ai_summary_short text`.
-- New `callbacks` table: `id, business_id, call_id, caller_number, requested_at, scheduled_for, type (immediate|scheduled), status (pending|done|missed)`.
-- New `notifications` table: `id, business_id, call_id, kind (sms|email|dashboard), title, body, read, created_at`. RLS: members read/update own business.
-- New `suggested_replies` ephemeral table (or store inline on `sms_threads` as `jsonb suggestions`). Choice: inline on thread to keep simple.
-- Add `notify_sms`, `notify_email`, `notify_dashboard` booleans on `businesses` + `notify_email_address text`.
-- Enable realtime on `notifications` and `sms_messages`.
+Replace voicemail-only flow with a live AI agent that picks up missed/forwarded calls, qualifies the lead, books or escalates.
 
-## 2. Server functions (`src/lib/*.functions.ts`)
+- **Provider**: ElevenLabs Conversational AI (WebRTC inbound via Twilio bridge once SMS+voice approved; until then, in-app browser test mode).
+- **Agent prompt** (server-managed, per-business): contractor type (roofing/HVAC/plumbing/electrical), business hours, services, emergency triggers, booking link.
+- **Tools exposed to agent** (via ElevenLabs client tools + server webhooks):
+  - `qualify_lead` — writes `qualification` jsonb on `calls`.
+  - `check_availability` — reads contractor calendar (HCP/Jobber).
+  - `book_appointment` — creates job/visit.
+  - `escalate_emergency` — fires alert pipeline.
+- **Token endpoint**: `src/routes/api/voice/token.ts` returns ElevenLabs conversation token (requires `ELEVENLABS_API_KEY`).
+- **In-app test page** `/voice-test` to talk to the agent from the browser before Twilio is live.
+- **Call record**: each session writes a `calls` row with transcript, summary, qualification — reuses Phase 2 `qualifyLead`.
 
-- `qualifyLead` — given a call/thread, run Lovable AI (`google/gemini-3-flash-preview`) with structured output to extract `{ service_needed, urgency, callback_time, address, insurance_claim, summary_short }` from transcript + SMS history; updates `calls.qualification`, `ai_summary_short`, `urgency`.
-- `detectEmergency` — keyword scan (leak, flooding, no AC, burst pipe, burning smell, gas, sparks, no heat) + AI confirm; sets `priority='high'` + `urgency='emergency'`, fires notification.
-- `aiSmsReply` — generates next conversational SMS asking for the missing qualification field; returns draft (auto-send or contractor-approved based on business setting).
-- `suggestReplies` — returns 3 contractor quick-reply options for the active thread.
-- `scheduleCallback` — insert into `callbacks`, notify contractor.
-- `updateLeadStatus` — change `lead_status`, write audit.
-- `sendNotification` — fan-out to SMS (Twilio, stubbed), email (Resend connector — ask later), and dashboard realtime row.
+## 2. Appointment Scheduling
 
-All protected by `requireSupabaseAuth` except inbound webhook handlers.
+Two integrations wired up; both require OAuth tokens user adds via Settings.
 
-## 3. Twilio webhook updates (scaffolded, deploy when SMS ready)
+- **Housecall Pro** (`HCP_API_KEY` per business) — REST API for customers, jobs, employees, availability.
+- **Jobber** (OAuth 2.0; `JOBBER_CLIENT_ID/SECRET`) — GraphQL API for clients, requests, visits.
+- `src/lib/scheduling.functions.ts`:
+  - `listAvailability({ businessId, date })` — provider-agnostic.
+  - `createAppointment({ businessId, callId, slot, customer })` — writes to chosen provider + local `appointments` table.
+- New `appointments` table: `id, business_id, call_id, provider (hcp|jobber|internal), provider_ref, scheduled_for, customer_name, customer_phone, service, status (booked|completed|cancelled)`.
+- Settings page gets "Scheduling provider" section with key/OAuth flow + which one is active.
 
-- `/api/public/twilio/sms` (incoming): append message → call `qualifyLead` + `detectEmergency` → if AI auto-reply enabled, call `aiSmsReply` and send via Twilio → emit `notifications` row.
-- `/api/public/twilio/voice` (recording done): existing transcript flow → call `qualifyLead`.
+## 3. Multi-User Dispatch (Round-Robin)
 
-## 4. UI
+- New `dispatch_role` enum: `emergency`, `office`, `sales`.
+- New `team_members` table: `id, business_id, user_id (nullable for non-app contacts), name, phone, email, role, active, last_assigned_at`.
+- New `lead_assignments` table: `id, call_id, team_member_id, assigned_at, accepted_at, status`.
+- **Routing logic** (`src/lib/dispatch.functions.ts → assignLead`):
+  1. Determine target role: `emergency` if `priority='high'`, `sales` if new-customer/quote, else `office`.
+  2. Pick active member in role with oldest `last_assigned_at` (round-robin), update timestamp.
+  3. Insert `lead_assignments` row, fire notifications (SMS+email+dashboard) to that member.
+  4. Fallback: if no member in role active, assign to business owner.
+- Triggered automatically after `qualifyLead`, and manually from lead drawer "Reassign" dropdown.
+- Settings → "Team" tab: add/edit members, toggle active, set roles.
 
-### Dashboard (`/dashboard`)
-- Lead cards show: `ai_summary_short` (one-line), priority badge (red for HIGH), lead status pill, qualification chips (service, urgency, callback time, address).
-- High-priority leads pinned top with subtle red accent.
-- New top-right bell icon → dropdown of unread `notifications` (realtime).
+## 4. Emergency Escalation
 
-### Lead detail drawer (new component, opens from card click)
-- Full SMS thread (left), qualification panel (right).
-- "Suggested replies" row — 3 AI buttons + free-text input → sends SMS.
-- Status selector: Open / Contacted / Scheduled / Closed.
-- "Schedule callback" — immediate or pick time.
-- AI summary block at top.
+Builds on Phase 2 emergency detection. When `priority='high'`:
 
-### Settings (`/settings`)
-- Notification preferences: SMS / Email / Dashboard toggles + email address field.
-- "Auto-send AI replies" toggle (default on).
+- Assign via dispatch to `emergency` role (round-robin within emergency members).
+- Send **immediate SMS + email** to assigned member with one-tap callback link `/leads/$callId`.
+- Dashboard shows red emergency banner with sound/notification (HTML5 Notification API + audio cue).
+- Notification row marked `kind='emergency'` (new enum value) to render with red styling and persist until acknowledged.
+- Add "Acknowledge" button in bell dropdown; logs to `lead_assignments.accepted_at`.
 
-## 5. Notifications system
+## 5. Revenue Dashboard
 
-- Realtime subscription on `notifications` in `_authenticated` layout → toast + bell badge.
-- Email via Resend connector (ask user to connect when ready).
-- SMS via existing Twilio number (queued, sends when Twilio approved).
+New `/dashboard` top section + `/revenue` detail route:
 
-## Technical Notes
+- **Stats cards** (computed via SQL view `business_metrics`):
+  - Recovered calls (last 30d) = calls with `lead_status IN ('contacted','scheduled','closed')`.
+  - Estimated jobs saved = recovered × `businesses.avg_job_value`.
+  - Conversion rate = scheduled+closed / total calls.
+  - Avg response time = avg(first outbound SMS time − call time).
+- **Sparkline** of recovered calls per day (last 14d) — Recharts area chart, primary gradient.
+- **Per-member leaderboard** (assignments closed) at bottom of `/revenue`.
 
-- AI calls: streaming not needed; use `generateText` + `Output.object` with Zod schema for qualification.
-- Emergency keywords stored in `src/lib/emergency-keywords.ts` for fast pre-check before AI call.
-- Lead status transitions enforced server-side (open→contacted→scheduled→closed; can reopen).
-- Keep card UI dense but scannable — single line summary + chips, drawer for depth.
-- No CRM-style pipelines, kanban, or reporting views.
+## 6. Mobile-First Responsive Polish
+
+- Dashboard: stat cards stack 1-col under 640px, lead cards single column, sticky top filter bar.
+- Bottom tab bar on mobile (Leads / Revenue / Settings) replacing the sidebar at `md:` breakpoint.
+- Lead drawer becomes full-screen sheet on mobile.
+- Larger tap targets (min 44px), high-contrast emergency styling, sans-serif numerics for stats.
+
+---
+
+## Database changes (single migration)
+
+```text
+enums:
+  dispatch_role: emergency | office | sales
+  appointment_provider: hcp | jobber | internal
+  appointment_status: booked | completed | cancelled
+  notification_kind: + 'emergency'  (already has sms/email/dashboard)
+
+tables:
+  team_members(id, business_id, user_id?, name, phone, email, role, active, last_assigned_at, timestamps)
+  lead_assignments(id, call_id, team_member_id, assigned_at, accepted_at?, status, timestamps)
+  appointments(id, business_id, call_id?, provider, provider_ref, scheduled_for, customer_name, customer_phone, service, status, timestamps)
+
+views:
+  business_metrics — aggregated per business_id (recovered, est_value, conv_rate, avg_response_seconds)
+
+RLS: members read/write within own business; owners-only delete on team_members.
+Realtime: lead_assignments + appointments.
+```
+
+## Server functions
+
+`src/lib/voice.functions.ts` — `mintAgentToken`, `startBrowserSession`, agent tool webhooks.
+`src/lib/scheduling.functions.ts` — `listAvailability`, `createAppointment`, `listAppointments`.
+`src/lib/dispatch.functions.ts` — `assignLead`, `reassignLead`, `acknowledgeAssignment`, `listTeamMembers`, `upsertTeamMember`.
+`src/lib/metrics.functions.ts` — `getRevenueStats`, `getSparkline`, `getLeaderboard`.
+
+All protected by `requireSupabaseAuth`.
+
+## UI
+
+```text
+/dashboard            stats strip + leads list (with assigned-to chip)
+/revenue              detailed metrics, sparkline, leaderboard
+/leads/$callId        new dedicated lead page (mobile sheet, desktop split)
+/settings/team        add/edit team members, roles, active
+/settings/scheduling  pick provider, paste API key / OAuth
+/settings/voice       agent prompt overrides, voice id, test button
+/voice-test           browser session with the agent (dev/demo)
+```
+
+## Secrets needed (will request via add_secret when you confirm)
+
+- `ELEVENLABS_API_KEY` — for voice agent + token minting.
+- `HCP_API_KEY` — Housecall Pro (per-business; stored encrypted on `businesses` or a `provider_credentials` table — I'll use a small encrypted column).
+- `JOBBER_CLIENT_ID` + `JOBBER_CLIENT_SECRET` — OAuth app credentials (one set workspace-wide; per-business refresh tokens stored).
+
+Twilio voice bridge remains stubbed until your campaign is approved — the in-browser test path proves the agent end-to-end in the meantime.
+
+## Out of scope (explicit)
+
+- No pipeline/kanban view, no contact CRM, no invoicing, no reports builder.
+- No native mobile app — responsive web only.
+- Google Calendar / Calendly deferred (you chose HCP + Jobber).
 
 ## Open questions
 
-1. Auto-send AI SMS replies, or always contractor-approved drafts? (default: auto-send, toggle in settings)
-2. Email notifications now (requires Resend connector) or skip until you ask?
-3. Should callback scheduling create a calendar event (ICS download) or just an in-app reminder?
+1. Should the in-app browser voice agent be available to **all team members** or just admins?
+2. For HCP/Jobber — paste API key in Settings (HCP) and full OAuth flow (Jobber), or start with just HCP API key and add Jobber OAuth after?
+3. Emergency alert sound: built-in chime, or upload custom?
