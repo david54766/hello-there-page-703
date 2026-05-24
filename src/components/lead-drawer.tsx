@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { qualifyLead, suggestReplies, updateLeadStatus, scheduleCallback } from "@/lib/leads.functions";
+import { assignLead } from "@/lib/dispatch.functions";
 import { toast } from "sonner";
 import { Sparkles, Send, PhoneCall, Clock, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -39,6 +40,7 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
   const suggestFn = useServerFn(suggestReplies);
   const statusFn = useServerFn(updateLeadStatus);
   const callbackFn = useServerFn(scheduleCallback);
+  const assignFn = useServerFn(assignLead);
 
   useEffect(() => {
     if (!call) return;
@@ -85,6 +87,15 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
     if (!call) return;
     try { await statusFn({ data: { callId: call.id, status: s } }); toast.success(`Status: ${s}`); }
     catch (e: any) { toast.error(e.message); }
+  }
+
+  async function autoAssign() {
+    if (!call) return;
+    try {
+      const r: any = await assignFn({ data: { callId: call.id } });
+      if (r.assigned) toast.success(`Assigned to ${r.member.name} (${r.role})`);
+      else toast.info(r.reason ?? "No assignment");
+    } catch (e: any) { toast.error(e.message); }
   }
 
   async function scheduleNow(type: "immediate" | "scheduled", when?: string) {
@@ -149,6 +160,7 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={() => scheduleNow("immediate")}><PhoneCall className="h-3.5 w-3.5" /> Call now</Button>
             <ScheduleInput onConfirm={(when) => scheduleNow("scheduled", when)} />
+            <Button size="sm" variant="outline" onClick={autoAssign}><Sparkles className="h-3.5 w-3.5" /> Auto-assign</Button>
           </div>
         </div>
 

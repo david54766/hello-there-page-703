@@ -108,16 +108,16 @@ function Dashboard() {
   if (loading) return <div className="p-10 text-muted-foreground">Loading…</div>;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
-      <div className="mb-8 flex items-start justify-between gap-4">
+    <div className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:px-6 sm:py-10 md:pb-10">
+      <div className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Welcome back</h1>
           <p className="mt-1 text-sm text-muted-foreground">Here's what CallRescue caught for {business?.business_name}.</p>
         </div>
         <NotificationsBell businessId={business?.id ?? null} />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {[
           { icon: PhoneCall, label: "Recovered Calls", value: recovered },
           { icon: TrendingUp, label: "Revenue Saved", value: `$${revenue.toLocaleString()}` },
@@ -125,12 +125,12 @@ function Dashboard() {
           { icon: Inbox, label: "Open Leads", value: openLeads },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-            <Card className="p-5 shadow-[var(--shadow-card)]">
+            <Card className="p-4 shadow-[var(--shadow-card)] sm:p-5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{s.label}</span>
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">{s.label}</span>
                 <s.icon className="h-4 w-4 text-primary" />
               </div>
-              <div className="mt-3 text-3xl font-semibold tracking-tight">{s.value}</div>
+                <div className="mt-2 text-xl font-semibold tabular-nums tracking-tight sm:mt-3 sm:text-3xl">{s.value}</div>
             </Card>
           </motion.div>
         ))}
