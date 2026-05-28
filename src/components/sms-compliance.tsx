@@ -36,6 +36,25 @@ Msg & data rates may apply. Msg frequency varies.`}
         automated help response with your business name and contact info.
       </Section>
 
+      <Section title="Opt-in keywords" icon={<CheckCircle className="h-4 w-4" />}>
+        Customers can text any of the following keywords to opt in to SMS
+        communications from CallRecover:
+        <div className="mt-2 flex flex-wrap gap-2">
+          {["START", "SUBSCRIBE", "JOIN", "YES", "OPTIN", "BEGIN"].map((k) => (
+            <span key={k} className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{k}</span>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Opt-in message" icon={<MessageSquare className="h-4 w-4" />}>
+        When a customer texts an opt-in keyword, they receive this automated reply:
+        <code className="mt-2 block whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 text-xs">
+{`CallRecover: You are now subscribed to SMS updates for your service requests.
+Reply STOP to opt out, HELP for help. Msg & data rates may apply.
+Msg frequency varies. Privacy: https://callrecover.net/privacy-policy`}
+        </code>
+      </Section>
+
       <Section title="A2P 10DLC campaign registration" icon={<FileText className="h-4 w-4" />}>
         Before sending production SMS in the US, your Twilio number must be
         registered to an approved A2P 10DLC brand and campaign. CallRecover AI uses
