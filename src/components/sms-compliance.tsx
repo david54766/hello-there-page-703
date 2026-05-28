@@ -90,19 +90,18 @@ export function CampaignRegistrationCard() {
 
       <Section title="Brand Information" icon={<Building2 className="h-4 w-4" />}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li><strong>Brand Name:</strong> Your legal business name (must match EIN/ tax records)</li>
-          <li><strong>Brand Type:</strong> Private (non-publicly traded) or Public</li>
-          <li><strong>Legal Entity Type:</strong> Sole Proprietorship, LLC, Partnership, Corporation, Non-Profit, or Government</li>
-          <li><strong>EIN / Tax ID:</strong> Employer Identification Number (required for verification)</li>
-          <li><strong>Business Address:</strong> Full street address, city, state, ZIP</li>
-          <li><strong>Business Website:</strong> Public-facing URL where customers can learn about your services</li>
-          <li><strong>Business Phone:</strong> Publicly listed business phone number</li>
+          <li><strong>Brand Name:</strong> CallRescue</li>
+          <li><strong>Brand Type:</strong> Private (non-publicly traded)</li>
+          <li><strong>Legal Entity Type:</strong> LLC</li>
+          <li><strong>Business Phone:</strong> (878) 234-0176</li>
+          <li><strong>Business Email:</strong> David@callrecover.net</li>
+          <li><strong>Contact Person:</strong> Dan</li>
         </ul>
       </Section>
 
       <Section title="Campaign Details" icon={<FileText className="h-4 w-4" />}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li><strong>Campaign Name:</strong> CallRescue AI — Customer Care &amp; Lead Follow-up</li>
+          <li><strong>Campaign Name:</strong> CallRescue — Customer Care &amp; Lead Follow-up</li>
           <li><strong>Use Case:</strong> Customer Care (non-marketing, service-related messaging)</li>
           <li><strong>Sub-use Case:</strong> Appointment reminders, lead qualification, callback scheduling</li>
           <li><strong>Message Content:</strong> Only transactional/service messages — no promotional or marketing content</li>
@@ -116,16 +115,16 @@ export function CampaignRegistrationCard() {
       <Section title="Sample Messages (required by carriers)" icon={<MessageSquare className="h-4 w-4" />}>
         <div className="space-y-2">
           <code className="block whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 text-xs">
-{`Hi {FirstName}, this is {BusinessName}. We received your voicemail about a service request.
+{`Hi Dan, this is CallRescue. We received your voicemail about a service request.
 Can we schedule a quick call? Reply YES or a time that works. Reply STOP to opt out,
 HELP for help. Msg & data rates may apply.`}
           </code>
           <code className="block whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 text-xs">
-{`Thanks {FirstName}! We'll call you at {Time} on {Phone}. If you need to reschedule,
-just reply here. Reply STOP to opt out, HELP for help. Msg & data rates may apply.`}
+{`Thanks Dan! We'll call you back shortly at (878) 234-0176. If you need to reschedule,
+just reply here or email David@callrecover.net. Reply STOP to opt out, HELP for help. Msg & data rates may apply.`}
           </code>
           <code className="block whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 text-xs">
-{`Hi {FirstName}, just confirming your appointment with {BusinessName} for {Date} at {Time}.
+{`Hi Dan, just confirming your appointment with CallRescue for May 27th.
 Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP for help.`}
           </code>
         </div>
