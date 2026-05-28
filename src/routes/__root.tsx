@@ -11,6 +11,7 @@ import {
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
+import { CookieConsent } from "@/components/cookie-consent";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,6 +127,7 @@ function RootComponent() {
         <AuthInvalidator />
         <Outlet />
         <Toaster />
+        <CookieConsent />
       </AuthProvider>
     </QueryClientProvider>
   );
