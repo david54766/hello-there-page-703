@@ -154,24 +154,30 @@ Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP f
 
       <Section title="Terms & Conditions URL" icon={<Globe className="h-4 w-4" />}>
         <p className="text-sm text-muted-foreground">
-          Your business must maintain a publicly accessible terms of service page that includes:
+          View our full Terms & Conditions here:
         </p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm">
+          <a className="underline text-primary" href="/terms" target="_blank" rel="noreferrer">/terms</a>
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           <li>Description of the SMS program and purpose</li>
-          <li>Message frequency disclosure (e.g., "Message frequency varies")</li>
+          <li>Message frequency disclosure ("Message frequency varies")</li>
           <li>Standard rate disclaimer ("Msg & data rates may apply")</li>
           <li>Opt-out instructions ("Reply STOP to cancel")</li>
           <li>Help instructions ("Reply HELP for assistance")</li>
-          <li>Your business contact information</li>
+          <li>Business contact information</li>
           <li>Privacy policy link covering data use and retention</li>
         </ul>
       </Section>
 
       <Section title="Privacy Policy URL" icon={<ShieldCheck className="h-4 w-4" />}>
         <p className="text-sm text-muted-foreground">
-          Your privacy policy must disclose:
+          View our full Privacy Policy here:
         </p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm">
+          <a className="underline text-primary" href="/privacy-policy" target="_blank" rel="noreferrer">/privacy-policy</a>
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           <li>What customer data is collected (name, phone, address, service details)</li>
           <li>How data is used (scheduling, follow-up, internal records)</li>
           <li>Who data is shared with (Twilio for delivery, no third-party marketing)</li>
