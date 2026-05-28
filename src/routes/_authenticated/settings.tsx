@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { SmsComplianceCard } from "@/components/sms-compliance";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: Settings });
@@ -149,6 +150,8 @@ function Settings() {
           <Textarea rows={6} value={biz.agent_prompt_override ?? ""} onChange={(e) => setBiz({ ...biz, agent_prompt_override: e.target.value })} placeholder="Leave blank to use the contractor-aware default." />
         </div>
       </Card>
+
+      <SmsComplianceCard />
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>

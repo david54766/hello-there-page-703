@@ -136,7 +136,16 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} CallRescue AI
+        <div className="mx-auto max-w-4xl space-y-2 px-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <span>© {new Date().getFullYear()} CallRescue AI</span>
+            <Link to="/compliance" className="hover:text-foreground">SMS &amp; voice compliance</Link>
+            <a href="https://www.twilio.com/legal/messaging-policy" target="_blank" rel="noreferrer" className="hover:text-foreground">Twilio messaging policy</a>
+          </div>
+          <p className="text-xs">
+            SMS &amp; voice powered by Twilio. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
+          </p>
+        </div>
       </footer>
     </main>
   );

@@ -201,6 +201,10 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
             <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type a reply…" />
             <Button onClick={sendDraft} disabled={!draft.trim()}><Send className="h-3.5 w-3.5" /></Button>
           </div>
+          <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+            By replying, the customer consents to SMS about their service request. Every first
+            reply auto-appends: <em>“Reply STOP to opt out, HELP for help. Msg &amp; data rates may apply.”</em>
+          </p>
         </div>
       </SheetContent>
     </Sheet>
