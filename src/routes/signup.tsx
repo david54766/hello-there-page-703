@@ -71,6 +71,12 @@ function Signup() {
             Already have an account?{" "}
             <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link>
           </p>
+          <p className="mt-3 text-center text-[11px] leading-snug text-muted-foreground">
+            By creating an account you agree that CallRescue AI may send SMS and place calls on
+            your business's behalf via Twilio in line with our{" "}
+            <Link to="/compliance" className="underline">SMS &amp; voice compliance</Link>{" "}
+            policy. Standard carrier rates apply. Reply STOP to opt out, HELP for help.
+          </p>
         </Card>
       </div>
     </main>
