@@ -152,6 +152,7 @@ function Settings() {
       </Card>
 
       <SmsComplianceCard />
+      <CampaignRegistrationCard />
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
