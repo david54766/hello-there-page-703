@@ -216,7 +216,9 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
           </div>
           <div className="mt-3 flex gap-2">
             <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type a reply…" />
-            <Button onClick={sendDraft} disabled={!draft.trim()}><Send className="h-3.5 w-3.5" /></Button>
+            <Button onClick={sendDraft} disabled={!draft.trim() || sending}>
+              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            </Button>
           </div>
           <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
             By replying, the customer consents to SMS about their service request. Every first
