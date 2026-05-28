@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
-      { title: "CallRescue AI — Recover Every Missed Call" },
+      { title: "CallRecover AI — Recover Every Missed Call" },
       { name: "description", content: "AI voicemail transcription + instant SMS recovery built for contractors. Turn missed calls into booked jobs." },
     ],
   }),
@@ -23,7 +23,7 @@ function Landing() {
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--shadow-elevated)]">
               <PhoneCall className="h-4 w-4" />
             </span>
-            <span className="tracking-tight">CallRescue AI</span>
+            <span className="tracking-tight">CallRecover AI</span>
           </Link>
           <nav className="flex items-center gap-3 text-sm">
             <Link to="/login" className="text-muted-foreground hover:text-foreground">Sign in</Link>
@@ -69,7 +69,7 @@ function Landing() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mx-auto mt-5 max-w-xl text-balance text-lg text-muted-foreground"
           >
-            CallRescue instantly engages every caller you miss — transcribing voicemails,
+            CallRecover instantly engages every caller you miss — transcribing voicemails,
             qualifying leads, and texting them back before they hire your competitor.
           </motion.p>
           <motion.div
@@ -138,7 +138,7 @@ function Landing() {
       <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
         <div className="mx-auto max-w-4xl space-y-2 px-6">
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <span>© {new Date().getFullYear()} CallRescue AI</span>
+            <span>© {new Date().getFullYear()} CallRecover AI</span>
             <Link to="/compliance" className="hover:text-foreground">SMS &amp; voice compliance</Link>
             <a href="https://www.twilio.com/legal/messaging-policy" target="_blank" rel="noreferrer" className="hover:text-foreground">Twilio messaging policy</a>
           </div>

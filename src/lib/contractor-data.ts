@@ -43,7 +43,7 @@ export function getForwardingInstructions(carrier: Carrier, twilioNumber: string
           `Open your phone dialer`,
           `Dial ${`*71${digits}`} and press call`,
           `Listen for confirmation tone, then hang up`,
-          `Your missed calls will now forward to CallRescue`,
+          `Your missed calls will now forward to CallRecover`,
         ],
       };
     case "att":

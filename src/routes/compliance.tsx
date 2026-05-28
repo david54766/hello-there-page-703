@@ -7,8 +7,8 @@ export const Route = createFileRoute("/compliance")({
   component: CompliancePage,
   head: () => ({
     meta: [
-      { title: "SMS & Voice Compliance · CallRescue AI" },
-      { name: "description", content: "How CallRescue AI handles SMS consent, opt-outs, A2P 10DLC, and AI voice disclosures via Twilio." },
+      { title: "SMS & Voice Compliance · CallRecover AI" },
+      { name: "description", content: "How CallRecover AI handles SMS consent, opt-outs, A2P 10DLC, and AI voice disclosures via Twilio." },
     ],
   }),
 });
@@ -21,7 +21,7 @@ function CompliancePage() {
       </Button>
       <h1 className="mb-2 text-3xl font-semibold tracking-tight">SMS &amp; Voice Compliance</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        CallRescue AI uses Twilio for SMS and voice. The disclosures below apply
+        CallRecover AI uses Twilio for SMS and voice. The disclosures below apply
         to every message and call the platform sends on your behalf.
       </p>
       <div className="space-y-6">

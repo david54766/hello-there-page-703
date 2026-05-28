@@ -153,7 +153,7 @@ function Onboarding() {
                       </li>
                     ))}
                   </ol>
-                  <p className="mt-5 text-xs text-muted-foreground">Your CallRescue number: <span className="font-mono">{twilioNumber}</span></p>
+                  <p className="mt-5 text-xs text-muted-foreground">Your CallRecover number: <span className="font-mono">{twilioNumber}</span></p>
                 </div>
               )}
               {step === 6 && (
@@ -175,7 +175,7 @@ function Onboarding() {
                         <ShieldCheck className="h-7 w-7" />
                       </div>
                       <h2 className="mt-4 text-2xl font-semibold tracking-tight">Your missed calls are now protected.</h2>
-                      <p className="mt-2 text-sm text-muted-foreground">CallRescue is live. Every missed call will land in your dashboard.</p>
+                      <p className="mt-2 text-sm text-muted-foreground">CallRecover is live. Every missed call will land in your dashboard.</p>
                       <Button className="mt-6" onClick={finish}>Go to dashboard</Button>
                     </>
                   )}
