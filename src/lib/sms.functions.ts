@@ -33,6 +33,19 @@ export const sendSms = createServerFn({ method: "POST" })
       .single();
     if (callErr || !call) throw new Error(callErr?.message ?? "Call not found");
 
+    // Respect SMS opt-outs (A2P 10DLC). Check the most recent consent record.
+    const { data: lastConsent } = await supabase
+      .from("sms_consents" as any)
+      .select("status")
+      .eq("business_id", call.business_id)
+      .eq("caller_number", call.caller_number)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if ((lastConsent as any)?.status === "opted_out") {
+      throw new Error("This number has opted out of SMS (replied STOP). They must text START to resubscribe.");
+    }
+
     // Find or create the SMS thread for this caller.
     let threadId: string | null = null;
     let isFirstOutbound = false;

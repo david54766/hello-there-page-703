@@ -398,6 +398,33 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_consents: {
+        Row: {
+          business_id: string
+          caller_number: string
+          created_at: string
+          id: string
+          keyword: string | null
+          status: Database["public"]["Enums"]["sms_consent_status"]
+        }
+        Insert: {
+          business_id: string
+          caller_number: string
+          created_at?: string
+          id?: string
+          keyword?: string | null
+          status: Database["public"]["Enums"]["sms_consent_status"]
+        }
+        Update: {
+          business_id?: string
+          caller_number?: string
+          created_at?: string
+          id?: string
+          keyword?: string | null
+          status?: Database["public"]["Enums"]["sms_consent_status"]
+        }
+        Relationships: []
+      }
       sms_messages: {
         Row: {
           body: string
@@ -596,6 +623,7 @@ export type Database = {
       lead_priority: "normal" | "high"
       lead_status: "open" | "contacted" | "scheduled" | "closed"
       notification_kind: "sms" | "email" | "dashboard" | "emergency"
+      sms_consent_status: "opted_in" | "opted_out"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -763,6 +791,7 @@ export const Constants = {
       lead_priority: ["normal", "high"],
       lead_status: ["open", "contacted", "scheduled", "closed"],
       notification_kind: ["sms", "email", "dashboard", "emergency"],
+      sms_consent_status: ["opted_in", "opted_out"],
     },
   },
 } as const
