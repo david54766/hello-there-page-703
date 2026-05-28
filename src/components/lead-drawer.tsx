@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { qualifyLead, suggestReplies, updateLeadStatus, scheduleCallback } from "@/lib/leads.functions";
 import { assignLead } from "@/lib/dispatch.functions";
+import { sendSms } from "@/lib/sms.functions";
 import { toast } from "sonner";
 import { Sparkles, Send, PhoneCall, Clock, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -41,6 +42,8 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
   const statusFn = useServerFn(updateLeadStatus);
   const callbackFn = useServerFn(scheduleCallback);
   const assignFn = useServerFn(assignLead);
+  const sendSmsFn = useServerFn(sendSms);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!call) return;
@@ -79,8 +82,22 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
 
   async function sendDraft() {
     if (!call || !draft.trim()) return;
-    toast.info("SMS queued (Twilio not connected yet)");
-    setDraft("");
+    const body = draft.trim();
+    setSending(true);
+    try {
+      await sendSmsFn({ data: { callId: call.id, body } });
+      // Optimistically append; realtime will also reconcile.
+      setMessages((prev) => [
+        ...prev,
+        { id: `tmp-${Date.now()}`, direction: "outbound", body, created_at: new Date().toISOString() },
+      ]);
+      setDraft("");
+      toast.success("Text sent");
+    } catch (e: any) {
+      toast.error(e.message ?? "Could not send SMS");
+    } finally {
+      setSending(false);
+    }
   }
 
   async function setStatus(s: Call["lead_status"]) {
