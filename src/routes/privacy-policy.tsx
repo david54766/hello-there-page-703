@@ -8,8 +8,8 @@ export const Route = createFileRoute("/privacy-policy")({
   component: PrivacyPage,
   head: () => ({
     meta: [
-      { title: "Privacy Policy · CallRescue" },
-      { name: "description", content: "CallRescue privacy policy covering data collection, SMS practices, and opt-out rights." },
+      { title: "Privacy Policy · CallRecover" },
+      { name: "description", content: "CallRecover privacy policy covering data collection, SMS practices, and opt-out rights." },
     ],
   }),
 });
@@ -25,12 +25,12 @@ function PrivacyPage() {
         <h1 className="text-3xl font-semibold tracking-tight">Privacy Policy</h1>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
-        Effective date: May 27, 2026 · CallRescue (David@callrecover.net · (878) 234-0176)
+        Effective date: May 27, 2026 · CallRecover (David@callrecover.net · (878) 234-0176)
       </p>
 
       <Card className="space-y-6 p-6">
         <Section title="1. What data we collect">
-          <p>We collect the following information when you interact with CallRescue:</p>
+          <p>We collect the following information when you interact with CallRecover:</p>
           <ul className="list-disc space-y-1 pl-5">
             <li>Phone numbers (caller and business)</li>
             <li>Voicemail recordings and transcripts</li>
@@ -53,7 +53,7 @@ function PrivacyPage() {
         <Section title="3. Mobile number non-sharing">
           <p>
             <strong>We do not share, sell, rent, or distribute your mobile phone number to any third parties for marketing purposes.</strong>
-            Your number is used only for service-related communication between you and CallRescue. Twilio is used as the delivery provider; they process the number solely to deliver the message and do not use it for independent marketing.
+            Your number is used only for service-related communication between you and CallRecover. Twilio is used as the delivery provider; they process the number solely to deliver the message and do not use it for independent marketing.
           </p>
         </Section>
 
@@ -77,13 +77,13 @@ function PrivacyPage() {
 
         <Section title="7. Opting out of SMS">
           <p>
-            You can opt out of SMS communications at any time by replying <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>END</strong>, or <strong>QUIT</strong> to any message. Once opted out, you will no longer receive SMS from CallRescue unless you initiate a new service request.
+            You can opt out of SMS communications at any time by replying <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>END</strong>, or <strong>QUIT</strong> to any message. Once opted out, you will no longer receive SMS from CallRecover unless you initiate a new service request.
           </p>
         </Section>
 
         <Section title="8. Security">
           <p>
-            Your data is stored in a private workspace protected by row-level security and access controls. Only authorized CallRescue staff can view your information.
+            Your data is stored in a private workspace protected by row-level security and access controls. Only authorized CallRecover staff can view your information.
           </p>
         </Section>
 
@@ -94,7 +94,7 @@ function PrivacyPage() {
           <ul className="list-disc space-y-1 pl-5">
             <li>Email: David@callrecover.net</li>
             <li>Phone: (878) 234-0176</li>
-            <li>Business: CallRescue</li>
+            <li>Business: CallRecover</li>
           </ul>
         </Section>
       </Card>

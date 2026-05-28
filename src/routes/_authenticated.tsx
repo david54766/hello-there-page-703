@@ -26,7 +26,7 @@ function Layout() {
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground">
             <PhoneCall className="h-4 w-4" />
           </span>
-          CallRescue
+          CallRecover
         </Link>
         <nav className="flex flex-col gap-1 text-sm">
           <Link to="/dashboard" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>

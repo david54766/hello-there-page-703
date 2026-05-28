@@ -112,7 +112,7 @@ function Dashboard() {
       <div className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Here's what CallRescue caught for {business?.business_name}.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Here's what CallRecover caught for {business?.business_name}.</p>
         </div>
         <NotificationsBell businessId={business?.id ?? null} />
       </div>

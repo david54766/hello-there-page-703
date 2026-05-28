@@ -8,8 +8,8 @@ export const Route = createFileRoute("/terms")({
   component: TermsPage,
   head: () => ({
     meta: [
-      { title: "Terms & Conditions · CallRescue" },
-      { name: "description", content: "CallRescue terms of service covering SMS program terms, consent, and opt-out." },
+      { title: "Terms & Conditions · CallRecover" },
+      { name: "description", content: "CallRecover terms of service covering SMS program terms, consent, and opt-out." },
     ],
   }),
 });
@@ -25,13 +25,13 @@ function TermsPage() {
         <h1 className="text-3xl font-semibold tracking-tight">Terms & Conditions</h1>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
-        Effective date: May 27, 2026 · CallRescue (David@callrecover.net · (878) 234-0176)
+        Effective date: May 27, 2026 · CallRecover (David@callrecover.net · (878) 234-0176)
       </p>
 
       <Card className="space-y-6 p-6">
         <Section title="1. SMS Program Description">
           <p>
-            CallRescue provides an automated customer care and lead follow-up service for home service contractors. When you call our business number and leave a voicemail, CallRescue AI may send you transactional SMS messages to schedule appointments, confirm callbacks, and answer basic service questions.
+            CallRecover provides an automated customer care and lead follow-up service for home service contractors. When you call our business number and leave a voicemail, CallRecover AI may send you transactional SMS messages to schedule appointments, confirm callbacks, and answer basic service questions.
           </p>
         </Section>
 
@@ -43,13 +43,13 @@ function TermsPage() {
 
         <Section title="3. Message and Data Rates May Apply">
           <p>
-            Standard messaging and data rates from your wireless carrier may apply to any text messages sent to or received from CallRescue. Contact your wireless carrier for pricing details.
+            Standard messaging and data rates from your wireless carrier may apply to any text messages sent to or received from CallRecover. Contact your wireless carrier for pricing details.
           </p>
         </Section>
 
         <Section title="4. Opt-Out Instructions">
           <p>
-            You can cancel SMS communications at any time by replying <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>END</strong>, or <strong>QUIT</strong> to any message. Once you opt out, you will no longer receive SMS from CallRescue unless you initiate a new service request.
+            You can cancel SMS communications at any time by replying <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>END</strong>, or <strong>QUIT</strong> to any message. Once you opt out, you will no longer receive SMS from CallRecover unless you initiate a new service request.
           </p>
         </Section>
 
@@ -60,7 +60,7 @@ function TermsPage() {
           <ul className="list-disc space-y-1 pl-5">
             <li>Email: David@callrecover.net</li>
             <li>Phone: (878) 234-0176</li>
-            <li>Business: CallRescue</li>
+            <li>Business: CallRecover</li>
           </ul>
         </Section>
 
@@ -72,7 +72,7 @@ function TermsPage() {
 
         <Section title="7. No Marketing Messages">
           <p>
-            CallRescue does not send promotional, advertising, or marketing SMS. All messages are transactional and directly related to a service request you initiated.
+            CallRecover does not send promotional, advertising, or marketing SMS. All messages are transactional and directly related to a service request you initiated.
           </p>
         </Section>
 

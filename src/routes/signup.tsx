@@ -43,7 +43,7 @@ function Signup() {
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground">
             <PhoneCall className="h-4 w-4" />
           </span>
-          CallRescue AI
+          CallRecover AI
         </Link>
         <Card className="p-8 shadow-[var(--shadow-card)]">
           <h1 className="text-2xl font-semibold tracking-tight">Start protecting calls</h1>
@@ -72,7 +72,7 @@ function Signup() {
             <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link>
           </p>
           <p className="mt-3 text-center text-[11px] leading-snug text-muted-foreground">
-            By creating an account you agree that CallRescue AI may send SMS and place calls on
+            By creating an account you agree that CallRecover AI may send SMS and place calls on
             your business's behalf via Twilio in line with our{" "}
             <Link to="/compliance" className="underline">SMS &amp; voice compliance</Link>{" "}
             policy. Standard carrier rates apply. Reply STOP to opt out, HELP for help.

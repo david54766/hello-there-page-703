@@ -38,7 +38,7 @@ function Login() {
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground">
             <PhoneCall className="h-4 w-4" />
           </span>
-          CallRescue AI
+          CallRecover AI
         </Link>
         <Card className="p-8 shadow-[var(--shadow-card)]">
           <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>

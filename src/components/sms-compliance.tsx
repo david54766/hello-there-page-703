@@ -9,7 +9,7 @@ export function SmsComplianceCard() {
         <h2 className="text-lg font-semibold">SMS &amp; voice compliance</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        CallRescue AI sends SMS and places calls through Twilio. To stay compliant
+        CallRecover AI sends SMS and places calls through Twilio. To stay compliant
         with US carrier rules (A2P 10DLC), TCPA, and CTIA guidelines, the following
         disclosures apply to every message your business sends through this app.
       </p>
@@ -38,7 +38,7 @@ Msg & data rates may apply. Msg frequency varies.`}
 
       <Section title="A2P 10DLC campaign registration" icon={<FileText className="h-4 w-4" />}>
         Before sending production SMS in the US, your Twilio number must be
-        registered to an approved A2P 10DLC brand and campaign. CallRescue AI uses
+        registered to an approved A2P 10DLC brand and campaign. CallRecover AI uses
         the <em>Customer Care</em> use case. Until your campaign is approved,
         outbound SMS runs in test mode only.
       </Section>
@@ -59,12 +59,12 @@ Msg & data rates may apply. Msg frequency varies.`}
 
       <Section title="Carrier fees" icon={<Hash className="h-4 w-4" />}>
         SMS and voice traffic is billed by Twilio at standard carrier rates,
-        including A2P 10DLC per-message surcharges. CallRescue AI does not mark
+        including A2P 10DLC per-message surcharges. CallRecover AI does not mark
         up carrier fees.
       </Section>
 
       <p className="border-t pt-3 text-xs text-muted-foreground">
-        Twilio is a registered trademark of Twilio Inc. CallRescue AI is an
+        Twilio is a registered trademark of Twilio Inc. CallRecover AI is an
         independent product and is not affiliated with or endorsed by Twilio.
         Twilio's full messaging policy:{" "}
         <a className="underline" href="https://www.twilio.com/legal/messaging-policy" target="_blank" rel="noreferrer">
@@ -90,7 +90,7 @@ export function CampaignRegistrationCard() {
 
       <Section title="Brand Information" icon={<Building2 className="h-4 w-4" />}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li><strong>Brand Name:</strong> CallRescue</li>
+          <li><strong>Brand Name:</strong> CallRecover</li>
           <li><strong>Brand Type:</strong> Private (non-publicly traded)</li>
           <li><strong>Legal Entity Type:</strong> LLC</li>
           <li><strong>Business Phone:</strong> (878) 234-0176</li>
@@ -101,7 +101,7 @@ export function CampaignRegistrationCard() {
 
       <Section title="Campaign Details" icon={<FileText className="h-4 w-4" />}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li><strong>Campaign Name:</strong> CallRescue — Customer Care &amp; Lead Follow-up</li>
+          <li><strong>Campaign Name:</strong> CallRecover — Customer Care &amp; Lead Follow-up</li>
           <li><strong>Use Case:</strong> Customer Care (non-marketing, service-related messaging)</li>
           <li><strong>Sub-use Case:</strong> Appointment reminders, lead qualification, callback scheduling</li>
           <li><strong>Message Content:</strong> Only transactional/service messages — no promotional or marketing content</li>
@@ -115,7 +115,7 @@ export function CampaignRegistrationCard() {
       <Section title="Sample Messages (required by carriers)" icon={<MessageSquare className="h-4 w-4" />}>
         <div className="space-y-2">
           <code className="block whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 text-xs">
-{`Hi Dan, this is CallRescue. We received your voicemail about a service request.
+{`Hi Dan, this is CallRecover. We received your voicemail about a service request.
 Can we schedule a quick call? Reply YES or a time that works. Reply STOP to opt out,
 HELP for help. Msg & data rates may apply.`}
           </code>
@@ -124,7 +124,7 @@ HELP for help. Msg & data rates may apply.`}
 just reply here or email David@callrecover.net. Reply STOP to opt out, HELP for help. Msg & data rates may apply.`}
           </code>
           <code className="block whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 text-xs">
-{`Hi Dan, just confirming your appointment with CallRescue for May 27th.
+{`Hi Dan, just confirming your appointment with CallRecover for May 27th.
 Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP for help.`}
           </code>
         </div>
@@ -134,7 +134,7 @@ Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP f
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           <li><strong>Primary Consent:</strong> Express consent is obtained when a customer calls your business phone number and leaves a voicemail, or when they reply to an initial AI voice call</li>
           <li><strong>Written Consent:</strong> Optionally collected through web forms, paper contracts, or digital agreements with clear SMS terms</li>
-          <li><strong>Consent Record:</strong> Timestamp and method of consent is stored per lead in the CallRescue AI backend</li>
+          <li><strong>Consent Record:</strong> Timestamp and method of consent is stored per lead in the CallRecover AI backend</li>
           <li><strong>Consent Disclaimers:</strong> Customers are informed that message frequency varies and that standard messaging rates apply</li>
         </ul>
       </Section>
