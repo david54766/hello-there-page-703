@@ -79,9 +79,9 @@ function TermsPage() {
         <Section title="8. Privacy Policy">
           <p>
             Your personal information is handled in accordance with our{" "}
-            <Link to="/privacy-policy" className="underline text-primary">
+            <a href="https://callrecover.net/privacy-policy" className="underline text-primary" target="_blank" rel="noreferrer">
               Privacy Policy
-            </Link>
+            </a>
             . We do not share your mobile number with third parties for marketing purposes.
           </p>
         </Section>

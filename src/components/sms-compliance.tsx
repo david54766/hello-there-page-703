@@ -157,7 +157,7 @@ Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP f
           View our full Terms & Conditions here:
         </p>
         <p className="mt-1 text-sm">
-          <a className="underline text-primary" href="/terms" target="_blank" rel="noreferrer">/terms</a>
+          <a className="underline text-primary" href="https://callrecover.net/terms" target="_blank" rel="noreferrer">https://callrecover.net/terms</a>
         </p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           <li>Description of the SMS program and purpose</li>
@@ -175,7 +175,7 @@ Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP f
           View our full Privacy Policy here:
         </p>
         <p className="mt-1 text-sm">
-          <a className="underline text-primary" href="/privacy-policy" target="_blank" rel="noreferrer">/privacy-policy</a>
+          <a className="underline text-primary" href="https://callrecover.net/privacy-policy" target="_blank" rel="noreferrer">https://callrecover.net/privacy-policy</a>
         </p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           <li>What customer data is collected (name, phone, address, service details)</li>
