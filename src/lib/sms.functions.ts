@@ -57,7 +57,6 @@ export const sendSms = createServerFn({ method: "POST" })
         .insert({
           business_id: call.business_id,
           caller_number: call.caller_number,
-          call_id: call.id,
         } as any)
         .select("id")
         .single();
@@ -98,10 +97,13 @@ export const sendSms = createServerFn({ method: "POST" })
       thread_id: threadId,
       direction: "outbound",
       body: finalBody,
-      provider_message_id: providerSid,
-      status: "sent",
     } as any);
     if (msgErr) throw new Error(msgErr.message);
+
+    await supabase
+      .from("sms_threads")
+      .update({ last_message_at: new Date().toISOString() } as any)
+      .eq("id", threadId);
 
     // Bump lead to contacted on first reply.
     await supabase
