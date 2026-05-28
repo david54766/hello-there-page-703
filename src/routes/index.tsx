@@ -136,9 +136,14 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
-        <div className="mx-auto max-w-4xl space-y-2 px-6">
+        <div className="mx-auto max-w-4xl space-y-3 px-6">
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             <span>© {new Date().getFullYear()} CallRecover AI</span>
+            <Link to="/privacy-policy" className="hover:text-foreground">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-foreground">Terms & Conditions</Link>
+            <Link to="/cookies" className="hover:text-foreground">Cookie Policy</Link>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             <Link to="/compliance" className="hover:text-foreground">SMS &amp; voice compliance</Link>
             <a href="https://www.twilio.com/legal/messaging-policy" target="_blank" rel="noreferrer" className="hover:text-foreground">Twilio messaging policy</a>
           </div>
