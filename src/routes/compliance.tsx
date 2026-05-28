@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { SmsComplianceCard } from "@/components/sms-compliance";
+import { SmsComplianceCard, CampaignRegistrationCard } from "@/components/sms-compliance";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
@@ -24,7 +24,10 @@ function CompliancePage() {
         CallRescue AI uses Twilio for SMS and voice. The disclosures below apply
         to every message and call the platform sends on your behalf.
       </p>
-      <SmsComplianceCard />
+      <div className="space-y-6">
+        <SmsComplianceCard />
+        <CampaignRegistrationCard />
+      </div>
     </div>
   );
 }

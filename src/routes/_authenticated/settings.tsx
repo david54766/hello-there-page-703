@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { SmsComplianceCard } from "@/components/sms-compliance";
+import { SmsComplianceCard, CampaignRegistrationCard } from "@/components/sms-compliance";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: Settings });
@@ -152,6 +152,7 @@ function Settings() {
       </Card>
 
       <SmsComplianceCard />
+      <CampaignRegistrationCard />
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
