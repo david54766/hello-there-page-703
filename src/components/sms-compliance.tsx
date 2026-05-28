@@ -172,9 +172,12 @@ Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP f
 
       <Section title="Privacy Policy URL" icon={<ShieldCheck className="h-4 w-4" />}>
         <p className="text-sm text-muted-foreground">
-          Your privacy policy must disclose:
+          View our full Privacy Policy here:
         </p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm">
+          <a className="underline text-primary" href="/privacy-policy" target="_blank" rel="noreferrer">/privacy-policy</a>
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           <li>What customer data is collected (name, phone, address, service details)</li>
           <li>How data is used (scheduling, follow-up, internal records)</li>
           <li>Who data is shared with (Twilio for delivery, no third-party marketing)</li>
