@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TosRouteImport } from './routes/tos'
 import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
+import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SmsOptInRouteImport } from './routes/sms-opt-in'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -37,6 +38,11 @@ const TosRoute = TosRouteImport.update({
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
   id: '/terms-of-service',
   path: '/terms-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsAndConditionsRoute = TermsAndConditionsRouteImport.update({
+  id: '/terms-and-conditions',
+  path: '/terms-and-conditions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/tos': typeof TosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/tos': typeof TosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/tos': typeof TosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sms-opt-in'
     | '/terms'
+    | '/terms-and-conditions'
     | '/terms-of-service'
     | '/tos'
     | '/dashboard'
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sms-opt-in'
     | '/terms'
+    | '/terms-and-conditions'
     | '/terms-of-service'
     | '/tos'
     | '/dashboard'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sms-opt-in'
     | '/terms'
+    | '/terms-and-conditions'
     | '/terms-of-service'
     | '/tos'
     | '/_authenticated/dashboard'
@@ -262,6 +274,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   SmsOptInRoute: typeof SmsOptInRoute
   TermsRoute: typeof TermsRoute
+  TermsAndConditionsRoute: typeof TermsAndConditionsRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
   TosRoute: typeof TosRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
@@ -282,6 +295,13 @@ declare module '@tanstack/react-router' {
       path: '/terms-of-service'
       fullPath: '/terms-of-service'
       preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms-and-conditions': {
+      id: '/terms-and-conditions'
+      path: '/terms-and-conditions'
+      fullPath: '/terms-and-conditions'
+      preLoaderRoute: typeof TermsAndConditionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -437,6 +457,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   SmsOptInRoute: SmsOptInRoute,
   TermsRoute: TermsRoute,
+  TermsAndConditionsRoute: TermsAndConditionsRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
   TosRoute: TosRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
