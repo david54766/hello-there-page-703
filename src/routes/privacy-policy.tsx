@@ -81,6 +81,13 @@ function PrivacyPage() {
           </p>
         </Section>
 
+        <Section title="8. How to opt in (CTA)">
+          <p>
+            You can opt in to receive SMS updates from CallRecover by submitting our SMS opt-in form at{" "}
+            <Link to="/sms-opt-in" className="underline text-primary">callrecover.net/sms-opt-in</Link>. The form requires your full name, your mobile phone number, and that you check an unchecked-by-default consent box agreeing to receive SMS from CallRecover. You may also opt in by leaving a voicemail at our business number, by replying to an initial AI voice call, or by texting <strong>START</strong>, <strong>SUBSCRIBE</strong>, <strong>JOIN</strong>, <strong>YES</strong>, <strong>OPTIN</strong>, or <strong>BEGIN</strong> to our business number. Consent is not a condition of purchase.
+          </p>
+        </Section>
+
         <Section title="8. Security">
           <p>
             Your data is stored in a private workspace protected by row-level security and access controls. Only authorized CallRecover staff can view your information.
