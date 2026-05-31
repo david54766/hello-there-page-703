@@ -33,17 +33,18 @@ function PrivacyPage() {
           <p>We collect the following information when you interact with CallRecover:</p>
           <ul className="list-disc space-y-1 pl-5">
             <li>Phone numbers (caller and business)</li>
-            <li>Voicemail recordings and transcripts</li>
+            <li>AI voice agent call recordings and transcripts (including the verbal yes/no consent response)</li>
             <li>Names and service-related details you provide</li>
             <li>Appointment dates, times, and callback preferences</li>
-            <li>SMS message history and timestamps</li>
+            <li>SMS message history, timestamps, and double opt-in confirmation (YES reply)</li>
           </ul>
         </Section>
 
         <Section title="2. How we use your data">
           <p>Your data is used solely to:</p>
           <ul className="list-disc space-y-1 pl-5">
-            <li>Transcribe and qualify voicemail leads</li>
+            <li>Transcribe and qualify calls handled by our AI voice agent</li>
+            <li>Record and store verbal + SMS double opt-in consent as proof</li>
             <li>Send transactional SMS for appointment reminders, callbacks, and scheduling</li>
             <li>Store internal records for your service request</li>
             <li>Improve AI accuracy and response quality</li>
@@ -77,14 +78,14 @@ function PrivacyPage() {
 
         <Section title="7. Opting out of SMS">
           <p>
-            You can opt out of SMS communications at any time by replying <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>END</strong>, or <strong>QUIT</strong> to any message. Once opted out, you will no longer receive SMS from CallRecover unless you initiate a new service request.
+            You can opt out of SMS communications at any time by replying <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>END</strong>, <strong>QUIT</strong>, <strong>OPTOUT</strong>, or <strong>REVOKE</strong> to any message. Once opted out, you will no longer receive SMS from CallRecover unless you initiate a new service request and complete the double opt-in again.
           </p>
         </Section>
 
         <Section title="8. How to opt in (CTA)">
           <p>
-            You can opt in to receive SMS updates from CallRecover by submitting our SMS opt-in form at{" "}
-            <Link to="/sms-opt-in" className="underline text-primary">callrecover.net/sms-opt-in</Link>. The form requires your full name, your mobile phone number, and that you check an unchecked-by-default consent box agreeing to receive SMS from CallRecover. You may also opt in by leaving a voicemail at our business number, by replying to an initial AI voice call, or by texting <strong>START</strong>, <strong>SUBSCRIBE</strong>, <strong>JOIN</strong>, <strong>YES</strong>, <strong>OPTIN</strong>, or <strong>BEGIN</strong> to our business number. Consent is not a condition of purchase.
+            The primary opt-in path is a two-layer (double) opt-in handled by our AI voice agent: (1) when your call is forwarded to the agent, it verbally asks whether you want a text confirmation and priority callback details — your yes/no is recorded as proof; (2) if you say yes and your number is mobile, you receive one confirmation text and must reply <strong>YES</strong> to start receiving transactional SMS. If you say no or call from a landline, no SMS is attempted. As a secondary path, you may also opt in at{" "}
+            <Link to="/sms-opt-in" className="underline text-primary">callrecover.net/sms-opt-in</Link> (full name + mobile number + an unchecked-by-default consent checkbox), or by texting <strong>YES, START, JOIN, BEGIN, CONFIRM,</strong> or <strong>UNSTOP</strong> to our business number. Consent is not a condition of purchase.
           </p>
         </Section>
 
