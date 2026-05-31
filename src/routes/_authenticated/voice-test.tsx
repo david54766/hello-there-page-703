@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { useConversation } from "@elevenlabs/react";
 import { useServerFn } from "@tanstack/react-start";
 import { mintAgentToken } from "@/lib/voice.functions";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +13,22 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/voice-test")({ component: VoiceTest });
 
 function VoiceTest() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Voice agent · live test</h1>
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+  return <VoiceTestInner />;
+}
+
+function VoiceTestInner() {
+  // Lazy require so @elevenlabs/react never runs during SSR/hydration.
+  const { useConversation } = require("@elevenlabs/react") as typeof import("@elevenlabs/react");
   const { user } = useAuth();
   const [agentId, setAgentId] = useState("");
   const [connecting, setConnecting] = useState(false);
