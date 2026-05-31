@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { PhoneCall, MessageSquareText, Sparkles, Shield, Clock, TrendingUp } from "lucide-react";
+import { PhoneCall, MessageSquareText, Sparkles, Shield, Clock, TrendingUp, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Landing,
