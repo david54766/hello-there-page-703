@@ -145,6 +145,7 @@ function Landing() {
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             <Link to="/compliance" className="hover:text-foreground">SMS &amp; voice compliance</Link>
+            <Link to="/sms-opt-in" className="hover:text-foreground">SMS opt-in</Link>
             <a href="https://www.twilio.com/legal/messaging-policy" target="_blank" rel="noreferrer" className="hover:text-foreground">Twilio messaging policy</a>
           </div>
           <p className="text-xs">

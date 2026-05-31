@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SmsOptInRouteImport } from './routes/sms-opt-in'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -23,11 +24,17 @@ import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/t
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
 import { Route as ApiPublicTwilioSmsInboundRouteImport } from './routes/api/public/twilio/sms-inbound'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SmsOptInRoute = SmsOptInRouteImport.update({
+  id: '/sms-opt-in',
+  path: '/sms-opt-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -94,6 +101,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicSmsOptInRoute = ApiPublicSmsOptInRouteImport.update({
+  id: '/api/public/sms-opt-in',
+  path: '/api/public/sms-opt-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTwilioSmsInboundRoute =
   ApiPublicTwilioSmsInboundRouteImport.update({
     id: '/api/public/twilio/sms-inbound',
@@ -109,12 +121,14 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/signup': typeof SignupRoute
+  '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/voice-test': typeof AuthenticatedVoiceTestRoute
+  '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
 export interface FileRoutesByTo {
@@ -125,12 +139,14 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/signup': typeof SignupRoute
+  '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/voice-test': typeof AuthenticatedVoiceTestRoute
+  '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
 export interface FileRoutesById {
@@ -143,12 +159,14 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/signup': typeof SignupRoute
+  '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/voice-test': typeof AuthenticatedVoiceTestRoute
+  '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
 export interface FileRouteTypes {
@@ -161,12 +179,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/privacy-policy'
     | '/signup'
+    | '/sms-opt-in'
     | '/terms'
     | '/dashboard'
     | '/revenue'
     | '/settings'
     | '/team'
     | '/voice-test'
+    | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -177,12 +197,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/privacy-policy'
     | '/signup'
+    | '/sms-opt-in'
     | '/terms'
     | '/dashboard'
     | '/revenue'
     | '/settings'
     | '/team'
     | '/voice-test'
+    | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   id:
     | '__root__'
@@ -194,12 +216,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/privacy-policy'
     | '/signup'
+    | '/sms-opt-in'
     | '/terms'
     | '/_authenticated/dashboard'
     | '/_authenticated/revenue'
     | '/_authenticated/settings'
     | '/_authenticated/team'
     | '/_authenticated/voice-test'
+    | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   fileRoutesById: FileRoutesById
 }
@@ -212,7 +236,9 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   SignupRoute: typeof SignupRoute
+  SmsOptInRoute: typeof SmsOptInRoute
   TermsRoute: typeof TermsRoute
+  ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
   ApiPublicTwilioSmsInboundRoute: typeof ApiPublicTwilioSmsInboundRoute
 }
 
@@ -223,6 +249,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sms-opt-in': {
+      id: '/sms-opt-in'
+      path: '/sms-opt-in'
+      fullPath: '/sms-opt-in'
+      preLoaderRoute: typeof SmsOptInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -316,6 +349,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/sms-opt-in': {
+      id: '/api/public/sms-opt-in'
+      path: '/api/public/sms-opt-in'
+      fullPath: '/api/public/sms-opt-in'
+      preLoaderRoute: typeof ApiPublicSmsOptInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/twilio/sms-inbound': {
       id: '/api/public/twilio/sms-inbound'
       path: '/api/public/twilio/sms-inbound'
@@ -355,19 +395,11 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   SignupRoute: SignupRoute,
+  SmsOptInRoute: SmsOptInRoute,
   TermsRoute: TermsRoute,
+  ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
   ApiPublicTwilioSmsInboundRoute: ApiPublicTwilioSmsInboundRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

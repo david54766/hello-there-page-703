@@ -402,26 +402,41 @@ export type Database = {
         Row: {
           business_id: string
           caller_number: string
+          consent_text: string | null
           created_at: string
+          full_name: string | null
           id: string
+          ip_address: string | null
           keyword: string | null
+          source: string | null
           status: Database["public"]["Enums"]["sms_consent_status"]
+          user_agent: string | null
         }
         Insert: {
           business_id: string
           caller_number: string
+          consent_text?: string | null
           created_at?: string
+          full_name?: string | null
           id?: string
+          ip_address?: string | null
           keyword?: string | null
+          source?: string | null
           status: Database["public"]["Enums"]["sms_consent_status"]
+          user_agent?: string | null
         }
         Update: {
           business_id?: string
           caller_number?: string
+          consent_text?: string | null
           created_at?: string
+          full_name?: string | null
           id?: string
+          ip_address?: string | null
           keyword?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["sms_consent_status"]
+          user_agent?: string | null
         }
         Relationships: []
       }
