@@ -70,6 +70,13 @@ function SmsOptInPage() {
         request, appointment scheduling, and lead follow-up.
       </p>
 
+      <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+        <strong className="text-foreground">How consent normally works:</strong> most
+        callers opt in by replying <strong>YES</strong> to a one-time confirmation text
+        sent after they call a business using CallRecover. This page is an alternative
+        web opt-in for business owners and visitors who want to subscribe directly.
+      </div>
+
       <Card className="mt-6 p-6">
         {done ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
