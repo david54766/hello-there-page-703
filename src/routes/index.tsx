@@ -131,15 +131,25 @@ function Landing() {
           <MessageSquareText className="mx-auto h-8 w-8 text-primary" />
           <h2 className="mt-3 text-2xl font-semibold tracking-tight">How we message you</h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
-            We only send SMS to users who have explicitly opted in through our
-            <Link to="/sms-opt-in" className="underline"> SMS opt-in page</Link>.
-            By opting in, you agree to receive text messages about your service request,
-            appointment scheduling, and lead follow-up.
+            CallRecover only texts callers after they've explicitly opted in. When a
+            customer calls a business using CallRecover and the call is missed, we send
+            <strong> one</strong> confirmation text asking the caller to reply{" "}
+            <strong>YES</strong> to receive a follow-up. We only continue messaging
+            after that reply is received. Business owners can also opt in directly via
+            our <Link to="/sms-opt-in" className="underline">web opt-in page</Link>.
           </p>
+          <div className="mx-auto mt-4 max-w-xl rounded-md border border-border bg-muted/30 p-3 text-left text-xs text-muted-foreground">
+            <p className="font-medium text-foreground">Sample confirmation text</p>
+            <p className="mt-1 italic">
+              "[Business] here — you just called us. Reply <strong>YES</strong> to get a
+              text follow-up. Msg freq varies. Msg &amp; data rates may apply. Reply{" "}
+              <strong>STOP</strong> to opt out, <strong>HELP</strong> for help."
+            </p>
+          </div>
           <ul className="mx-auto mt-4 inline-block text-left text-xs text-muted-foreground space-y-1.5">
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
-              <span>Consent is collected via a checked box before submission.</span>
+              <span>Consent is captured by the caller replying <strong>YES</strong> to the confirmation text (double opt-in).</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
