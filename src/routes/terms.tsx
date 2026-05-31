@@ -31,13 +31,13 @@ function TermsPage() {
       <Card className="space-y-6 p-6">
         <Section title="1. SMS Program Description">
           <p>
-            CallRecover provides an automated customer care and lead follow-up service for home service contractors. When you call our business number and leave a voicemail, CallRecover AI may send you transactional SMS messages to schedule appointments, confirm callbacks, and answer basic service questions.
+            CallRecover provides an automated customer care and lead follow-up service for home service contractors. When you call a business that uses CallRecover and the call is missed, the call is forwarded to our AI voice agent, which collects your message and verbally asks whether you'd like a text confirmation and priority callback details. If you verbally agree and your number is a mobile number, we send one confirmation SMS asking you to reply <strong>YES</strong> to complete a two-layer (double) opt-in. Only after that YES reply do we send transactional SMS to schedule appointments, confirm callbacks, and share service details. Landline callers receive a callback only — no SMS is attempted.
           </p>
         </Section>
 
         <Section title="2. Message Frequency">
           <p>
-            <strong>Message frequency varies.</strong> Most conversations involve 1–3 text messages depending on your service needs. You will only receive messages in response to a voicemail or service inquiry you initiated.
+            <strong>Message frequency varies.</strong> Most conversations involve 1–3 text messages depending on your service needs. You will only receive messages after you (a) verbally consent on the call with our AI voice agent and (b) reply <strong>YES</strong> to the confirmation text.
           </p>
         </Section>
 
@@ -49,7 +49,7 @@ function TermsPage() {
 
         <Section title="4. Opt-Out Instructions">
           <p>
-            You can cancel SMS communications at any time by replying <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>END</strong>, or <strong>QUIT</strong> to any message. Once you opt out, you will no longer receive SMS from CallRecover unless you initiate a new service request.
+            You can cancel SMS communications at any time by replying <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>END</strong>, <strong>QUIT</strong>, <strong>OPTOUT</strong>, or <strong>REVOKE</strong> to any message. Once you opt out, you will no longer receive SMS from CallRecover unless you initiate a new service request and complete the double opt-in again.
           </p>
         </Section>
 
@@ -66,7 +66,7 @@ function TermsPage() {
 
         <Section title="6. Consent">
           <p>
-            By calling our business phone number and leaving a voicemail, you consent to receive transactional SMS messages related to your service request. This consent is not required as a condition of purchasing any goods or services.
+            Consent is captured through a two-layer (double) opt-in: (1) verbal yes/no recorded on the call with our AI voice agent after a clear disclosure of message frequency, rates, and STOP instructions; and (2) a <strong>YES</strong> reply to the single confirmation text sent to mobile numbers. Both layers are required before any further SMS is sent. If verbal consent is declined or the caller is on a landline, no SMS is attempted. Consent is not required as a condition of purchasing any goods or services. Opt-in keywords accepted on inbound SMS: <strong>YES, START, JOIN, BEGIN, CONFIRM, UNSTOP</strong>.
           </p>
         </Section>
 
