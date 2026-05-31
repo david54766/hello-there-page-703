@@ -71,10 +71,14 @@ function SmsOptInPage() {
       </p>
 
       <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-        <strong className="text-foreground">How consent normally works:</strong> most
-        callers opt in by replying <strong>YES</strong> to a one-time confirmation text
-        sent after they call a business using CallRecover. This page is an alternative
-        web opt-in for business owners and visitors who want to subscribe directly.
+        <strong className="text-foreground">How consent normally works:</strong> when
+        you call a business using CallRecover and the call is forwarded to our AI
+        voice agent, the agent collects your message and asks{" "}
+        <em>verbally</em> if you'd like a text confirmation and priority callback. If
+        you agree and called from a mobile number, we send one confirmation text and
+        only continue messaging after you reply <strong>YES</strong> (double opt-in).
+        Landline callers get a callback only — no SMS. This page is an alternative web
+        opt-in for business owners and visitors who want to subscribe directly.
       </div>
 
       <Card className="mt-6 p-6">
