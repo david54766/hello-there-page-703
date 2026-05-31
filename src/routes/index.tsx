@@ -83,11 +83,6 @@ function Landing() {
                 Start recovering calls
               </Button>
             </Link>
-            <Link to="/login">
-              <Button size="lg" variant="outline" className="h-12 px-6 text-base">
-                Sign in
-              </Button>
-            </Link>
             <Link to="/sms-opt-in">
               <Button size="lg" variant="secondary" className="h-12 px-6 text-base gap-2">
                 <MessageSquareText className="h-4 w-4" />
