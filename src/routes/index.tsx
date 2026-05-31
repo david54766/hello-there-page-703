@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { PhoneCall, MessageSquareText, Sparkles, Shield, Clock, TrendingUp } from "lucide-react";
+import { PhoneCall, MessageSquareText, Sparkles, Shield, Clock, TrendingUp, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -122,6 +122,41 @@ function Landing() {
               <p className="mt-2 text-sm text-muted-foreground">{f.body}</p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* How We Message You */}
+      <section className="mx-auto max-w-4xl px-6 py-16 text-center">
+        <div className="rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)]">
+          <MessageSquareText className="mx-auto h-8 w-8 text-primary" />
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight">How we message you</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
+            We only send SMS to users who have explicitly opted in through our
+            <Link to="/sms-opt-in" className="underline"> SMS opt-in page</Link>.
+            By opting in, you agree to receive text messages about your service request,
+            appointment scheduling, and lead follow-up.
+          </p>
+          <ul className="mx-auto mt-4 inline-block text-left text-xs text-muted-foreground space-y-1.5">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Consent is collected via a checked box before submission.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Message frequency varies. Message &amp; data rates may apply.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Reply <strong>STOP</strong> to opt out, <strong>HELP</strong> for help at any time.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
+              <span>
+                See our <Link to="/privacy-policy" className="underline">privacy policy</Link>{" "}
+                and <Link to="/terms" className="underline">terms</Link> for full details.
+              </span>
+            </li>
+          </ul>
         </div>
       </section>
 
