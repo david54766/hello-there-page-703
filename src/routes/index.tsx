@@ -97,29 +97,144 @@ function Landing() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* How It Works */}
+      <section className="border-t border-border/60 bg-background">
+        <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
+          >
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">How it works</h2>
+            <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+              From missed call to booked job in under a minute. No apps to install.
+            </p>
+          </motion.div>
+
+          <div className="relative mx-auto mt-12 grid max-w-5xl gap-6 sm:grid-cols-5">
+            {/* Connector line (desktop) */}
+            <div
+              aria-hidden
+              className="absolute left-0 right-0 top-[2.25rem] hidden h-0.5 sm:block"
+              style={{ background: "var(--gradient-primary)", opacity: 0.2, margin: "0 2.5rem" }}
+            />
+
+            {[
+              {
+                icon: PhoneMissed,
+                title: "Missed call",
+                body: "You're on a job, driving, or it's after hours. The caller gets silence.",
+              },
+              {
+                icon: Bot,
+                title: "AI answers",
+                body: "Our voice agent picks up in 20 seconds, introduces itself, and takes a detailed message.",
+              },
+              {
+                icon: ClipboardList,
+                title: "Lead qualified",
+                body: "AI asks what they need, when they need it, and logs every detail in your dashboard.",
+              },
+              {
+                icon: Send,
+                title: "SMS sent",
+                body: "The caller gets an instant text with your info and next steps — before they call a competitor.",
+              },
+              {
+                icon: BellRing,
+                title: "You close it",
+                body: "You get notified with a hot, pre-qualified lead. Call back and book the job.",
+              },
+            ].map((step, i) => (
+              <motion.div
+                key={step.title}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="relative z-10 text-center"
+              >
+                <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary bg-background text-primary shadow-[var(--shadow-card)]">
+                  <span className="text-sm font-bold">{i + 1}</span>
+                </div>
+                <div className="mt-4 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <step.icon className="h-4 w-4" />
+                </div>
+                <h3 className="mt-3 text-sm font-semibold">{step.title}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.body}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Key Features */}
       <section className="border-t border-border/60 bg-card/40">
-        <div className="mx-auto grid max-w-6xl gap-6 px-6 py-20 sm:grid-cols-3">
-          {[
-            { icon: Clock, title: "20-second pickup", body: "If you don't answer in 20s, AI takes over — captures the lead, never the silence." },
-            { icon: MessageSquareText, title: "Instant SMS reply", body: "Mobile callers get a personalized text in seconds. Schedule, callback, or text — they choose." },
-            { icon: TrendingUp, title: "Revenue recovered", body: "Dashboard shows exactly how much pipeline you would've lost. Every week." },
-          ].map((f, i) => (
-            <motion.div
-              key={f.title}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.08 }}
-              className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]"
-            >
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold">{f.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{f.body}</p>
-            </motion.div>
-          ))}
+        <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
+          >
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">What you get</h2>
+            <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+              Built for contractors who can't afford to miss another job.
+            </p>
+          </motion.div>
+
+          <div className="mx-auto mt-12 grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                icon: Clock,
+                title: "20-second AI pickup",
+                value: "Never lose a caller to voicemail again. If you don't answer, AI takes over instantly.",
+              },
+              {
+                icon: MessageSquareText,
+                title: "Instant SMS follow-up",
+                value: "Callers get a personalized text in seconds with your contact info and next steps.",
+              },
+              {
+                icon: BarChart3,
+                title: "Revenue you can see",
+                value: "Dashboard shows exactly how many leads and how much pipeline you've recovered — weekly.",
+              },
+              {
+                icon: Headset,
+                title: "Zero hardware or apps",
+                value: "Works with your existing phone number. No devices to buy, no software to install.",
+              },
+              {
+                icon: Zap,
+                title: "5-minute setup",
+                value: "Forward your missed calls to us. That's it. Most contractors are live before their coffee cools.",
+              },
+              {
+                icon: Wrench,
+                title: "Built for trades",
+                value: "HVAC, plumbing, electrical, roofing — AI speaks the language of your industry and your customers.",
+              },
+            ].map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.06 }}
+                className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]"
+              >
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <f.icon className="h-5 w-5" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold">{f.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{f.value}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
