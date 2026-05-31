@@ -131,25 +131,60 @@ function Landing() {
           <MessageSquareText className="mx-auto h-8 w-8 text-primary" />
           <h2 className="mt-3 text-2xl font-semibold tracking-tight">How we message you</h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
-            CallRecover only texts callers after they've explicitly opted in. When a
-            customer calls a business using CallRecover and the call is missed, we send
-            <strong> one</strong> confirmation text asking the caller to reply{" "}
-            <strong>YES</strong> to receive a follow-up. We only continue messaging
-            after that reply is received. Business owners can also opt in directly via
-            our <Link to="/sms-opt-in" className="underline">web opt-in page</Link>.
+            CallRecover only texts callers after they've explicitly opted in — with{" "}
+            <strong>two layers of consent</strong>: verbal confirmation on the call,
+            then a confirmation text they must reply <strong>YES</strong> to. Business
+            owners can also opt in directly via our{" "}
+            <Link to="/sms-opt-in" className="underline">web opt-in page</Link>.
           </p>
-          <div className="mx-auto mt-4 max-w-xl rounded-md border border-border bg-muted/30 p-3 text-left text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">Sample confirmation text</p>
-            <p className="mt-1 italic">
-              "[Business] here — you just called us. Reply <strong>YES</strong> to get a
-              text follow-up. Msg freq varies. Msg &amp; data rates may apply. Reply{" "}
-              <strong>STOP</strong> to opt out, <strong>HELP</strong> for help."
-            </p>
+
+          <div className="mx-auto mt-6 max-w-2xl space-y-3 text-left">
+            <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">1. Call is forwarded to our AI agent</p>
+              <p className="mt-1">
+                When the business misses your call, it forwards to our AI voice agent.
+                The agent takes your message and reason for calling so you get{" "}
+                <strong>priority service placement</strong> — your job is logged before
+                the callback even happens.
+              </p>
+            </div>
+            <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">2. Verbal consent on the call</p>
+              <p className="mt-1 italic">
+                "Would you like a text confirmation and priority callback details at
+                this number? Message frequency varies, msg &amp; data rates may apply,
+                reply STOP to opt out."
+              </p>
+              <p className="mt-2">Your verbal response is recorded as proof of consent.</p>
+            </div>
+            <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">3. Confirmation text (double opt-in)</p>
+              <p className="mt-1">If you agreed verbally and called from a mobile number, we send one text:</p>
+              <p className="mt-2 italic">
+                "[Business] here — reply <strong>YES</strong> to confirm text updates
+                and get priority callback. Msg freq varies. Msg &amp; data rates may
+                apply. Reply <strong>STOP</strong> to opt out, <strong>HELP</strong> for help."
+              </p>
+              <p className="mt-2">We only continue messaging after you reply YES.</p>
+            </div>
+            <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Calling from a landline?</p>
+              <p className="mt-1">
+                No text is sent. The agent confirms your message is logged with the
+                operator and a callback is scheduled with additional details as quickly
+                as possible.
+              </p>
+            </div>
           </div>
-          <ul className="mx-auto mt-4 inline-block text-left text-xs text-muted-foreground space-y-1.5">
+
+          <ul className="mx-auto mt-6 inline-block text-left text-xs text-muted-foreground space-y-1.5">
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
-              <span>Consent is captured by the caller replying <strong>YES</strong> to the confirmation text (double opt-in).</span>
+              <span>Two-layer consent: verbal on the call + <strong>YES</strong> reply to the text.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Landlines get a callback only — no SMS attempted.</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
