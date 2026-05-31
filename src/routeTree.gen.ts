@@ -9,10 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TosRouteImport } from './routes/tos'
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
+import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-conditions'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SmsOptInRouteImport } from './routes/sms-opt-in'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CookiesRouteImport } from './routes/cookies'
@@ -27,6 +31,21 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
 import { Route as ApiPublicTwilioSmsInboundRouteImport } from './routes/api/public/twilio/sms-inbound'
 
+const TosRoute = TosRouteImport.update({
+  id: '/tos',
+  path: '/tos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsAndConditionsRoute = TermsAndConditionsRouteImport.update({
+  id: '/terms-and-conditions',
+  path: '/terms-and-conditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -45,6 +64,11 @@ const SignupRoute = SignupRouteImport.update({
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -119,10 +143,14 @@ export interface FileRoutesByFullPath {
   '/cookies': typeof CookiesRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/signup': typeof SignupRoute
   '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
+  '/tos': typeof TosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -137,10 +165,14 @@ export interface FileRoutesByTo {
   '/cookies': typeof CookiesRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/signup': typeof SignupRoute
   '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
+  '/tos': typeof TosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -157,10 +189,14 @@ export interface FileRoutesById {
   '/cookies': typeof CookiesRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/signup': typeof SignupRoute
   '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
+  '/terms-and-conditions': typeof TermsAndConditionsRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
+  '/tos': typeof TosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -177,10 +213,14 @@ export interface FileRouteTypes {
     | '/cookies'
     | '/login'
     | '/onboarding'
+    | '/privacy'
     | '/privacy-policy'
     | '/signup'
     | '/sms-opt-in'
     | '/terms'
+    | '/terms-and-conditions'
+    | '/terms-of-service'
+    | '/tos'
     | '/dashboard'
     | '/revenue'
     | '/settings'
@@ -195,10 +235,14 @@ export interface FileRouteTypes {
     | '/cookies'
     | '/login'
     | '/onboarding'
+    | '/privacy'
     | '/privacy-policy'
     | '/signup'
     | '/sms-opt-in'
     | '/terms'
+    | '/terms-and-conditions'
+    | '/terms-of-service'
+    | '/tos'
     | '/dashboard'
     | '/revenue'
     | '/settings'
@@ -214,10 +258,14 @@ export interface FileRouteTypes {
     | '/cookies'
     | '/login'
     | '/onboarding'
+    | '/privacy'
     | '/privacy-policy'
     | '/signup'
     | '/sms-opt-in'
     | '/terms'
+    | '/terms-and-conditions'
+    | '/terms-of-service'
+    | '/tos'
     | '/_authenticated/dashboard'
     | '/_authenticated/revenue'
     | '/_authenticated/settings'
@@ -234,16 +282,41 @@ export interface RootRouteChildren {
   CookiesRoute: typeof CookiesRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  PrivacyRoute: typeof PrivacyRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   SignupRoute: typeof SignupRoute
   SmsOptInRoute: typeof SmsOptInRoute
   TermsRoute: typeof TermsRoute
+  TermsAndConditionsRoute: typeof TermsAndConditionsRoute
+  TermsOfServiceRoute: typeof TermsOfServiceRoute
+  TosRoute: typeof TosRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
   ApiPublicTwilioSmsInboundRoute: typeof ApiPublicTwilioSmsInboundRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tos': {
+      id: '/tos'
+      path: '/tos'
+      fullPath: '/tos'
+      preLoaderRoute: typeof TosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms-of-service': {
+      id: '/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/terms-of-service'
+      preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms-and-conditions': {
+      id: '/terms-and-conditions'
+      path: '/terms-and-conditions'
+      fullPath: '/terms-and-conditions'
+      preLoaderRoute: typeof TermsAndConditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -270,6 +343,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -393,10 +473,14 @@ const rootRouteChildren: RootRouteChildren = {
   CookiesRoute: CookiesRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  PrivacyRoute: PrivacyRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   SignupRoute: SignupRoute,
   SmsOptInRoute: SmsOptInRoute,
   TermsRoute: TermsRoute,
+  TermsAndConditionsRoute: TermsAndConditionsRoute,
+  TermsOfServiceRoute: TermsOfServiceRoute,
+  TosRoute: TosRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
   ApiPublicTwilioSmsInboundRoute: ApiPublicTwilioSmsInboundRoute,
 }
