@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SmsOptInRouteImport } from './routes/sms-opt-in'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -29,6 +30,11 @@ import { Route as ApiPublicTwilioSmsInboundRouteImport } from './routes/api/publ
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SmsOptInRoute = SmsOptInRouteImport.update({
+  id: '/sms-opt-in',
+  path: '/sms-opt-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/signup': typeof SignupRoute
+  '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/signup': typeof SignupRoute
+  '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/signup': typeof SignupRoute
+  '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/privacy-policy'
     | '/signup'
+    | '/sms-opt-in'
     | '/terms'
     | '/dashboard'
     | '/revenue'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/privacy-policy'
     | '/signup'
+    | '/sms-opt-in'
     | '/terms'
     | '/dashboard'
     | '/revenue'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/privacy-policy'
     | '/signup'
+    | '/sms-opt-in'
     | '/terms'
     | '/_authenticated/dashboard'
     | '/_authenticated/revenue'
@@ -224,6 +236,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   SignupRoute: typeof SignupRoute
+  SmsOptInRoute: typeof SmsOptInRoute
   TermsRoute: typeof TermsRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
   ApiPublicTwilioSmsInboundRoute: typeof ApiPublicTwilioSmsInboundRoute
@@ -236,6 +249,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sms-opt-in': {
+      id: '/sms-opt-in'
+      path: '/sms-opt-in'
+      fullPath: '/sms-opt-in'
+      preLoaderRoute: typeof SmsOptInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -375,6 +395,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   SignupRoute: SignupRoute,
+  SmsOptInRoute: SmsOptInRoute,
   TermsRoute: TermsRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
   ApiPublicTwilioSmsInboundRoute: ApiPublicTwilioSmsInboundRoute,
