@@ -151,9 +151,10 @@ Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP f
 
       <Section title="Opt-In & Consent Mechanism" icon={<CheckCircle className="h-4 w-4" />}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li><strong>Primary Consent:</strong> Express consent is obtained when a customer calls your business phone number and leaves a voicemail, or when they reply to an initial AI voice call</li>
+          <li><strong>Web Form (Primary CTA):</strong> Customers opt in at <a className="underline" href="https://callrecover.net/sms-opt-in" target="_blank" rel="noreferrer">https://callrecover.net/sms-opt-in</a>. The form collects full name and mobile number, and requires an unchecked-by-default consent checkbox with the disclosure: "By checking this box and submitting, I agree to receive SMS messages from CallRecover related to my service request, appointment scheduling, and lead follow-up at the phone number provided. Message frequency varies. Message &amp; data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase."</li>
+          <li><strong>Phone Call Consent:</strong> Express consent is also obtained when a customer calls the business phone number and leaves a voicemail, or replies to an initial AI voice call asking for SMS follow-up</li>
           <li><strong>Written Consent:</strong> Optionally collected through web forms, paper contracts, or digital agreements with clear SMS terms</li>
-          <li><strong>Consent Record:</strong> Timestamp and method of consent is stored per lead in the CallRecover AI backend</li>
+          <li><strong>Consent Record:</strong> Every opt-in is logged with timestamp, phone number, source (web form / call / SMS keyword), IP address, user agent, and the exact consent disclosure text shown to the customer</li>
           <li><strong>Consent Disclaimers:</strong> Customers are informed that message frequency varies and that standard messaging rates apply</li>
         </ul>
       </Section>
