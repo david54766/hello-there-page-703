@@ -88,6 +88,12 @@ function Landing() {
                 Sign in
               </Button>
             </Link>
+            <Link to="/sms-opt-in">
+              <Button size="lg" variant="secondary" className="h-12 px-6 text-base gap-2">
+                <MessageSquareText className="h-4 w-4" />
+                Subscribe to SMS updates
+              </Button>
+            </Link>
           </motion.div>
           <p className="mt-4 text-xs text-muted-foreground">No credit card. 5-minute setup.</p>
         </div>
