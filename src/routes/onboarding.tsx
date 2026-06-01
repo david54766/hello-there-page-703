@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber, updateAssistantForNumber, previewVoice } from "@/lib/vapi.functions";
+import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber, updateAssistantForNumber } from "@/lib/vapi.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, getStandardScrip
 import { VOICE_OPTIONS, DEFAULT_VOICE_ID } from "@/lib/voices";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2, Play, Mic2, CalendarCheck } from "lucide-react";
+import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2, Mic2, CalendarCheck } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
 
@@ -41,14 +41,11 @@ function Onboarding() {
   const fetchNumberAssistants = useServerFn(listNumberAssistants);
   const ensureAssistant = useServerFn(ensureAssistantForNumber);
   const updateAssistant = useServerFn(updateAssistantForNumber);
-  const previewVoiceFn = useServerFn(previewVoice);
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentRows, setAgentRows] = useState<{ number: string; assistantId: string | null; phoneNumberId: string }[]>([]);
   const [agentRan, setAgentRan] = useState(false);
 
   const [voiceId, setVoiceId] = useState<string>(DEFAULT_VOICE_ID);
-  const [voicePlayed, setVoicePlayed] = useState<Set<string>>(new Set());
-  const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
   const [voiceSaving, setVoiceSaving] = useState(false);
 
   const [schedulingEnabled, setSchedulingEnabled] = useState(false);
@@ -156,27 +153,6 @@ function Onboarding() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
-  async function playVoicePreview(id: string) {
-    if (voicePlaying) return;
-    setVoicePlaying(id);
-    try {
-      const { audioBase64, mime } = await previewVoiceFn({
-        data: {
-          voiceId: id,
-          text: `Thanks for calling ${state.business_name || "our team"}. All of our team are on another line right now — but I can take your details and pass them along immediately.`,
-        },
-      });
-      const audio = new Audio(`data:${mime};base64,${audioBase64}`);
-      audio.onended = () => setVoicePlaying(null);
-      audio.onerror = () => setVoicePlaying(null);
-      await audio.play();
-      setVoicePlayed((s) => new Set(s).add(id));
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not play preview");
-      setVoicePlaying(null);
-    }
-  }
-
   async function saveVoiceAndContinue() {
     if (!bizId) return;
     setVoiceSaving(true);
@@ -277,13 +253,7 @@ function Onboarding() {
                 <AgentStep loading={agentLoading} rows={agentRows} />
               )}
               {step === 6 && (
-                <VoiceStep
-                  voiceId={voiceId}
-                  setVoiceId={setVoiceId}
-                  played={voicePlayed}
-                  playing={voicePlaying}
-                  onPreview={playVoicePreview}
-                />
+                <VoiceStep voiceId={voiceId} setVoiceId={setVoiceId} />
               )}
               {step === 7 && (
                 <ScriptStep
@@ -364,10 +334,7 @@ function Onboarding() {
           {step === 6 && (
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
-              <Button
-                onClick={saveVoiceAndContinue}
-                disabled={voiceSaving || !voicePlayed.has(voiceId)}
-              >
+              <Button onClick={saveVoiceAndContinue} disabled={voiceSaving}>
                 {voiceSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approve voice
               </Button>
             </div>
@@ -437,15 +404,9 @@ function AgentStep({ loading, rows }: { loading: boolean; rows: { number: string
 function VoiceStep({
   voiceId,
   setVoiceId,
-  played,
-  playing,
-  onPreview,
 }: {
   voiceId: string;
   setVoiceId: (id: string) => void;
-  played: Set<string>;
-  playing: string | null;
-  onPreview: (id: string) => void;
 }) {
   return (
     <div>
@@ -453,11 +414,10 @@ function VoiceStep({
         <Mic2 className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-semibold tracking-tight">Pick your agent's voice</h2>
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">Preview each voice, then approve the one you'd like callers to hear.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Choose the voice callers will hear when your agent answers.</p>
       <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {VOICE_OPTIONS.map((v) => {
           const selected = voiceId === v.id;
-          const isPlaying = playing === v.id;
           return (
             <div
               key={v.id}
@@ -473,23 +433,11 @@ function VoiceStep({
                 </div>
                 <div className="text-xs text-muted-foreground">{v.description}</div>
               </div>
-              <Button
-                type="button"
-                variant={selected ? "default" : "outline"}
-                size="sm"
-                onClick={(e) => { e.stopPropagation(); onPreview(v.id); }}
-                disabled={!!playing}
-              >
-                {isPlaying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
-                {played.has(v.id) ? "Replay" : "Play"}
-              </Button>
+              {selected && <Check className="h-4 w-4 text-primary" />}
             </div>
           );
         })}
       </div>
-      {!played.has(voiceId) && (
-        <p className="mt-3 text-xs text-muted-foreground">Tip: play your selected voice at least once before approving.</p>
-      )}
     </div>
   );
 }

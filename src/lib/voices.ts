@@ -1,5 +1,5 @@
-// Curated ElevenLabs voice options surfaced in onboarding + the AI agent tab.
-// `id` is the ElevenLabs voice ID passed to Vapi via { provider: "11labs", voiceId }.
+// Curated voice options surfaced in onboarding + the AI agent tab.
+// `id` is the voice ID Vapi uses for TTS playback during calls.
 
 export type VoiceOption = {
   id: string;

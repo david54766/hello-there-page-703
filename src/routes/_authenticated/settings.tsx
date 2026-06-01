@@ -317,7 +317,7 @@ function Settings() {
       <Card className="space-y-5 p-6">
         <h2 className="text-lg font-semibold">Voice agent</h2>
         <div className="space-y-1.5">
-          <Label>ElevenLabs voice ID (optional)</Label>
+          <Label>Voice ID (optional)</Label>
           <Input value={biz.agent_voice_id ?? ""} onChange={(e) => setBiz({ ...biz, agent_voice_id: e.target.value })} placeholder="JBFqnCBsd6RMkjVDRZzb" />
         </div>
         <div className="space-y-1.5">

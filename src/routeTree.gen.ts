@@ -25,7 +25,6 @@ import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedVoiceTestRouteImport } from './routes/_authenticated/voice-test'
 import { Route as AuthenticatedVapiRouteImport } from './routes/_authenticated/vapi'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -115,11 +114,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedVoiceTestRoute = AuthenticatedVoiceTestRouteImport.update({
-  id: '/voice-test',
-  path: '/voice-test',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedVapiRoute = AuthenticatedVapiRouteImport.update({
   id: '/vapi',
   path: '/vapi',
@@ -190,7 +184,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/vapi': typeof AuthenticatedVapiRoute
-  '/voice-test': typeof AuthenticatedVoiceTestRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -217,7 +210,6 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/vapi': typeof AuthenticatedVapiRoute
-  '/voice-test': typeof AuthenticatedVoiceTestRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -246,7 +238,6 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/vapi': typeof AuthenticatedVapiRoute
-  '/_authenticated/voice-test': typeof AuthenticatedVoiceTestRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -275,7 +266,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/vapi'
-    | '/voice-test'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   fileRoutesByTo: FileRoutesByTo
@@ -302,7 +292,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/vapi'
-    | '/voice-test'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   id:
@@ -330,7 +319,6 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/team'
     | '/_authenticated/vapi'
-    | '/_authenticated/voice-test'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   fileRoutesById: FileRoutesById
@@ -470,13 +458,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/voice-test': {
-      id: '/_authenticated/voice-test'
-      path: '/voice-test'
-      fullPath: '/voice-test'
-      preLoaderRoute: typeof AuthenticatedVoiceTestRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/vapi': {
       id: '/_authenticated/vapi'
       path: '/vapi'
@@ -551,7 +532,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedVapiRoute: typeof AuthenticatedVapiRoute
-  AuthenticatedVoiceTestRoute: typeof AuthenticatedVoiceTestRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -562,7 +542,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedVapiRoute: AuthenticatedVapiRoute,
-  AuthenticatedVoiceTestRoute: AuthenticatedVoiceTestRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
