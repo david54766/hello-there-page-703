@@ -325,6 +325,7 @@ export type Database = {
           recording_url: string | null
           service_needed: string | null
           status: Database["public"]["Enums"]["call_status"]
+          to_number: string | null
           transcript: string | null
           twilio_call_sid: string | null
           updated_at: string
@@ -346,6 +347,7 @@ export type Database = {
           recording_url?: string | null
           service_needed?: string | null
           status?: Database["public"]["Enums"]["call_status"]
+          to_number?: string | null
           transcript?: string | null
           twilio_call_sid?: string | null
           updated_at?: string
@@ -367,6 +369,7 @@ export type Database = {
           recording_url?: string | null
           service_needed?: string | null
           status?: Database["public"]["Enums"]["call_status"]
+          to_number?: string | null
           transcript?: string | null
           twilio_call_sid?: string | null
           updated_at?: string
