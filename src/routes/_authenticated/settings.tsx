@@ -262,29 +262,54 @@ function Settings() {
       <Card className="space-y-4 p-6">
         <div>
           <h2 className="text-lg font-semibold">Observed holidays</h2>
-          <p className="text-xs text-muted-foreground">Selected days are blocked out on the scheduling calendar for this year and next.</p>
+          <p className="text-xs text-muted-foreground">
+            Toggle each holiday <span className="font-medium">On</span> to block it out on your scheduling calendar for this year and next,
+            or <span className="font-medium">Off</span> to keep taking bookings that day. Holidays stay Off by default — nothing is disabled automatically.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 border-b border-border pb-3">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setBiz({ ...biz, observed_holidays: US_HOLIDAY_PRESETS.map((h) => ({ id: h.id, name: h.name })) })}
+          >
+            Turn all on
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setBiz({ ...biz, observed_holidays: [] })}
+          >
+            Turn all off
+          </Button>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {US_HOLIDAY_PRESETS.map((h) => {
             const checked = biz.observed_holidays.some((x) => x.id === h.id);
             return (
-              <label key={h.id} className="flex cursor-pointer items-center gap-2 rounded-md border border-border p-2 text-sm hover:bg-muted/50">
-                <input
-                  type="checkbox"
+              <div key={h.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3 text-sm">
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{h.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {h.dateFor(new Date().getFullYear())} · {checked ? "Blocked out" : "Open for bookings"}
+                  </div>
+                </div>
+                <Switch
                   checked={checked}
-                  onChange={(e) => {
-                    const next = e.target.checked
+                  onCheckedChange={(v) => {
+                    const next = v
                       ? [...biz.observed_holidays, { id: h.id, name: h.name }]
                       : biz.observed_holidays.filter((x) => x.id !== h.id);
                     setBiz({ ...biz, observed_holidays: next });
                   }}
                 />
-                <span>{h.name}</span>
-                <span className="ml-auto text-xs text-muted-foreground">{h.dateFor(new Date().getFullYear()).slice(5)}</span>
-              </label>
+              </div>
             );
           })}
         </div>
+        <p className="text-xs text-muted-foreground">Changes take effect when you click <span className="font-medium">Save changes</span> at the bottom.</p>
       </Card>
 
       <TwoFactorCard userEmail={user?.email ?? ""} />
