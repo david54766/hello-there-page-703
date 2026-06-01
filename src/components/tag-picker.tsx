@@ -12,11 +12,11 @@ import { TAG_DEFS } from "@/lib/tags";
 type Props = {
   value: string;
   onChange: (next: string) => void;
-  textareaRef?: React.RefObject<HTMLTextAreaElement | HTMLInputElement>;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | HTMLInputElement | null>;
 };
 
 export function TagPicker({ value, onChange, textareaRef }: Props) {
-  const fallbackRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
+  const fallbackRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
   const ref = textareaRef ?? fallbackRef;
 
   const insert = (token: string) => {
