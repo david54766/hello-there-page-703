@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { PhoneCall, LayoutDashboard, Settings as SettingsIcon, LogOut, TrendingUp, Users, Mic, Phone, FileText, CalendarDays } from "lucide-react";
+import { PhoneCall, LayoutDashboard, Settings as SettingsIcon, LogOut, TrendingUp, Users, Phone, FileText, CalendarDays } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({ component: Layout });
 
@@ -38,11 +38,8 @@ function Layout() {
           <Link to="/team" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
             <Users className="h-4 w-4" /> Team
           </Link>
-          <Link to="/voice-test" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
-            <Mic className="h-4 w-4" /> Voice agent
-          </Link>
           <Link to="/vapi" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
-            <Phone className="h-4 w-4" /> Vapi calls
+            <Phone className="h-4 w-4" /> AI agent
           </Link>
           <Link to="/scripts" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
             <FileText className="h-4 w-4" /> Scripts
@@ -69,8 +66,7 @@ function Layout() {
           { to: "/dashboard", icon: LayoutDashboard, label: "Leads" },
           { to: "/revenue", icon: TrendingUp, label: "Revenue" },
           { to: "/team", icon: Users, label: "Team" },
-          { to: "/voice-test", icon: Mic, label: "Voice" },
-          { to: "/vapi", icon: Phone, label: "Vapi" },
+          { to: "/vapi", icon: Phone, label: "AI agent" },
           { to: "/scripts", icon: FileText, label: "Scripts" },
           { to: "/scheduling", icon: CalendarDays, label: "Sched" },
           { to: "/settings", icon: SettingsIcon, label: "Settings" },
