@@ -433,3 +433,114 @@ function AgentStep({ loading, rows }: { loading: boolean; rows: { number: string
     </div>
   );
 }
+
+function VoiceStep({
+  voiceId,
+  setVoiceId,
+  played,
+  playing,
+  onPreview,
+}: {
+  voiceId: string;
+  setVoiceId: (id: string) => void;
+  played: Set<string>;
+  playing: string | null;
+  onPreview: (id: string) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <Mic2 className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold tracking-tight">Pick your agent's voice</h2>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">Preview each voice, then approve the one you'd like callers to hear.</p>
+      <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {VOICE_OPTIONS.map((v) => {
+          const selected = voiceId === v.id;
+          const isPlaying = playing === v.id;
+          return (
+            <div
+              key={v.id}
+              onClick={() => setVoiceId(v.id)}
+              className={`flex cursor-pointer items-center justify-between rounded-md border p-3 text-left transition ${
+                selected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
+              }`}
+            >
+              <div>
+                <div className="text-sm font-semibold">
+                  {v.label}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">{v.gender}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">{v.description}</div>
+              </div>
+              <Button
+                type="button"
+                variant={selected ? "default" : "outline"}
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); onPreview(v.id); }}
+                disabled={!!playing}
+              >
+                {isPlaying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                {played.has(v.id) ? "Replay" : "Play"}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+      {!played.has(voiceId) && (
+        <p className="mt-3 text-xs text-muted-foreground">Tip: play your selected voice at least once before approving.</p>
+      )}
+    </div>
+  );
+}
+
+function ScriptStep({
+  first,
+  setFirst,
+  system,
+  schedulingEnabled,
+  hasBooking,
+}: {
+  first: string;
+  setFirst: (s: string) => void;
+  system: string;
+  schedulingEnabled: boolean;
+  hasBooking: boolean;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold tracking-tight">Approve your script</h2>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Short, direct, tailored to your trade. Edit the greeting if you'd like — the rest keeps your agent on script.
+      </p>
+      <div className="mt-5">
+        <Label htmlFor="first-msg" className="text-sm">Greeting (what callers hear first)</Label>
+        <Textarea id="first-msg" value={first} onChange={(e) => setFirst(e.target.value)} rows={4} maxLength={2000} />
+      </div>
+      <div className={`mt-4 flex items-start gap-2 rounded-md border p-3 text-xs ${
+        schedulingEnabled && hasBooking ? "border-success/30 bg-success/5" : "border-border bg-muted/30"
+      }`}>
+        <CalendarCheck className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          {schedulingEnabled && hasBooking ? (
+            <>Scheduling is <span className="font-semibold">on</span> — after capturing details, the agent will offer to book a consultation.</>
+          ) : schedulingEnabled ? (
+            <>Scheduling is on, but no booking link is set yet. Add one in <span className="font-medium">Scheduling settings</span> to auto-offer bookings.</>
+          ) : (
+            <>Scheduling is <span className="font-semibold">off</span>. Turn it on in <span className="font-medium">Scheduling settings</span> if you'd like the agent to book consultations automatically.</>
+          )}
+        </div>
+      </div>
+      <details className="mt-4 rounded-md border border-border bg-muted/20 p-3 text-xs">
+        <summary className="cursor-pointer text-muted-foreground">View full agent instructions</summary>
+        <pre className="mt-2 whitespace-pre-wrap break-words font-mono leading-relaxed">{system}</pre>
+      </details>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Settings applied: lets caller finish speaking · keeps replies to one or two short sentences.
+      </p>
+    </div>
+  );
+}
