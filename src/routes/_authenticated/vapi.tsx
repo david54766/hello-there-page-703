@@ -116,23 +116,14 @@ function VapiPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-provision assistants for any number missing one
-  useEffect(() => {
-    if (loading || numbers.length === 0) return;
-    const provisioned = new Set(numberRows.map((r) => r.phone_number_id));
-    const missing = numbers.filter((n) => !provisioned.has(n.id));
-    if (missing.length === 0) return;
-    (async () => {
-      const results = await Promise.allSettled(
-        missing.map((n) => ensureAssistant({ data: { phoneNumberId: n.id, phoneNumber: n.number, contractorType: business?.contractor_type } })),
-      );
-      if (results.some((r) => r.status === "fulfilled")) {
-        const fresh = await fetchNumberAssistants();
-        setNumberRows(fresh.rows);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, numbers, business]);
+  const provisionMissing = async (phoneNumberId: string, phoneNumber: string) => {
+    try {
+      await ensureAssistant({ data: { phoneNumberId, phoneNumber, contractorType: business?.contractor_type } });
+      const fresh = await fetchNumberAssistants();
+      setNumberRows(fresh.rows);
+      toast.success("Assistant provisioned");
+    } catch (e: any) { toast.error(e.message); }
+  };
 
   const loadCalls = async () => {
     setCallsLoading(true);
@@ -352,6 +343,7 @@ function VapiPage() {
             <NumbersTab
               numbers={numbers}
               rows={numberRows}
+              onProvision={provisionMissing}
               onUpdate={async (phoneNumberId, payload) => {
                 try {
                   await updateAssistant({ data: { phoneNumberId, ...payload } });
