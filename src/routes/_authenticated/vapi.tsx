@@ -415,10 +415,12 @@ function NumbersTab({
   numbers,
   rows,
   onUpdate,
+  onProvision,
 }: {
   numbers: { id: string; number: string; name: string }[];
   rows: any[];
   onUpdate: (phoneNumberId: string, payload: { assistantName?: string; systemPrompt?: string; firstMessage?: string; contractorType?: string }) => Promise<void>;
+  onProvision: (phoneNumberId: string, phoneNumber: string) => Promise<void>;
 }) {
   const byId = new Map(rows.map((r) => [r.phone_number_id, r]));
   return (
@@ -428,6 +430,17 @@ function NumbersTab({
       )}
       {numbers.map((n) => {
         const row = byId.get(n.id);
+        if (!row) {
+          return (
+            <Card key={n.id} className="flex items-center justify-between gap-3 p-4">
+              <div>
+                <div className="text-sm font-semibold">{n.number}</div>
+                <div className="text-xs text-muted-foreground">No assistant yet.</div>
+              </div>
+              <Button size="sm" onClick={() => onProvision(n.id, n.number)}>Provision assistant</Button>
+            </Card>
+          );
+        }
         return <NumberRow key={n.id} number={n} row={row} onSave={(p) => onUpdate(n.id, p)} />;
       })}
     </div>
