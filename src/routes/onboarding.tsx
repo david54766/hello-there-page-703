@@ -276,7 +276,25 @@ function Onboarding() {
               {step === 5 && (
                 <AgentStep loading={agentLoading} rows={agentRows} />
               )}
-              {step === 6 && fwd && (
+              {step === 6 && (
+                <VoiceStep
+                  voiceId={voiceId}
+                  setVoiceId={setVoiceId}
+                  played={voicePlayed}
+                  playing={voicePlaying}
+                  onPreview={playVoicePreview}
+                />
+              )}
+              {step === 7 && (
+                <ScriptStep
+                  first={scriptFirst}
+                  setFirst={setScriptFirst}
+                  system={scriptSystem}
+                  schedulingEnabled={schedulingEnabled}
+                  hasBooking={!!bookingUrl}
+                />
+              )}
+              {step === 8 && fwd && (
                 <div>
                   <h2 className="text-xl font-semibold tracking-tight">{fwd.title}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Set up forwarding so we can catch missed calls.</p>
@@ -295,7 +313,7 @@ function Onboarding() {
                   <p className="mt-5 text-xs text-muted-foreground">Your CallRecover number: <span className="font-mono">{provisionedNumber}</span></p>
                 </div>
               )}
-              {step === 7 && (
+              {step === 9 && (
                 <div className="text-center">
                   {!testDone ? (
                     <>
@@ -346,7 +364,26 @@ function Onboarding() {
           {step === 6 && (
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
-              <Button onClick={() => setStep(7)}><Check className="h-4 w-4" /> I set it up</Button>
+              <Button
+                onClick={saveVoiceAndContinue}
+                disabled={voiceSaving || !voicePlayed.has(voiceId)}
+              >
+                {voiceSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approve voice
+              </Button>
+            </div>
+          )}
+          {step === 7 && (
+            <div className="mt-8 flex justify-between">
+              <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
+              <Button onClick={saveScriptAndContinue} disabled={scriptSaving || !scriptFirst.trim()}>
+                {scriptSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approve script
+              </Button>
+            </div>
+          )}
+          {step === 8 && (
+            <div className="mt-8 flex justify-between">
+              <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
+              <Button onClick={() => setStep(9)}><Check className="h-4 w-4" /> I set it up</Button>
             </div>
           )}
         </Card>
