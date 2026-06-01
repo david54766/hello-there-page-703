@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { applyTags, mergeTagDefaults, type TagValues } from "@/lib/tags";
+import { DEFAULT_VOICE_ID } from "@/lib/voices";
 
 const BASE = "https://api.vapi.ai";
 
@@ -129,7 +130,12 @@ export const getVapiCall = createServerFn({ method: "POST" })
 
 // -------- Per-number assistant management --------
 
-function defaultAssistantPayload(name: string, firstMessage: string, systemPrompt: string) {
+function defaultAssistantPayload(
+  name: string,
+  firstMessage: string,
+  systemPrompt: string,
+  voiceId: string,
+) {
   return {
     name,
     firstMessage,
@@ -138,8 +144,13 @@ function defaultAssistantPayload(name: string, firstMessage: string, systemPromp
       model: "gpt-4o-mini",
       messages: [{ role: "system", content: systemPrompt }],
     },
-    voice: { provider: "11labs", voiceId: "burt" },
+    voice: { provider: "11labs", voiceId },
     transcriber: { provider: "deepgram", model: "nova-2", language: "en" },
+    // Let the assistant finish its sentence; don't yield on filler words.
+    startSpeakingPlan: { waitSeconds: 0.6, smartEndpointingEnabled: true },
+    stopSpeakingPlan: { numWords: 3, voiceSeconds: 0.4, backoffSeconds: 1.2 },
+    silenceTimeoutSeconds: 25,
+    maxDurationSeconds: 300,
   };
 }
 
@@ -150,6 +161,9 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
       phoneNumberId: z.string().min(1),
       phoneNumber: z.string().optional(),
       contractorType: z.string().max(50).optional(),
+      voiceId: z.string().max(60).optional(),
+      firstMessage: z.string().max(2000).optional(),
+      systemPrompt: z.string().max(8000).optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -170,24 +184,24 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
     const tags = mergeTagDefaults(business);
     const name = `${tags.business ?? "Business"} – ${data.phoneNumber ?? "agent"}`.slice(0, 80);
     const first = applyTags(
-      "Hi, thanks for calling {business}. How can I help today?",
+      data.firstMessage ?? "Hi, thanks for calling {business}. How can I help today?",
       tags,
     );
     const prompt = applyTags(
-      [
-        "You are a friendly receptionist for {business}.",
-        "Confirm the caller's name and reason for calling.",
-        "If they ask about our website, share: {website_info}.",
-        "If they want to book, offer: {book_consult}.",
-        "If they want a callback, collect their best number and confirm SMS consent: {sms_consent}.",
-        "Stay concise and warm. Transfer to a human if asked.",
-      ].join(" "),
+      data.systemPrompt ??
+        [
+          "You are a friendly receptionist for {business}.",
+          "Confirm the caller's name and reason for calling.",
+          "If they want to book, offer: {book_consult}.",
+          "Stay concise — keep replies to one or two short sentences.",
+        ].join(" "),
       tags,
     );
+    const voiceId = data.voiceId || (business as any)?.agent_voice_id || DEFAULT_VOICE_ID;
 
     const assistant = await vapi("/assistant", {
       method: "POST",
-      body: JSON.stringify(defaultAssistantPayload(name, first, prompt)),
+      body: JSON.stringify(defaultAssistantPayload(name, first, prompt, voiceId)),
     });
 
     // Link the assistant to the phone number on Vapi
@@ -228,6 +242,7 @@ export const updateAssistantForNumber = createServerFn({ method: "POST" })
       systemPrompt: z.string().max(8000).optional(),
       firstMessage: z.string().max(2000).optional(),
       contractorType: z.string().max(50).optional(),
+      voiceId: z.string().max(60).optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -251,11 +266,24 @@ export const updateAssistantForNumber = createServerFn({ method: "POST" })
         messages: [{ role: "system", content: applyTags(data.systemPrompt, tags) }],
       };
     }
+    if (data.voiceId) {
+      patch.voice = { provider: "11labs", voiceId: data.voiceId };
+    }
+    // Always re-apply the "don't interrupt" speaking plan on update so
+    // older assistants get the new behavior the first time they're saved.
+    patch.startSpeakingPlan = { waitSeconds: 0.6, smartEndpointingEnabled: true };
+    patch.stopSpeakingPlan = { numWords: 3, voiceSeconds: 0.4, backoffSeconds: 1.2 };
     if (Object.keys(patch).length) {
       await vapi(`/assistant/${existing.assistant_id}`, {
         method: "PATCH",
         body: JSON.stringify(patch),
       });
+    }
+    if (data.voiceId) {
+      await context.supabase
+        .from("businesses")
+        .update({ agent_voice_id: data.voiceId })
+        .eq("id", businessId);
     }
     const { data: saved, error } = await context.supabase
       .from("vapi_number_assistants")
@@ -282,4 +310,44 @@ export const listNumberAssistants = createServerFn({ method: "GET" })
       .select("*")
       .eq("business_id", businessId);
     return { rows: data ?? [] };
+  });
+
+// -------- Voice preview (ElevenLabs TTS) --------
+
+export const previewVoice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      voiceId: z.string().min(1).max(60),
+      text: z.string().min(1).max(400).optional(),
+    }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) throw new Error("ELEVENLABS_API_KEY not configured");
+    const text =
+      data.text ??
+      "Thanks for calling. All of our team are on another line right now — I can take your details and pass them along immediately.";
+    const res = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${data.voiceId}?output_format=mp3_22050_32`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_turbo_v2_5",
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+        }),
+      },
+    );
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`Voice preview failed (${res.status}): ${t.slice(0, 200)}`);
+    }
+    const buf = await res.arrayBuffer();
+    const base64 = Buffer.from(buf).toString("base64");
+    return { audioBase64: base64, mime: "audio/mpeg" };
   });

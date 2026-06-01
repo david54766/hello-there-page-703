@@ -3,17 +3,19 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber } from "@/lib/vapi.functions";
+import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber, updateAssistantForNumber, previewVoice } from "@/lib/vapi.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, type Carrier, type ContractorType } from "@/lib/contractor-data";
+import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, getStandardScript, type Carrier, type ContractorType } from "@/lib/contractor-data";
+import { VOICE_OPTIONS, DEFAULT_VOICE_ID } from "@/lib/voices";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2 } from "lucide-react";
+import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2, Play, Mic2, CalendarCheck } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
 
@@ -38,9 +40,22 @@ function Onboarding() {
   const fetchNumbers = useServerFn(listVapiPhoneNumbers);
   const fetchNumberAssistants = useServerFn(listNumberAssistants);
   const ensureAssistant = useServerFn(ensureAssistantForNumber);
+  const updateAssistant = useServerFn(updateAssistantForNumber);
+  const previewVoiceFn = useServerFn(previewVoice);
   const [agentLoading, setAgentLoading] = useState(false);
-  const [agentRows, setAgentRows] = useState<{ number: string; assistantId: string | null }[]>([]);
+  const [agentRows, setAgentRows] = useState<{ number: string; assistantId: string | null; phoneNumberId: string }[]>([]);
   const [agentRan, setAgentRan] = useState(false);
+
+  const [voiceId, setVoiceId] = useState<string>(DEFAULT_VOICE_ID);
+  const [voicePlayed, setVoicePlayed] = useState<Set<string>>(new Set());
+  const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
+  const [voiceSaving, setVoiceSaving] = useState(false);
+
+  const [schedulingEnabled, setSchedulingEnabled] = useState(false);
+  const [bookingUrl, setBookingUrl] = useState<string | null>(null);
+  const [scriptFirst, setScriptFirst] = useState("");
+  const [scriptSystem, setScriptSystem] = useState("");
+  const [scriptSaving, setScriptSaving] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -56,11 +71,19 @@ function Onboarding() {
         owner_phone: data.owner_phone ?? "",
         carrier: (data.carrier ?? "") as Carrier | "",
       });
+      if ((data as any).agent_voice_id) setVoiceId((data as any).agent_voice_id);
+      setSchedulingEnabled(!!(data as any).scheduling_enabled);
+      setBookingUrl(
+        ((data as any).booking_url as string | null) ||
+        ((data as any).cal_url as string | null) ||
+        ((data as any).calendly_url as string | null) ||
+        null,
+      );
       if (data.onboarding_complete) navigate({ to: "/dashboard" });
     });
   }, [user, authLoading, navigate]);
 
-  const steps = ["Business", "Type", "Business phone", "Your cell", "Carrier", "AI agent", "Forwarding", "Test"];
+  const steps = ["Business", "Type", "Business phone", "Your cell", "Carrier", "AI agent", "Voice", "Script", "Forwarding", "Test"];
   const totalSteps = steps.length;
 
   async function next() {
@@ -109,7 +132,7 @@ function Onboarding() {
         );
         const fresh = await fetchNumberAssistants();
         const map = new Map(fresh.rows.map((r: any) => [r.phone_number_id, r]));
-        setAgentRows(numbers.map((n) => ({ number: n.number, assistantId: (map.get(n.id) as any)?.assistant_id ?? null })));
+        setAgentRows(numbers.map((n) => ({ number: n.number, phoneNumberId: n.id, assistantId: (map.get(n.id) as any)?.assistant_id ?? null })));
       } catch (e: any) {
         toast.error(e?.message ?? "Could not provision AI agent");
       } finally {
@@ -119,6 +142,83 @@ function Onboarding() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
+
+  // Build the trade-tailored script the moment the user lands on the Script step.
+  useEffect(() => {
+    if (step !== 7) return;
+    if (scriptFirst && scriptSystem) return;
+    const tpl = getStandardScript(state.contractor_type || null, state.business_name, {
+      schedulingEnabled,
+      bookingUrl,
+    });
+    setScriptFirst(tpl.firstMessage);
+    setScriptSystem(tpl.systemPrompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  async function playVoicePreview(id: string) {
+    if (voicePlaying) return;
+    setVoicePlaying(id);
+    try {
+      const { audioBase64, mime } = await previewVoiceFn({
+        data: {
+          voiceId: id,
+          text: `Thanks for calling ${state.business_name || "our team"}. All of our team are on another line right now — but I can take your details and pass them along immediately.`,
+        },
+      });
+      const audio = new Audio(`data:${mime};base64,${audioBase64}`);
+      audio.onended = () => setVoicePlaying(null);
+      audio.onerror = () => setVoicePlaying(null);
+      await audio.play();
+      setVoicePlayed((s) => new Set(s).add(id));
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not play preview");
+      setVoicePlaying(null);
+    }
+  }
+
+  async function saveVoiceAndContinue() {
+    if (!bizId) return;
+    setVoiceSaving(true);
+    try {
+      await supabase.from("businesses").update({ agent_voice_id: voiceId }).eq("id", bizId);
+      await Promise.allSettled(
+        agentRows
+          .filter((r) => r.assistantId)
+          .map((r) => updateAssistant({ data: { phoneNumberId: r.phoneNumberId, voiceId } })),
+      );
+      setStep(7);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not save voice");
+    } finally {
+      setVoiceSaving(false);
+    }
+  }
+
+  async function saveScriptAndContinue() {
+    setScriptSaving(true);
+    try {
+      await Promise.allSettled(
+        agentRows
+          .filter((r) => r.assistantId)
+          .map((r) =>
+            updateAssistant({
+              data: {
+                phoneNumberId: r.phoneNumberId,
+                firstMessage: scriptFirst,
+                systemPrompt: scriptSystem,
+                contractorType: state.contractor_type || undefined,
+              },
+            }),
+          ),
+      );
+      setStep(8);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not save script");
+    } finally {
+      setScriptSaving(false);
+    }
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[image:var(--gradient-subtle)] p-6">
@@ -176,7 +276,25 @@ function Onboarding() {
               {step === 5 && (
                 <AgentStep loading={agentLoading} rows={agentRows} />
               )}
-              {step === 6 && fwd && (
+              {step === 6 && (
+                <VoiceStep
+                  voiceId={voiceId}
+                  setVoiceId={setVoiceId}
+                  played={voicePlayed}
+                  playing={voicePlaying}
+                  onPreview={playVoicePreview}
+                />
+              )}
+              {step === 7 && (
+                <ScriptStep
+                  first={scriptFirst}
+                  setFirst={setScriptFirst}
+                  system={scriptSystem}
+                  schedulingEnabled={schedulingEnabled}
+                  hasBooking={!!bookingUrl}
+                />
+              )}
+              {step === 8 && fwd && (
                 <div>
                   <h2 className="text-xl font-semibold tracking-tight">{fwd.title}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Set up forwarding so we can catch missed calls.</p>
@@ -195,7 +313,7 @@ function Onboarding() {
                   <p className="mt-5 text-xs text-muted-foreground">Your CallRecover number: <span className="font-mono">{provisionedNumber}</span></p>
                 </div>
               )}
-              {step === 7 && (
+              {step === 9 && (
                 <div className="text-center">
                   {!testDone ? (
                     <>
@@ -246,7 +364,26 @@ function Onboarding() {
           {step === 6 && (
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
-              <Button onClick={() => setStep(7)}><Check className="h-4 w-4" /> I set it up</Button>
+              <Button
+                onClick={saveVoiceAndContinue}
+                disabled={voiceSaving || !voicePlayed.has(voiceId)}
+              >
+                {voiceSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approve voice
+              </Button>
+            </div>
+          )}
+          {step === 7 && (
+            <div className="mt-8 flex justify-between">
+              <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
+              <Button onClick={saveScriptAndContinue} disabled={scriptSaving || !scriptFirst.trim()}>
+                {scriptSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approve script
+              </Button>
+            </div>
+          )}
+          {step === 8 && (
+            <div className="mt-8 flex justify-between">
+              <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
+              <Button onClick={() => setStep(9)}><Check className="h-4 w-4" /> I set it up</Button>
             </div>
           )}
         </Card>
@@ -293,6 +430,117 @@ function AgentStep({ loading, rows }: { loading: boolean; rows: { number: string
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function VoiceStep({
+  voiceId,
+  setVoiceId,
+  played,
+  playing,
+  onPreview,
+}: {
+  voiceId: string;
+  setVoiceId: (id: string) => void;
+  played: Set<string>;
+  playing: string | null;
+  onPreview: (id: string) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <Mic2 className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold tracking-tight">Pick your agent's voice</h2>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">Preview each voice, then approve the one you'd like callers to hear.</p>
+      <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {VOICE_OPTIONS.map((v) => {
+          const selected = voiceId === v.id;
+          const isPlaying = playing === v.id;
+          return (
+            <div
+              key={v.id}
+              onClick={() => setVoiceId(v.id)}
+              className={`flex cursor-pointer items-center justify-between rounded-md border p-3 text-left transition ${
+                selected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
+              }`}
+            >
+              <div>
+                <div className="text-sm font-semibold">
+                  {v.label}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">{v.gender}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">{v.description}</div>
+              </div>
+              <Button
+                type="button"
+                variant={selected ? "default" : "outline"}
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); onPreview(v.id); }}
+                disabled={!!playing}
+              >
+                {isPlaying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                {played.has(v.id) ? "Replay" : "Play"}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+      {!played.has(voiceId) && (
+        <p className="mt-3 text-xs text-muted-foreground">Tip: play your selected voice at least once before approving.</p>
+      )}
+    </div>
+  );
+}
+
+function ScriptStep({
+  first,
+  setFirst,
+  system,
+  schedulingEnabled,
+  hasBooking,
+}: {
+  first: string;
+  setFirst: (s: string) => void;
+  system: string;
+  schedulingEnabled: boolean;
+  hasBooking: boolean;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold tracking-tight">Approve your script</h2>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Short, direct, tailored to your trade. Edit the greeting if you'd like — the rest keeps your agent on script.
+      </p>
+      <div className="mt-5">
+        <Label htmlFor="first-msg" className="text-sm">Greeting (what callers hear first)</Label>
+        <Textarea id="first-msg" value={first} onChange={(e) => setFirst(e.target.value)} rows={4} maxLength={2000} />
+      </div>
+      <div className={`mt-4 flex items-start gap-2 rounded-md border p-3 text-xs ${
+        schedulingEnabled && hasBooking ? "border-success/30 bg-success/5" : "border-border bg-muted/30"
+      }`}>
+        <CalendarCheck className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          {schedulingEnabled && hasBooking ? (
+            <>Scheduling is <span className="font-semibold">on</span> — after capturing details, the agent will offer to book a consultation.</>
+          ) : schedulingEnabled ? (
+            <>Scheduling is on, but no booking link is set yet. Add one in <span className="font-medium">Scheduling settings</span> to auto-offer bookings.</>
+          ) : (
+            <>Scheduling is <span className="font-semibold">off</span>. Turn it on in <span className="font-medium">Scheduling settings</span> if you'd like the agent to book consultations automatically.</>
+          )}
+        </div>
+      </div>
+      <details className="mt-4 rounded-md border border-border bg-muted/20 p-3 text-xs">
+        <summary className="cursor-pointer text-muted-foreground">View full agent instructions</summary>
+        <pre className="mt-2 whitespace-pre-wrap break-words font-mono leading-relaxed">{system}</pre>
+      </details>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Settings applied: lets caller finish speaking · keeps replies to one or two short sentences.
+      </p>
     </div>
   );
 }
