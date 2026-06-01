@@ -30,6 +30,16 @@ type Biz = {
   jobber_refresh_token: string | null;
   agent_voice_id: string | null;
   agent_prompt_override: string | null;
+  address: string | null;
+  website: string | null;
+  website_blurb: string | null;
+  booking_url: string | null;
+  callback_form_url: string | null;
+  sms_consent_text: string | null;
+  default_hello_script: string | null;
+  cal_url: string | null;
+  calendly_url: string | null;
+  scheduling_enabled: boolean;
 };
 
 function Settings() {
@@ -40,7 +50,7 @@ function Settings() {
   useEffect(() => {
     if (!user) return;
     supabase.from("businesses")
-      .select("id, business_name, owner_phone, business_phone, avg_job_value, notify_sms, notify_email, notify_dashboard, notify_email_address, auto_send_ai_replies, scheduling_provider, hcp_api_key, jobber_refresh_token, agent_voice_id, agent_prompt_override")
+      .select("id, business_name, owner_phone, business_phone, avg_job_value, notify_sms, notify_email, notify_dashboard, notify_email_address, auto_send_ai_replies, scheduling_provider, hcp_api_key, jobber_refresh_token, agent_voice_id, agent_prompt_override, address, website, website_blurb, booking_url, callback_form_url, sms_consent_text, default_hello_script, cal_url, calendly_url, scheduling_enabled")
       .eq("owner_id", user.id).maybeSingle().then(({ data }) => setBiz(data as Biz));
   }, [user]);
 
@@ -62,6 +72,16 @@ function Settings() {
       jobber_refresh_token: biz.jobber_refresh_token,
       agent_voice_id: biz.agent_voice_id,
       agent_prompt_override: biz.agent_prompt_override,
+      address: biz.address,
+      website: biz.website,
+      website_blurb: biz.website_blurb,
+      booking_url: biz.booking_url,
+      callback_form_url: biz.callback_form_url,
+      sms_consent_text: biz.sms_consent_text,
+      default_hello_script: biz.default_hello_script,
+      cal_url: biz.cal_url,
+      calendly_url: biz.calendly_url,
+      scheduling_enabled: biz.scheduling_enabled,
     }).eq("id", biz.id);
     setSaving(false);
     if (error) toast.error(error.message); else toast.success("Saved");
@@ -153,6 +173,52 @@ function Settings() {
 
       <SmsComplianceCard />
       <CampaignRegistrationCard />
+
+      <Card className="space-y-5 p-6">
+        <h2 className="text-lg font-semibold">Tag values</h2>
+        <p className="-mt-3 text-xs text-muted-foreground">Default values inserted into prompts and first messages via {"{business}"}, {"{website}"}, {"{book_consult}"}…</p>
+        <div className="space-y-1.5">
+          <Label>Address</Label>
+          <Input value={biz.address ?? ""} onChange={(e) => setBiz({ ...biz, address: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Website</Label>
+          <Input value={biz.website ?? ""} onChange={(e) => setBiz({ ...biz, website: e.target.value })} placeholder="https://" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Website blurb ({"{website_info}"})</Label>
+          <Textarea rows={3} value={biz.website_blurb ?? ""} onChange={(e) => setBiz({ ...biz, website_blurb: e.target.value })} placeholder="Short description the agent reads if asked about your site." />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Booking URL ({"{book_consult}"})</Label>
+          <Input value={biz.booking_url ?? ""} onChange={(e) => setBiz({ ...biz, booking_url: e.target.value })} placeholder="https://" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Callback form URL ({"{callback_form}"})</Label>
+          <Input value={biz.callback_form_url ?? ""} onChange={(e) => setBiz({ ...biz, callback_form_url: e.target.value })} placeholder="https://" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>SMS consent text ({"{sms_consent}"})</Label>
+          <Textarea rows={2} value={biz.sms_consent_text ?? ""} onChange={(e) => setBiz({ ...biz, sms_consent_text: e.target.value })} placeholder="By replying YES you agree to receive texts…" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Default greeting ({"{hello_script}"})</Label>
+          <Textarea rows={2} value={biz.default_hello_script ?? ""} onChange={(e) => setBiz({ ...biz, default_hello_script: e.target.value })} placeholder="Hello, thanks for calling {business}…" />
+        </div>
+      </Card>
+
+      <Card className="space-y-5 p-6">
+        <h2 className="text-lg font-semibold">Scheduling</h2>
+        <Row label="Enable in-app scheduling" hint="Show the Scheduling tab and let calls book consultations" checked={biz.scheduling_enabled} onChange={(v) => setBiz({ ...biz, scheduling_enabled: v })} />
+        <div className="space-y-1.5">
+          <Label>Cal.com link (optional)</Label>
+          <Input value={biz.cal_url ?? ""} onChange={(e) => setBiz({ ...biz, cal_url: e.target.value })} placeholder="https://cal.com/yourname" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Calendly link (optional)</Label>
+          <Input value={biz.calendly_url ?? ""} onChange={(e) => setBiz({ ...biz, calendly_url: e.target.value })} placeholder="https://calendly.com/yourname" />
+        </div>
+      </Card>
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
