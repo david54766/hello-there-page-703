@@ -85,10 +85,11 @@ function Dashboard() {
         .order("created_at", { ascending: false })
         .limit(50);
       if (assignedNumbers.length > 0) {
-        // include legacy rows with null to_number for backward compatibility
-        query = query.or(
-          `to_number.in.(${assignedNumbers.map((n) => `"${n}"`).join(",")}),to_number.is.null`,
-        );
+        // Only show calls explicitly routed to this business's assigned number(s)
+        query = query.in("to_number", assignedNumbers);
+      } else {
+        // No assigned numbers yet — show nothing rather than legacy/unscoped rows
+        query = query.eq("business_id", "00000000-0000-0000-0000-000000000000");
       }
       const { data: c } = await query;
       setCalls((c ?? []) as Call[]);
@@ -99,7 +100,7 @@ function Dashboard() {
         .on("postgres_changes", { event: "*", schema: "public", table: "calls", filter: `business_id=eq.${biz.id}` }, (p) => {
           const row = p.new as any;
           const matchesAssigned =
-            assignedNumbers.length === 0 || !row?.to_number || assignedNumbers.includes(row.to_number);
+            assignedNumbers.length > 0 && row?.to_number && assignedNumbers.includes(row.to_number);
           if (!matchesAssigned) return;
           if (p.eventType === "INSERT") setCalls((prev) => [row as Call, ...prev]);
           if (p.eventType === "UPDATE") setCalls((prev) => prev.map((x) => x.id === row.id ? (row as Call) : x));
