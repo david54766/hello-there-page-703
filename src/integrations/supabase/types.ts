@@ -131,6 +131,7 @@ export type Database = {
           notify_email: boolean
           notify_email_address: string | null
           notify_sms: boolean
+          observed_holidays: Json
           onboarding_complete: boolean
           owner_id: string
           owner_phone: string | null
@@ -170,6 +171,7 @@ export type Database = {
           notify_email?: boolean
           notify_email_address?: string | null
           notify_sms?: boolean
+          observed_holidays?: Json
           onboarding_complete?: boolean
           owner_id: string
           owner_phone?: string | null
@@ -209,6 +211,7 @@ export type Database = {
           notify_email?: boolean
           notify_email_address?: string | null
           notify_sms?: boolean
+          observed_holidays?: Json
           onboarding_complete?: boolean
           owner_id?: string
           owner_phone?: string | null
@@ -451,6 +454,50 @@ export type Database = {
             columns: ["team_member_id"]
             isOneToOne: false
             referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mfa_challenges: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          destination_masked: string
+          expires_at: string
+          factor_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          destination_masked: string
+          expires_at: string
+          factor_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          destination_masked?: string
+          expires_at?: string
+          factor_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mfa_challenges_factor_id_fkey"
+            columns: ["factor_id"]
+            isOneToOne: false
+            referencedRelation: "user_mfa_factors"
             referencedColumns: ["id"]
           },
         ]
@@ -708,6 +755,39 @@ export type Database = {
           role?: Database["public"]["Enums"]["dispatch_role"]
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_mfa_factors: {
+        Row: {
+          created_at: string
+          destination: string
+          enabled: boolean
+          factor_type: string
+          id: string
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          enabled?: boolean
+          factor_type: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          enabled?: boolean
+          factor_type?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
         }
         Relationships: []
       }
