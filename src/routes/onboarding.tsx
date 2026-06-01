@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber, updateAssistantForNumber, previewVoice } from "@/lib/vapi.functions";
+import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber, updateAssistantForNumber } from "@/lib/vapi.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, getStandardScrip
 import { VOICE_OPTIONS, DEFAULT_VOICE_ID } from "@/lib/voices";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2, Play, Mic2, CalendarCheck } from "lucide-react";
+import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2, Mic2, CalendarCheck } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
 
@@ -41,14 +41,11 @@ function Onboarding() {
   const fetchNumberAssistants = useServerFn(listNumberAssistants);
   const ensureAssistant = useServerFn(ensureAssistantForNumber);
   const updateAssistant = useServerFn(updateAssistantForNumber);
-  const previewVoiceFn = useServerFn(previewVoice);
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentRows, setAgentRows] = useState<{ number: string; assistantId: string | null; phoneNumberId: string }[]>([]);
   const [agentRan, setAgentRan] = useState(false);
 
   const [voiceId, setVoiceId] = useState<string>(DEFAULT_VOICE_ID);
-  const [voicePlayed, setVoicePlayed] = useState<Set<string>>(new Set());
-  const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
   const [voiceSaving, setVoiceSaving] = useState(false);
 
   const [schedulingEnabled, setSchedulingEnabled] = useState(false);
@@ -155,27 +152,6 @@ function Onboarding() {
     setScriptSystem(tpl.systemPrompt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
-
-  async function playVoicePreview(id: string) {
-    if (voicePlaying) return;
-    setVoicePlaying(id);
-    try {
-      const { audioBase64, mime } = await previewVoiceFn({
-        data: {
-          voiceId: id,
-          text: `Thanks for calling ${state.business_name || "our team"}. All of our team are on another line right now — but I can take your details and pass them along immediately.`,
-        },
-      });
-      const audio = new Audio(`data:${mime};base64,${audioBase64}`);
-      audio.onended = () => setVoicePlaying(null);
-      audio.onerror = () => setVoicePlaying(null);
-      await audio.play();
-      setVoicePlayed((s) => new Set(s).add(id));
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not play preview");
-      setVoicePlaying(null);
-    }
-  }
 
   async function saveVoiceAndContinue() {
     if (!bizId) return;
