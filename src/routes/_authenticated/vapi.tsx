@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   listVapiAssistants,
@@ -7,15 +7,24 @@ import {
   createVapiCall,
   listVapiCalls,
   getVapiCall,
+  listNumberAssistants,
+  ensureAssistantForNumber,
+  updateAssistantForNumber,
 } from "@/lib/vapi.functions";
+import { listScriptTemplates } from "@/lib/scripts.functions";
+import { getBusinessForTags } from "@/lib/schedule.functions";
+import { mergeTagDefaults, applyTags, TAG_DEFS, type TagValues } from "@/lib/tags";
+import { TagPicker } from "@/components/tag-picker";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, Loader2, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Phone, Loader2, RefreshCw, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { CONTRACTOR_TYPES } from "@/lib/contractor-data";
 
 export const Route = createFileRoute("/_authenticated/vapi")({ component: VapiPage });
 
@@ -53,6 +62,11 @@ function VapiPage() {
   const startCall = useServerFn(createVapiCall);
   const fetchCalls = useServerFn(listVapiCalls);
   const fetchCall = useServerFn(getVapiCall);
+  const fetchNumberAssistants = useServerFn(listNumberAssistants);
+  const ensureAssistant = useServerFn(ensureAssistantForNumber);
+  const updateAssistant = useServerFn(updateAssistantForNumber);
+  const fetchTemplates = useServerFn(listScriptTemplates);
+  const fetchBusiness = useServerFn(getBusinessForTags);
 
   const [assistants, setAssistants] = useState<{ id: string; name: string }[]>([]);
   const [numbers, setNumbers] = useState<{ id: string; number: string; name: string }[]>([]);
@@ -60,6 +74,7 @@ function VapiPage() {
   const [phoneNumberId, setPhoneNumberId] = useState("");
   const [customer, setCustomer] = useState("");
   const [customerTouched, setCustomerTouched] = useState(false);
+  const [customerName, setCustomerName] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [firstMessage, setFirstMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -67,15 +82,57 @@ function VapiPage() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [callsLoading, setCallsLoading] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, { loading: boolean; transcript?: string | null; recordingUrl?: string | null }>>({});
+  const [business, setBusiness] = useState<any>(null);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [numberRows, setNumberRows] = useState<any[]>([]);
+  const promptRef = useRef<HTMLTextAreaElement>(null);
+  const firstRef = useRef<HTMLInputElement>(null);
 
   const phoneError = useMemo(() => (customerTouched ? validateE164(customer) : null), [customer, customerTouched]);
+  const tags: TagValues = useMemo(
+    () => mergeTagDefaults(business, customerName ? { name: customerName } : {}),
+    [business, customerName],
+  );
+  const promptPreview = useMemo(() => applyTags(systemPrompt, tags), [systemPrompt, tags]);
+  const firstPreview = useMemo(() => applyTags(firstMessage, tags), [firstMessage, tags]);
 
   useEffect(() => {
-    Promise.all([fetchAssistants(), fetchNumbers()])
-      .then(([a, n]) => { setAssistants(a.assistants); setNumbers(n.numbers); })
+    Promise.all([
+      fetchAssistants(),
+      fetchNumbers(),
+      fetchNumberAssistants(),
+      fetchTemplates({ data: {} }),
+      fetchBusiness(),
+    ])
+      .then(([a, n, rows, t, biz]) => {
+        setAssistants(a.assistants);
+        setNumbers(n.numbers);
+        setNumberRows(rows.rows);
+        setTemplates(t.templates);
+        setBusiness(biz.business);
+      })
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
-  }, [fetchAssistants, fetchNumbers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-provision assistants for any number missing one
+  useEffect(() => {
+    if (loading || numbers.length === 0) return;
+    const provisioned = new Set(numberRows.map((r) => r.phone_number_id));
+    const missing = numbers.filter((n) => !provisioned.has(n.id));
+    if (missing.length === 0) return;
+    (async () => {
+      const results = await Promise.allSettled(
+        missing.map((n) => ensureAssistant({ data: { phoneNumberId: n.id, phoneNumber: n.number, contractorType: business?.contractor_type } })),
+      );
+      if (results.some((r) => r.status === "fulfilled")) {
+        const fresh = await fetchNumberAssistants();
+        setNumberRows(fresh.rows);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, numbers, business]);
 
   const loadCalls = async () => {
     setCallsLoading(true);
@@ -102,6 +159,7 @@ function VapiPage() {
           customerNumber: normalizeE164(customer),
           systemPrompt: systemPrompt || undefined,
           firstMessage: firstMessage || undefined,
+          tagOverrides: customerName ? { name: customerName } : undefined,
         },
       });
       toast.success("Call initiated");
@@ -126,15 +184,39 @@ function VapiPage() {
     }
   };
 
+  const loadTemplateInto = (kind: "first_message" | "system", id: string) => {
+    const t = templates.find((x) => x.id === id);
+    if (!t) return;
+    if (kind === "first_message") setFirstMessage(t.body);
+    else setSystemPrompt(t.body);
+    toast.success(`Loaded "${t.label}"`);
+  };
+
+  const filteredTemplates = (kind: string) =>
+    templates.filter(
+      (t) =>
+        t.kind === kind &&
+        (!business?.contractor_type ||
+          !t.contractor_type ||
+          t.contractor_type === business.contractor_type),
+    );
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Vapi · outbound test call</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Trigger a real phone call from your Vapi number to any destination. Optional script overrides the assistant's system prompt and opening line for this call only.</p>
+      <p className="mb-6 text-sm text-muted-foreground">Trigger a real phone call, manage one assistant per Vapi number, and review transcripts. Use <code className="rounded bg-muted px-1 text-xs">{"{tags}"}</code> in scripts — they're filled from your business profile at call time.</p>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading Vapi resources…</p>
       ) : (
-        <>
+        <Tabs defaultValue="call">
+          <TabsList className="mb-4">
+            <TabsTrigger value="call">Place call</TabsTrigger>
+            <TabsTrigger value="numbers">Numbers & assistants</TabsTrigger>
+            <TabsTrigger value="recent">Recent calls</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="call">
         <Card className="space-y-4 p-5">
           <div>
             <Label>Assistant</Label>
@@ -156,62 +238,139 @@ function VapiPage() {
             </Select>
           </div>
 
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="cust-name">Customer name (optional)</Label>
+              <Input
+                id="cust-name"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Jane Doe"
+                maxLength={120}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">Substitutes <code>{"{name}"}</code> in scripts.</p>
+            </div>
+            <div>
+              <Label htmlFor="dest">Destination number (E.164)</Label>
+              <Input
+                id="dest"
+                value={customer}
+                onChange={(e) => setCustomer(e.target.value)}
+                onBlur={() => setCustomerTouched(true)}
+                placeholder="+15551234567"
+                inputMode="tel"
+                autoComplete="tel"
+                aria-invalid={!!phoneError}
+                className={phoneError ? "border-destructive focus-visible:ring-destructive" : ""}
+              />
+              {phoneError ? (
+                <p className="mt-1 text-xs text-destructive">{phoneError}</p>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">Include + and country code. e.g. +15551234567</p>
+              )}
+            </div>
+          </div>
+
           <div>
-            <Label htmlFor="dest">Destination number (E.164)</Label>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <Label htmlFor="first">First message (optional)</Label>
+              <div className="flex items-center gap-2">
+                {filteredTemplates("first_message").length > 0 && (
+                  <Select onValueChange={(v) => loadTemplateInto("first_message", v)}>
+                    <SelectTrigger className="h-7 w-40 text-xs"><SelectValue placeholder="Load template" /></SelectTrigger>
+                    <SelectContent>
+                      {filteredTemplates("first_message").map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <TagPicker value={firstMessage} onChange={setFirstMessage} textareaRef={firstRef} />
+              </div>
+            </div>
             <Input
-              id="dest"
-              value={customer}
-              onChange={(e) => setCustomer(e.target.value)}
-              onBlur={() => setCustomerTouched(true)}
-              placeholder="+15551234567"
-              inputMode="tel"
-              autoComplete="tel"
-              aria-invalid={!!phoneError}
-              className={phoneError ? "border-destructive focus-visible:ring-destructive" : ""}
+              id="first"
+              ref={firstRef as any}
+              value={firstMessage}
+              onChange={(e) => setFirstMessage(e.target.value)}
+              placeholder="Hi {name}, this is calling from {business} — do you have a moment?"
+              maxLength={2000}
             />
-            {phoneError ? (
-              <p className="mt-1 text-xs text-destructive">{phoneError}</p>
-            ) : (
-              <p className="mt-1 text-xs text-muted-foreground">Include country code with +. Example: +1 555 123 4567 → +15551234567</p>
+            {firstMessage && firstPreview !== firstMessage && (
+              <p className="mt-1 text-xs text-muted-foreground"><Sparkles className="mr-1 inline h-3 w-3" />{firstPreview}</p>
             )}
           </div>
 
           <div>
-            <Label htmlFor="first">First message (optional)</Label>
-            <Input
-              id="first"
-              value={firstMessage}
-              onChange={(e) => setFirstMessage(e.target.value)}
-              placeholder="Hi, this is Sam calling from Acme — do you have a moment?"
-              maxLength={2000}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="script">Script / system prompt (optional)</Label>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <Label htmlFor="script">Script / system prompt (optional)</Label>
+              <div className="flex items-center gap-2">
+                {filteredTemplates("system").length > 0 && (
+                  <Select onValueChange={(v) => loadTemplateInto("system", v)}>
+                    <SelectTrigger className="h-7 w-40 text-xs"><SelectValue placeholder="Load template" /></SelectTrigger>
+                    <SelectContent>
+                      {filteredTemplates("system").map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <TagPicker value={systemPrompt} onChange={setSystemPrompt} textareaRef={promptRef} />
+              </div>
+            </div>
             <Textarea
               id="script"
+              ref={promptRef}
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder={"You are a friendly scheduling agent. Confirm the appointment, answer questions about pricing, and offer to transfer to a human if asked."}
+              placeholder={"You are a friendly agent for {business}. If asked about our site share {website_info}. Offer to book via {book_consult}."}
               rows={6}
               maxLength={8000}
             />
-            <p className="mt-1 text-xs text-muted-foreground">Overrides the assistant's default instructions for this call only. Leave blank to use the assistant as-is.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Overrides the assistant's default instructions for this call only. Use <code>{"{business}"}</code>, <code>{"{website}"}</code>, etc. — manage values in Settings.</p>
           </div>
+
+          <details className="rounded-md border border-border bg-muted/20 p-3 text-xs">
+            <summary className="cursor-pointer text-muted-foreground">Tag values for this call</summary>
+            <dl className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+              {TAG_DEFS.map((t) => (
+                <div key={t.key} className="flex justify-between gap-2">
+                  <dt className="font-mono text-muted-foreground">{t.label}</dt>
+                  <dd className="truncate text-right">{tags[t.key] ?? <span className="text-muted-foreground">—</span>}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
 
           <Button onClick={placeCall} disabled={calling} className="w-full sm:w-auto">
             {calling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />} Place call
           </Button>
         </Card>
+          </TabsContent>
 
-        <div className="mt-8 mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight">Recent calls</h2>
-          <Button variant="outline" size="sm" onClick={loadCalls} disabled={callsLoading}>
-            {callsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Refresh
-          </Button>
-        </div>
-        <Card className="divide-y p-0">
+          <TabsContent value="numbers">
+            <NumbersTab
+              numbers={numbers}
+              rows={numberRows}
+              onUpdate={async (phoneNumberId, payload) => {
+                try {
+                  await updateAssistant({ data: { phoneNumberId, ...payload } });
+                  const fresh = await fetchNumberAssistants();
+                  setNumberRows(fresh.rows);
+                  toast.success("Saved");
+                } catch (e: any) { toast.error(e.message); }
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="recent">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight">Recent calls</h2>
+              <Button variant="outline" size="sm" onClick={loadCalls} disabled={callsLoading}>
+                {callsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Refresh
+              </Button>
+            </div>
+            <Card className="divide-y p-0">
           {calls.length === 0 && !callsLoading && (
             <p className="p-4 text-sm text-muted-foreground">No calls yet.</p>
           )}
@@ -252,9 +411,95 @@ function VapiPage() {
               </div>
             );
           })}
-        </Card>
-        </>
+            </Card>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
+  );
+}
+
+function NumbersTab({
+  numbers,
+  rows,
+  onUpdate,
+}: {
+  numbers: { id: string; number: string; name: string }[];
+  rows: any[];
+  onUpdate: (phoneNumberId: string, payload: { assistantName?: string; systemPrompt?: string; firstMessage?: string; contractorType?: string }) => Promise<void>;
+}) {
+  const byId = new Map(rows.map((r) => [r.phone_number_id, r]));
+  return (
+    <div className="space-y-4">
+      {numbers.length === 0 && (
+        <Card className="p-4 text-sm text-muted-foreground">No Vapi numbers configured yet.</Card>
+      )}
+      {numbers.map((n) => {
+        const row = byId.get(n.id);
+        return <NumberRow key={n.id} number={n} row={row} onSave={(p) => onUpdate(n.id, p)} />;
+      })}
+    </div>
+  );
+}
+
+function NumberRow({ number, row, onSave }: { number: { id: string; number: string; name: string }; row: any; onSave: (p: any) => Promise<void> }) {
+  const [name, setName] = useState(row?.assistant_name ?? "");
+  const [first, setFirst] = useState(row?.custom_first_message ?? "");
+  const [prompt, setPrompt] = useState(row?.custom_prompt ?? "");
+  const [type, setType] = useState(row?.contractor_type_preset ?? "");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    setName(row?.assistant_name ?? "");
+    setFirst(row?.custom_first_message ?? "");
+    setPrompt(row?.custom_prompt ?? "");
+    setType(row?.contractor_type_preset ?? "");
+  }, [row]);
+  return (
+    <Card className="space-y-3 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <div className="text-sm font-semibold">{number.number}</div>
+          <div className="text-xs text-muted-foreground">
+            {row?.assistant_id ? `Assistant: ${row.assistant_id.slice(0, 8)}…` : "Provisioning…"}
+          </div>
+        </div>
+        <Select value={type} onValueChange={setType}>
+          <SelectTrigger className="w-44 text-xs"><SelectValue placeholder="Contractor type" /></SelectTrigger>
+          <SelectContent>
+            {CONTRACTOR_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="text-xs">Assistant name</Label>
+        <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+      </div>
+      <div>
+        <div className="mb-1 flex items-center justify-between">
+          <Label className="text-xs">First message</Label>
+          <TagPicker value={first} onChange={setFirst} />
+        </div>
+        <Input value={first} onChange={(e) => setFirst(e.target.value)} maxLength={2000} />
+      </div>
+      <div>
+        <div className="mb-1 flex items-center justify-between">
+          <Label className="text-xs">System prompt</Label>
+          <TagPicker value={prompt} onChange={setPrompt} />
+        </div>
+        <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={5} maxLength={8000} />
+      </div>
+      <Button
+        size="sm"
+        disabled={saving || !row?.assistant_id}
+        onClick={async () => {
+          setSaving(true);
+          try {
+            await onSave({ assistantName: name, firstMessage: first, systemPrompt: prompt, contractorType: type || undefined });
+          } finally { setSaving(false); }
+        }}
+      >
+        {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null} Save changes
+      </Button>
+    </Card>
   );
 }

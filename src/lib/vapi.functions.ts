@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { applyTags, mergeTagDefaults, type TagValues } from "@/lib/tags";
 
 const BASE = "https://api.vapi.ai";
 
@@ -18,6 +19,21 @@ async function vapi(path: string, init: RequestInit = {}) {
   const text = await res.text();
   if (!res.ok) throw new Error(`Vapi ${res.status}: ${text.slice(0, 300)}`);
   return text ? JSON.parse(text) : {};
+}
+
+async function loadBusinessForUser(supabase: any) {
+  const { data: memberships } = await supabase
+    .from("business_members")
+    .select("business_id")
+    .limit(1);
+  const businessId = memberships?.[0]?.business_id as string | undefined;
+  if (!businessId) return { business: null, businessId: null };
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("id", businessId)
+    .single();
+  return { business, businessId };
 }
 
 export const listVapiAssistants = createServerFn({ method: "GET" })
@@ -43,30 +59,39 @@ export const createVapiCall = createServerFn({ method: "POST" })
       customerNumber: z.string().min(5).max(20).regex(/^\+[1-9]\d{4,14}$/, "Use E.164 format e.g. +15551234567"),
       systemPrompt: z.string().max(8000).optional(),
       firstMessage: z.string().max(2000).optional(),
+      tagOverrides: z.record(z.string(), z.string().max(500)).optional(),
     }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { business } = await loadBusinessForUser(context.supabase);
+    const tags: TagValues = mergeTagDefaults(business, (data.tagOverrides ?? {}) as TagValues);
     const assistantOverrides: Record<string, unknown> = {};
-    if (data.systemPrompt && data.systemPrompt.trim()) {
+    const resolvedPrompt = data.systemPrompt && data.systemPrompt.trim()
+      ? applyTags(data.systemPrompt, tags)
+      : "";
+    const resolvedFirst = data.firstMessage && data.firstMessage.trim()
+      ? applyTags(data.firstMessage, tags)
+      : "";
+    if (resolvedPrompt) {
       assistantOverrides.model = {
         provider: "openai",
         model: "gpt-4o-mini",
-        messages: [{ role: "system", content: data.systemPrompt.trim() }],
+        messages: [{ role: "system", content: resolvedPrompt }],
       };
     }
-    if (data.firstMessage && data.firstMessage.trim()) {
-      assistantOverrides.firstMessage = data.firstMessage.trim();
+    if (resolvedFirst) {
+      assistantOverrides.firstMessage = resolvedFirst;
     }
     const call = await vapi("/call", {
       method: "POST",
       body: JSON.stringify({
         assistantId: data.assistantId,
         phoneNumberId: data.phoneNumberId,
-        customer: { number: data.customerNumber },
+        customer: { number: data.customerNumber, ...(tags.name ? { name: tags.name } : {}) },
         ...(Object.keys(assistantOverrides).length ? { assistantOverrides } : {}),
       }),
     });
-    return { call };
+    return { call, resolvedPrompt, resolvedFirstMessage: resolvedFirst };
   });
 
 export const listVapiCalls = createServerFn({ method: "GET" })
@@ -100,4 +125,161 @@ export const getVapiCall = createServerFn({ method: "POST" })
         recordingUrl: c.recordingUrl ?? c.artifact?.recordingUrl ?? null,
       },
     };
+  });
+
+// -------- Per-number assistant management --------
+
+function defaultAssistantPayload(name: string, firstMessage: string, systemPrompt: string) {
+  return {
+    name,
+    firstMessage,
+    model: {
+      provider: "openai",
+      model: "gpt-4o-mini",
+      messages: [{ role: "system", content: systemPrompt }],
+    },
+    voice: { provider: "11labs", voiceId: "burt" },
+    transcriber: { provider: "deepgram", model: "nova-2", language: "en" },
+  };
+}
+
+export const ensureAssistantForNumber = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      phoneNumberId: z.string().min(1),
+      phoneNumber: z.string().optional(),
+      contractorType: z.string().max(50).optional(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { business, businessId } = await loadBusinessForUser(context.supabase);
+    if (!businessId) throw new Error("No business found for user");
+
+    const { data: existing } = await context.supabase
+      .from("vapi_number_assistants")
+      .select("*")
+      .eq("business_id", businessId)
+      .eq("phone_number_id", data.phoneNumberId)
+      .maybeSingle();
+
+    if (existing?.assistant_id) {
+      return { row: existing, created: false };
+    }
+
+    const tags = mergeTagDefaults(business);
+    const name = `${tags.business ?? "Business"} – ${data.phoneNumber ?? "agent"}`.slice(0, 80);
+    const first = applyTags(
+      "Hi, thanks for calling {business}. How can I help today?",
+      tags,
+    );
+    const prompt = applyTags(
+      [
+        "You are a friendly receptionist for {business}.",
+        "Confirm the caller's name and reason for calling.",
+        "If they ask about our website, share: {website_info}.",
+        "If they want to book, offer: {book_consult}.",
+        "If they want a callback, collect their best number and confirm SMS consent: {sms_consent}.",
+        "Stay concise and warm. Transfer to a human if asked.",
+      ].join(" "),
+      tags,
+    );
+
+    const assistant = await vapi("/assistant", {
+      method: "POST",
+      body: JSON.stringify(defaultAssistantPayload(name, first, prompt)),
+    });
+
+    // Link the assistant to the phone number on Vapi
+    try {
+      await vapi(`/phone-number/${data.phoneNumberId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ assistantId: assistant.id }),
+      });
+    } catch {
+      // Vapi may reject linking for some number types; ignore — UI still works.
+    }
+
+    const row = {
+      business_id: businessId,
+      phone_number_id: data.phoneNumberId,
+      phone_number: data.phoneNumber ?? null,
+      assistant_id: assistant.id,
+      assistant_name: name,
+      contractor_type_preset: data.contractorType ?? business?.contractor_type ?? null,
+      custom_prompt: prompt,
+      custom_first_message: first,
+    };
+    const { data: saved, error } = await context.supabase
+      .from("vapi_number_assistants")
+      .upsert(row, { onConflict: "business_id,phone_number_id" })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return { row: saved, created: true };
+  });
+
+export const updateAssistantForNumber = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      phoneNumberId: z.string().min(1),
+      assistantName: z.string().max(80).optional(),
+      systemPrompt: z.string().max(8000).optional(),
+      firstMessage: z.string().max(2000).optional(),
+      contractorType: z.string().max(50).optional(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { business, businessId } = await loadBusinessForUser(context.supabase);
+    if (!businessId) throw new Error("No business found");
+    const { data: existing } = await context.supabase
+      .from("vapi_number_assistants")
+      .select("*")
+      .eq("business_id", businessId)
+      .eq("phone_number_id", data.phoneNumberId)
+      .single();
+    if (!existing?.assistant_id) throw new Error("Assistant not provisioned yet for this number");
+    const tags = mergeTagDefaults(business);
+    const patch: Record<string, unknown> = {};
+    if (data.assistantName) patch.name = data.assistantName;
+    if (data.firstMessage !== undefined) patch.firstMessage = applyTags(data.firstMessage, tags);
+    if (data.systemPrompt !== undefined) {
+      patch.model = {
+        provider: "openai",
+        model: "gpt-4o-mini",
+        messages: [{ role: "system", content: applyTags(data.systemPrompt, tags) }],
+      };
+    }
+    if (Object.keys(patch).length) {
+      await vapi(`/assistant/${existing.assistant_id}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      });
+    }
+    const { data: saved, error } = await context.supabase
+      .from("vapi_number_assistants")
+      .update({
+        assistant_name: data.assistantName ?? existing.assistant_name,
+        custom_prompt: data.systemPrompt ?? existing.custom_prompt,
+        custom_first_message: data.firstMessage ?? existing.custom_first_message,
+        contractor_type_preset: data.contractorType ?? existing.contractor_type_preset,
+      })
+      .eq("id", existing.id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return { row: saved };
+  });
+
+export const listNumberAssistants = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { businessId } = await loadBusinessForUser(context.supabase);
+    if (!businessId) return { rows: [] };
+    const { data } = await context.supabase
+      .from("vapi_number_assistants")
+      .select("*")
+      .eq("business_id", businessId);
+    return { rows: data ?? [] };
   });

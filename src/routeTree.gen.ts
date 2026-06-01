@@ -29,6 +29,8 @@ import { Route as AuthenticatedVoiceTestRouteImport } from './routes/_authentica
 import { Route as AuthenticatedVapiRouteImport } from './routes/_authenticated/vapi'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticated/scripts'
+import { Route as AuthenticatedSchedulingRouteImport } from './routes/_authenticated/scheduling'
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
@@ -133,6 +135,16 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedScriptsRoute = AuthenticatedScriptsRouteImport.update({
+  id: '/scripts',
+  path: '/scripts',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSchedulingRoute = AuthenticatedSchedulingRouteImport.update({
+  id: '/scheduling',
+  path: '/scheduling',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedRevenueRoute = AuthenticatedRevenueRouteImport.update({
   id: '/revenue',
   path: '/revenue',
@@ -173,6 +185,8 @@ export interface FileRoutesByFullPath {
   '/tos': typeof TosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
+  '/scheduling': typeof AuthenticatedSchedulingRoute
+  '/scripts': typeof AuthenticatedScriptsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/vapi': typeof AuthenticatedVapiRoute
@@ -198,6 +212,8 @@ export interface FileRoutesByTo {
   '/tos': typeof TosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
+  '/scheduling': typeof AuthenticatedSchedulingRoute
+  '/scripts': typeof AuthenticatedScriptsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/vapi': typeof AuthenticatedVapiRoute
@@ -225,6 +241,8 @@ export interface FileRoutesById {
   '/tos': typeof TosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
+  '/_authenticated/scheduling': typeof AuthenticatedSchedulingRoute
+  '/_authenticated/scripts': typeof AuthenticatedScriptsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/vapi': typeof AuthenticatedVapiRoute
@@ -252,6 +270,8 @@ export interface FileRouteTypes {
     | '/tos'
     | '/dashboard'
     | '/revenue'
+    | '/scheduling'
+    | '/scripts'
     | '/settings'
     | '/team'
     | '/vapi'
@@ -277,6 +297,8 @@ export interface FileRouteTypes {
     | '/tos'
     | '/dashboard'
     | '/revenue'
+    | '/scheduling'
+    | '/scripts'
     | '/settings'
     | '/team'
     | '/vapi'
@@ -303,6 +325,8 @@ export interface FileRouteTypes {
     | '/tos'
     | '/_authenticated/dashboard'
     | '/_authenticated/revenue'
+    | '/_authenticated/scheduling'
+    | '/_authenticated/scripts'
     | '/_authenticated/settings'
     | '/_authenticated/team'
     | '/_authenticated/vapi'
@@ -474,6 +498,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/scripts': {
+      id: '/_authenticated/scripts'
+      path: '/scripts'
+      fullPath: '/scripts'
+      preLoaderRoute: typeof AuthenticatedScriptsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/scheduling': {
+      id: '/_authenticated/scheduling'
+      path: '/scheduling'
+      fullPath: '/scheduling'
+      preLoaderRoute: typeof AuthenticatedSchedulingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/revenue': {
       id: '/_authenticated/revenue'
       path: '/revenue'
@@ -508,6 +546,8 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
+  AuthenticatedSchedulingRoute: typeof AuthenticatedSchedulingRoute
+  AuthenticatedScriptsRoute: typeof AuthenticatedScriptsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedVapiRoute: typeof AuthenticatedVapiRoute
@@ -517,6 +557,8 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
+  AuthenticatedSchedulingRoute: AuthenticatedSchedulingRoute,
+  AuthenticatedScriptsRoute: AuthenticatedScriptsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedVapiRoute: AuthenticatedVapiRoute,
