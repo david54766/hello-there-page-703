@@ -47,14 +47,19 @@ export function getForwardingInstructions(carrier: Carrier, twilioNumber: string
         ],
       };
     case "att":
+      // AT&T wireless requires the 1 country-code prefix and uses *004* to set
+      // busy + no-answer + unreachable forwarding in one shot. The bare GSM
+      // **61* code is rejected on most AT&T lines.
+      const attTarget = digits.length === 10 ? `1${digits}` : digits;
       return {
         title: "AT&T — No Answer Forwarding",
-        dialCode: `**61*${digits}#`,
+        dialCode: `*004*${attTarget}#`,
         steps: [
           `Open your phone dialer`,
-          `Dial ${`**61*${digits}#`} and press call`,
+          `Dial ${`*004*${attTarget}#`} and press call`,
           `Wait for the confirmation message`,
-          `Hang up — forwarding is active`,
+          `Hang up — forwarding is active for busy, no-answer, and unreachable calls`,
+          `To turn it off later, dial ##004#`,
         ],
       };
     case "tmobile":
