@@ -16,6 +16,7 @@ import { listMyFactors, enrollFactor, verifyEnrollment, disableFactor } from "@/
 import { Badge } from "@/components/ui/badge";
 import { Trash2, ShieldCheck, Mail, Smartphone } from "lucide-react";
 import { toast } from "sonner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: Settings });
 
@@ -130,7 +131,21 @@ function Settings() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
+        <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
+      </div>
+
+      <Tabs defaultValue="business" className="space-y-6">
+        <TabsList className="flex w-full flex-wrap justify-start gap-1 h-auto">
+          <TabsTrigger value="business">Business</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="scheduling">Scheduling</TabsTrigger>
+          <TabsTrigger value="voice-sms">Voice &amp; SMS</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="business" className="space-y-6">
       <Card className="space-y-5 p-6">
         <h2 className="text-lg font-semibold">Business</h2>
         <div className="space-y-1.5">
@@ -150,69 +165,6 @@ function Settings() {
           <Input type="number" value={biz.avg_job_value} onChange={(e) => setBiz({ ...biz, avg_job_value: Number(e.target.value) || 0 })} />
         </div>
       </Card>
-
-      <Card className="space-y-5 p-6">
-        <h2 className="text-lg font-semibold">Notifications</h2>
-        <Row label="SMS alerts" hint="Text your phone when a new lead comes in" checked={biz.notify_sms} onChange={(v) => setBiz({ ...biz, notify_sms: v })} />
-        <Row label="Email alerts" hint="Send a digest to your inbox" checked={biz.notify_email} onChange={(v) => setBiz({ ...biz, notify_email: v })} />
-        {biz.notify_email && (
-          <div className="space-y-1.5">
-            <Label>Notification email</Label>
-            <Input type="email" value={biz.notify_email_address ?? ""} onChange={(e) => setBiz({ ...biz, notify_email_address: e.target.value })} />
-          </div>
-        )}
-        <Row label="Dashboard alerts" hint="Realtime bell + toast in this app" checked={biz.notify_dashboard} onChange={(v) => setBiz({ ...biz, notify_dashboard: v })} />
-      </Card>
-
-      <Card className="space-y-5 p-6">
-        <h2 className="text-lg font-semibold">AI replies</h2>
-        <Row label="Auto-send AI follow-ups" hint="AI replies to customer texts to qualify the lead before you respond" checked={biz.auto_send_ai_replies} onChange={(v) => setBiz({ ...biz, auto_send_ai_replies: v })} />
-      </Card>
-
-      <Card className="space-y-5 p-6">
-        <h2 className="text-lg font-semibold">Scheduling</h2>
-        <div className="space-y-1.5">
-          <Label>Provider</Label>
-          <Select value={biz.scheduling_provider} onValueChange={(v) => setBiz({ ...biz, scheduling_provider: v as Biz["scheduling_provider"] })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="internal">In-app only</SelectItem>
-              <SelectItem value="hcp">Housecall Pro</SelectItem>
-              <SelectItem value="jobber">Jobber</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {biz.scheduling_provider === "hcp" && (
-          <div className="space-y-1.5">
-            <Label>Housecall Pro API key</Label>
-            <Input type="password" value={biz.hcp_api_key ?? ""} onChange={(e) => setBiz({ ...biz, hcp_api_key: e.target.value })} placeholder="hcp_…" />
-            <p className="text-xs text-muted-foreground">Settings → API in your HCP account.</p>
-          </div>
-        )}
-        {biz.scheduling_provider === "jobber" && (
-          <div className="space-y-1.5">
-            <Label>Jobber refresh token</Label>
-            <Input type="password" value={biz.jobber_refresh_token ?? ""} onChange={(e) => setBiz({ ...biz, jobber_refresh_token: e.target.value })} />
-            <p className="text-xs text-muted-foreground">OAuth setup coming — paste manually for now.</p>
-          </div>
-        )}
-      </Card>
-
-      <Card className="space-y-5 p-6">
-        <h2 className="text-lg font-semibold">Voice agent</h2>
-        <div className="space-y-1.5">
-          <Label>ElevenLabs voice ID (optional)</Label>
-          <Input value={biz.agent_voice_id ?? ""} onChange={(e) => setBiz({ ...biz, agent_voice_id: e.target.value })} placeholder="JBFqnCBsd6RMkjVDRZzb" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Custom agent prompt (optional)</Label>
-          <Textarea rows={6} value={biz.agent_prompt_override ?? ""} onChange={(e) => setBiz({ ...biz, agent_prompt_override: e.target.value })} placeholder="Leave blank to use the contractor-aware default." />
-        </div>
-      </Card>
-
-      <SmsComplianceCard />
-      <CampaignRegistrationCard />
-
       <Card className="space-y-5 p-6">
         <h2 className="text-lg font-semibold">Tag values</h2>
         <p className="-mt-3 text-xs text-muted-foreground">Default values inserted into prompts and first messages via {"{business}"}, {"{website}"}, {"{book_consult}"}…</p>
@@ -245,9 +197,58 @@ function Settings() {
           <Textarea rows={2} value={biz.default_hello_script ?? ""} onChange={(e) => setBiz({ ...biz, default_hello_script: e.target.value })} placeholder="Hello, thanks for calling {business}…" />
         </div>
       </Card>
+        </TabsContent>
 
+        <TabsContent value="notifications" className="space-y-6">
       <Card className="space-y-5 p-6">
-        <h2 className="text-lg font-semibold">Scheduling</h2>
+        <h2 className="text-lg font-semibold">Notifications</h2>
+        <Row label="SMS alerts" hint="Text your phone when a new lead comes in" checked={biz.notify_sms} onChange={(v) => setBiz({ ...biz, notify_sms: v })} />
+        <Row label="Email alerts" hint="Send a digest to your inbox" checked={biz.notify_email} onChange={(v) => setBiz({ ...biz, notify_email: v })} />
+        {biz.notify_email && (
+          <div className="space-y-1.5">
+            <Label>Notification email</Label>
+            <Input type="email" value={biz.notify_email_address ?? ""} onChange={(e) => setBiz({ ...biz, notify_email_address: e.target.value })} />
+          </div>
+        )}
+        <Row label="Dashboard alerts" hint="Realtime bell + toast in this app" checked={biz.notify_dashboard} onChange={(v) => setBiz({ ...biz, notify_dashboard: v })} />
+      </Card>
+      <Card className="space-y-5 p-6">
+        <h2 className="text-lg font-semibold">AI replies</h2>
+        <Row label="Auto-send AI follow-ups" hint="AI replies to customer texts to qualify the lead before you respond" checked={biz.auto_send_ai_replies} onChange={(v) => setBiz({ ...biz, auto_send_ai_replies: v })} />
+      </Card>
+        </TabsContent>
+
+        <TabsContent value="scheduling" className="space-y-6">
+      <Card className="space-y-5 p-6">
+        <h2 className="text-lg font-semibold">Scheduling provider</h2>
+        <div className="space-y-1.5">
+          <Label>Provider</Label>
+          <Select value={biz.scheduling_provider} onValueChange={(v) => setBiz({ ...biz, scheduling_provider: v as Biz["scheduling_provider"] })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="internal">In-app only</SelectItem>
+              <SelectItem value="hcp">Housecall Pro</SelectItem>
+              <SelectItem value="jobber">Jobber</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {biz.scheduling_provider === "hcp" && (
+          <div className="space-y-1.5">
+            <Label>Housecall Pro API key</Label>
+            <Input type="password" value={biz.hcp_api_key ?? ""} onChange={(e) => setBiz({ ...biz, hcp_api_key: e.target.value })} placeholder="hcp_…" />
+            <p className="text-xs text-muted-foreground">Settings → API in your HCP account.</p>
+          </div>
+        )}
+        {biz.scheduling_provider === "jobber" && (
+          <div className="space-y-1.5">
+            <Label>Jobber refresh token</Label>
+            <Input type="password" value={biz.jobber_refresh_token ?? ""} onChange={(e) => setBiz({ ...biz, jobber_refresh_token: e.target.value })} />
+            <p className="text-xs text-muted-foreground">OAuth setup coming — paste manually for now.</p>
+          </div>
+        )}
+      </Card>
+      <Card className="space-y-5 p-6">
+        <h2 className="text-lg font-semibold">In-app scheduling</h2>
         <Row label="Enable in-app scheduling" hint="Show the Scheduling tab and let calls book consultations" checked={biz.scheduling_enabled} onChange={(v) => setBiz({ ...biz, scheduling_enabled: v })} />
         <div className="space-y-1.5">
           <Label>Cal.com link (optional)</Label>
@@ -258,7 +259,6 @@ function Settings() {
           <Input value={biz.calendly_url ?? ""} onChange={(e) => setBiz({ ...biz, calendly_url: e.target.value })} placeholder="https://calendly.com/yourname" />
         </div>
       </Card>
-
       <Card className="space-y-4 p-6">
         <div>
           <h2 className="text-lg font-semibold">Observed holidays</h2>
@@ -311,8 +311,28 @@ function Settings() {
         </div>
         <p className="text-xs text-muted-foreground">Changes take effect when you click <span className="font-medium">Save changes</span> at the bottom.</p>
       </Card>
+        </TabsContent>
 
+        <TabsContent value="voice-sms" className="space-y-6">
+      <Card className="space-y-5 p-6">
+        <h2 className="text-lg font-semibold">Voice agent</h2>
+        <div className="space-y-1.5">
+          <Label>ElevenLabs voice ID (optional)</Label>
+          <Input value={biz.agent_voice_id ?? ""} onChange={(e) => setBiz({ ...biz, agent_voice_id: e.target.value })} placeholder="JBFqnCBsd6RMkjVDRZzb" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Custom agent prompt (optional)</Label>
+          <Textarea rows={6} value={biz.agent_prompt_override ?? ""} onChange={(e) => setBiz({ ...biz, agent_prompt_override: e.target.value })} placeholder="Leave blank to use the contractor-aware default." />
+        </div>
+      </Card>
+      <SmsComplianceCard />
+      <CampaignRegistrationCard />
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-6">
       <TwoFactorCard userEmail={user?.email ?? ""} />
+        </TabsContent>
+      </Tabs>
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
