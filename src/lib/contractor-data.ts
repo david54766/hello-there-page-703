@@ -130,3 +130,74 @@ export function getSmsTemplate(contractorType: string | null | undefined, busine
       return `Thanks for calling ${businessName}. We missed your call — would you like an immediate callback or to schedule a time?`;
   }
 }
+
+// ---- Trade-tailored standard voice script ----
+// Returns a short, direct first message + a system prompt that keeps
+// every reply to 1-2 sentences and (optionally) offers to book a consult.
+
+const TRADE_TEAM_WORDS: Record<string, string> = {
+  roofing: "roofers",
+  plumbing: "plumbers",
+  hvac: "HVAC techs",
+  electrical: "electricians",
+  landscaping: "landscapers",
+  pest_control: "pest control techs",
+  restoration: "restoration crew",
+  general_contractor: "contractors",
+  painting: "painters",
+  concrete: "concrete crew",
+  pool_services: "pool techs",
+  pressure_washing: "crew",
+  tree_services: "tree crew",
+  flooring: "flooring crew",
+  handyman: "handymen",
+  solar: "solar techs",
+  fencing: "fencing crew",
+};
+
+const TRADE_QUALIFIER: Record<string, string> = {
+  roofing: "Is this a leak or general repair?",
+  plumbing: "Is water actively running, or contained?",
+  hvac: "Are you currently without heat or cooling?",
+  electrical: "Is there a safety concern like sparks or smell of burning?",
+  landscaping: "Is this for ongoing maintenance or a one-time job?",
+  pest_control: "What kind of pest are you dealing with?",
+  restoration: "Is there active water, smoke, or mold damage right now?",
+  painting: "Is this interior or exterior work?",
+  pool_services: "Is the pool currently in use or being opened/closed?",
+  tree_services: "Is the tree damaged, leaning, or down?",
+  solar: "Is this for a new install or existing system service?",
+};
+
+export function getStandardScript(
+  contractorType: string | null | undefined,
+  businessName: string,
+  opts: { schedulingEnabled?: boolean; bookingUrl?: string | null } = {},
+): { firstMessage: string; systemPrompt: string } {
+  const team = (contractorType && TRADE_TEAM_WORDS[contractorType]) || "team";
+  const qualifier =
+    (contractorType && TRADE_QUALIFIER[contractorType]) ||
+    "Can you briefly describe what you need help with?";
+
+  const firstMessage =
+    `Thanks for calling ${businessName || "{business}"}. ` +
+    `All of our ${team} are on another line right now — ` +
+    `but I can take your details and pass them along immediately so they get back to you as fast as possible.`;
+
+  const bookingLine =
+    opts.schedulingEnabled && opts.bookingUrl
+      ? `After you have their name, number, and the reason for the call, offer: "Would you like me to book a quick consultation right now?" If yes, share this link: ${opts.bookingUrl}`
+      : `After you have their name, number, and the reason for the call, close with: "I'll have someone call you back shortly."`;
+
+  const systemPrompt = [
+    `You are the phone receptionist for ${businessName || "{business}"}.`,
+    `Keep every reply to one or two short sentences. Be warm, calm, and direct.`,
+    `Step 1: confirm the caller's name and best callback number.`,
+    `Step 2: ask one qualifying question — ${qualifier}`,
+    `Step 3: ${bookingLine}`,
+    `Never argue. Never repeat yourself. If the caller is frustrated or asks for a person, say someone will call them right back and end the call politely.`,
+    `Do not invent prices, appointment times, or technician names.`,
+  ].join(" ");
+
+  return { firstMessage, systemPrompt };
+}
