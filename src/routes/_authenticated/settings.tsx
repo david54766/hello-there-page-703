@@ -30,6 +30,16 @@ type Biz = {
   jobber_refresh_token: string | null;
   agent_voice_id: string | null;
   agent_prompt_override: string | null;
+  address: string | null;
+  website: string | null;
+  website_blurb: string | null;
+  booking_url: string | null;
+  callback_form_url: string | null;
+  sms_consent_text: string | null;
+  default_hello_script: string | null;
+  cal_url: string | null;
+  calendly_url: string | null;
+  scheduling_enabled: boolean;
 };
 
 function Settings() {
@@ -40,7 +50,7 @@ function Settings() {
   useEffect(() => {
     if (!user) return;
     supabase.from("businesses")
-      .select("id, business_name, owner_phone, business_phone, avg_job_value, notify_sms, notify_email, notify_dashboard, notify_email_address, auto_send_ai_replies, scheduling_provider, hcp_api_key, jobber_refresh_token, agent_voice_id, agent_prompt_override")
+      .select("id, business_name, owner_phone, business_phone, avg_job_value, notify_sms, notify_email, notify_dashboard, notify_email_address, auto_send_ai_replies, scheduling_provider, hcp_api_key, jobber_refresh_token, agent_voice_id, agent_prompt_override, address, website, website_blurb, booking_url, callback_form_url, sms_consent_text, default_hello_script, cal_url, calendly_url, scheduling_enabled")
       .eq("owner_id", user.id).maybeSingle().then(({ data }) => setBiz(data as Biz));
   }, [user]);
 
@@ -62,6 +72,16 @@ function Settings() {
       jobber_refresh_token: biz.jobber_refresh_token,
       agent_voice_id: biz.agent_voice_id,
       agent_prompt_override: biz.agent_prompt_override,
+      address: biz.address,
+      website: biz.website,
+      website_blurb: biz.website_blurb,
+      booking_url: biz.booking_url,
+      callback_form_url: biz.callback_form_url,
+      sms_consent_text: biz.sms_consent_text,
+      default_hello_script: biz.default_hello_script,
+      cal_url: biz.cal_url,
+      calendly_url: biz.calendly_url,
+      scheduling_enabled: biz.scheduling_enabled,
     }).eq("id", biz.id);
     setSaving(false);
     if (error) toast.error(error.message); else toast.success("Saved");
