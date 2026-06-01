@@ -172,7 +172,7 @@ function Onboarding() {
                   </Select>
                 </Field>
               )}
-              {step === 5 && fwd && (
+              {step === 5 && (
                 <AgentStep loading={agentLoading} rows={agentRows} />
               )}
               {step === 6 && fwd && (
