@@ -116,23 +116,14 @@ function VapiPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-provision assistants for any number missing one
-  useEffect(() => {
-    if (loading || numbers.length === 0) return;
-    const provisioned = new Set(numberRows.map((r) => r.phone_number_id));
-    const missing = numbers.filter((n) => !provisioned.has(n.id));
-    if (missing.length === 0) return;
-    (async () => {
-      const results = await Promise.allSettled(
-        missing.map((n) => ensureAssistant({ data: { phoneNumberId: n.id, phoneNumber: n.number, contractorType: business?.contractor_type } })),
-      );
-      if (results.some((r) => r.status === "fulfilled")) {
-        const fresh = await fetchNumberAssistants();
-        setNumberRows(fresh.rows);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, numbers, business]);
+  const provisionMissing = async (phoneNumberId: string, phoneNumber: string) => {
+    try {
+      await ensureAssistant({ data: { phoneNumberId, phoneNumber, contractorType: business?.contractor_type } });
+      const fresh = await fetchNumberAssistants();
+      setNumberRows(fresh.rows);
+      toast.success("Assistant provisioned");
+    } catch (e: any) { toast.error(e.message); }
+  };
 
   const loadCalls = async () => {
     setCallsLoading(true);
@@ -352,6 +343,7 @@ function VapiPage() {
             <NumbersTab
               numbers={numbers}
               rows={numberRows}
+              onProvision={provisionMissing}
               onUpdate={async (phoneNumberId, payload) => {
                 try {
                   await updateAssistant({ data: { phoneNumberId, ...payload } });
@@ -423,10 +415,12 @@ function NumbersTab({
   numbers,
   rows,
   onUpdate,
+  onProvision,
 }: {
   numbers: { id: string; number: string; name: string }[];
   rows: any[];
   onUpdate: (phoneNumberId: string, payload: { assistantName?: string; systemPrompt?: string; firstMessage?: string; contractorType?: string }) => Promise<void>;
+  onProvision: (phoneNumberId: string, phoneNumber: string) => Promise<void>;
 }) {
   const byId = new Map(rows.map((r) => [r.phone_number_id, r]));
   return (
@@ -436,6 +430,17 @@ function NumbersTab({
       )}
       {numbers.map((n) => {
         const row = byId.get(n.id);
+        if (!row) {
+          return (
+            <Card key={n.id} className="flex items-center justify-between gap-3 p-4">
+              <div>
+                <div className="text-sm font-semibold">{n.number}</div>
+                <div className="text-xs text-muted-foreground">No assistant yet.</div>
+              </div>
+              <Button size="sm" onClick={() => onProvision(n.id, n.number)}>Provision assistant</Button>
+            </Card>
+          );
+        }
         return <NumberRow key={n.id} number={n} row={row} onSave={(p) => onUpdate(n.id, p)} />;
       })}
     </div>
