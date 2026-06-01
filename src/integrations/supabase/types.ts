@@ -21,12 +21,18 @@ export type Database = {
           created_at: string
           customer_name: string | null
           customer_phone: string | null
+          duration_minutes: number
+          external_event_id: string | null
+          external_provider: string | null
           id: string
+          notes: string | null
           provider: Database["public"]["Enums"]["appointment_provider"]
           provider_ref: string | null
           scheduled_for: string
           service: string | null
+          source: string
           status: Database["public"]["Enums"]["appointment_status"]
+          team_member_id: string | null
           updated_at: string
         }
         Insert: {
@@ -35,12 +41,18 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           customer_phone?: string | null
+          duration_minutes?: number
+          external_event_id?: string | null
+          external_provider?: string | null
           id?: string
+          notes?: string | null
           provider?: Database["public"]["Enums"]["appointment_provider"]
           provider_ref?: string | null
           scheduled_for: string
           service?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          team_member_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -49,12 +61,18 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           customer_phone?: string | null
+          duration_minutes?: number
+          external_event_id?: string | null
+          external_provider?: string | null
           id?: string
+          notes?: string | null
           provider?: Database["public"]["Enums"]["appointment_provider"]
           provider_ref?: string | null
           scheduled_for?: string
           service?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          team_member_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -90,16 +108,22 @@ export type Database = {
       }
       businesses: {
         Row: {
+          address: string | null
           agent_prompt_override: string | null
           agent_voice_id: string | null
           auto_send_ai_replies: boolean
           avg_job_value: number
+          booking_url: string | null
           business_hours: Json
           business_name: string
           business_phone: string | null
+          cal_url: string | null
+          calendly_url: string | null
+          callback_form_url: string | null
           carrier: Database["public"]["Enums"]["carrier"] | null
           contractor_type: Database["public"]["Enums"]["contractor_type"] | null
           created_at: string
+          default_hello_script: string | null
           hcp_api_key: string | null
           id: string
           jobber_refresh_token: string | null
@@ -110,25 +134,35 @@ export type Database = {
           onboarding_complete: boolean
           owner_id: string
           owner_phone: string | null
+          scheduling_enabled: boolean
           scheduling_provider:
             | Database["public"]["Enums"]["appointment_provider"]
             | null
+          sms_consent_text: string | null
           twilio_number: string | null
           updated_at: string
+          website: string | null
+          website_blurb: string | null
         }
         Insert: {
+          address?: string | null
           agent_prompt_override?: string | null
           agent_voice_id?: string | null
           auto_send_ai_replies?: boolean
           avg_job_value?: number
+          booking_url?: string | null
           business_hours?: Json
           business_name?: string
           business_phone?: string | null
+          cal_url?: string | null
+          calendly_url?: string | null
+          callback_form_url?: string | null
           carrier?: Database["public"]["Enums"]["carrier"] | null
           contractor_type?:
             | Database["public"]["Enums"]["contractor_type"]
             | null
           created_at?: string
+          default_hello_script?: string | null
           hcp_api_key?: string | null
           id?: string
           jobber_refresh_token?: string | null
@@ -139,25 +173,35 @@ export type Database = {
           onboarding_complete?: boolean
           owner_id: string
           owner_phone?: string | null
+          scheduling_enabled?: boolean
           scheduling_provider?:
             | Database["public"]["Enums"]["appointment_provider"]
             | null
+          sms_consent_text?: string | null
           twilio_number?: string | null
           updated_at?: string
+          website?: string | null
+          website_blurb?: string | null
         }
         Update: {
+          address?: string | null
           agent_prompt_override?: string | null
           agent_voice_id?: string | null
           auto_send_ai_replies?: boolean
           avg_job_value?: number
+          booking_url?: string | null
           business_hours?: Json
           business_name?: string
           business_phone?: string | null
+          cal_url?: string | null
+          calendly_url?: string | null
+          callback_form_url?: string | null
           carrier?: Database["public"]["Enums"]["carrier"] | null
           contractor_type?:
             | Database["public"]["Enums"]["contractor_type"]
             | null
           created_at?: string
+          default_hello_script?: string | null
           hcp_api_key?: string | null
           id?: string
           jobber_refresh_token?: string | null
@@ -168,10 +212,56 @@ export type Database = {
           onboarding_complete?: boolean
           owner_id?: string
           owner_phone?: string | null
+          scheduling_enabled?: boolean
           scheduling_provider?:
             | Database["public"]["Enums"]["appointment_provider"]
             | null
+          sms_consent_text?: string | null
           twilio_number?: string | null
+          updated_at?: string
+          website?: string | null
+          website_blurb?: string | null
+        }
+        Relationships: []
+      }
+      calendar_connections: {
+        Row: {
+          access_token: string | null
+          business_id: string
+          calendar_id: string | null
+          created_at: string
+          email: string | null
+          expires_at: string | null
+          id: string
+          provider: string
+          refresh_token: string | null
+          team_member_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          business_id: string
+          calendar_id?: string | null
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          provider: string
+          refresh_token?: string | null
+          team_member_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          business_id?: string
+          calendar_id?: string | null
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          team_member_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -398,6 +488,72 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_blackouts: {
+        Row: {
+          business_id: string
+          created_at: string
+          end_at: string
+          id: string
+          reason: string | null
+          start_at: string
+          team_member_id: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          end_at: string
+          id?: string
+          reason?: string | null
+          start_at: string
+          team_member_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          end_at?: string
+          id?: string
+          reason?: string | null
+          start_at?: string
+          team_member_id?: string | null
+        }
+        Relationships: []
+      }
+      script_templates: {
+        Row: {
+          body: string
+          business_id: string
+          contractor_type: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          kind: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          business_id: string
+          contractor_type?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          kind: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          business_id?: string
+          contractor_type?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          kind?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sms_consents: {
         Row: {
           business_id: string
@@ -510,7 +666,9 @@ export type Database = {
       team_members: {
         Row: {
           active: boolean
+          availability: Json
           business_id: string
+          color: string | null
           created_at: string
           email: string | null
           id: string
@@ -523,7 +681,9 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          availability?: Json
           business_id: string
+          color?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -536,7 +696,9 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          availability?: Json
           business_id?: string
+          color?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -580,6 +742,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vapi_number_assistants: {
+        Row: {
+          assistant_id: string | null
+          assistant_name: string | null
+          business_id: string
+          contractor_type_preset: string | null
+          created_at: string
+          custom_first_message: string | null
+          custom_prompt: string | null
+          id: string
+          phone_number: string | null
+          phone_number_id: string
+          updated_at: string
+        }
+        Insert: {
+          assistant_id?: string | null
+          assistant_name?: string | null
+          business_id: string
+          contractor_type_preset?: string | null
+          created_at?: string
+          custom_first_message?: string | null
+          custom_prompt?: string | null
+          id?: string
+          phone_number?: string | null
+          phone_number_id: string
+          updated_at?: string
+        }
+        Update: {
+          assistant_id?: string | null
+          assistant_name?: string | null
+          business_id?: string
+          contractor_type_preset?: string | null
+          created_at?: string
+          custom_first_message?: string | null
+          custom_prompt?: string | null
+          id?: string
+          phone_number?: string | null
+          phone_number_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
