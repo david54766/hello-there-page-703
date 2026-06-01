@@ -132,7 +132,7 @@ function Onboarding() {
         );
         const fresh = await fetchNumberAssistants();
         const map = new Map(fresh.rows.map((r: any) => [r.phone_number_id, r]));
-        setAgentRows(numbers.map((n) => ({ number: n.number, assistantId: (map.get(n.id) as any)?.assistant_id ?? null })));
+        setAgentRows(numbers.map((n) => ({ number: n.number, phoneNumberId: n.id, assistantId: (map.get(n.id) as any)?.assistant_id ?? null })));
       } catch (e: any) {
         toast.error(e?.message ?? "Could not provision AI agent");
       } finally {
