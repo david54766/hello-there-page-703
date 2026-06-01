@@ -253,13 +253,7 @@ function Onboarding() {
                 <AgentStep loading={agentLoading} rows={agentRows} />
               )}
               {step === 6 && (
-                <VoiceStep
-                  voiceId={voiceId}
-                  setVoiceId={setVoiceId}
-                  played={voicePlayed}
-                  playing={voicePlaying}
-                  onPreview={playVoicePreview}
-                />
+                <VoiceStep voiceId={voiceId} setVoiceId={setVoiceId} />
               )}
               {step === 7 && (
                 <ScriptStep
@@ -340,10 +334,7 @@ function Onboarding() {
           {step === 6 && (
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
-              <Button
-                onClick={saveVoiceAndContinue}
-                disabled={voiceSaving || !voicePlayed.has(voiceId)}
-              >
+              <Button onClick={saveVoiceAndContinue} disabled={voiceSaving}>
                 {voiceSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approve voice
               </Button>
             </div>
