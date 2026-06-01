@@ -143,6 +143,83 @@ function Onboarding() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
+  // Build the trade-tailored script the moment the user lands on the Script step.
+  useEffect(() => {
+    if (step !== 7) return;
+    if (scriptFirst && scriptSystem) return;
+    const tpl = getStandardScript(state.contractor_type || null, state.business_name, {
+      schedulingEnabled,
+      bookingUrl,
+    });
+    setScriptFirst(tpl.firstMessage);
+    setScriptSystem(tpl.systemPrompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  async function playVoicePreview(id: string) {
+    if (voicePlaying) return;
+    setVoicePlaying(id);
+    try {
+      const { audioBase64, mime } = await previewVoiceFn({
+        data: {
+          voiceId: id,
+          text: `Thanks for calling ${state.business_name || "our team"}. All of our team are on another line right now — but I can take your details and pass them along immediately.`,
+        },
+      });
+      const audio = new Audio(`data:${mime};base64,${audioBase64}`);
+      audio.onended = () => setVoicePlaying(null);
+      audio.onerror = () => setVoicePlaying(null);
+      await audio.play();
+      setVoicePlayed((s) => new Set(s).add(id));
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not play preview");
+      setVoicePlaying(null);
+    }
+  }
+
+  async function saveVoiceAndContinue() {
+    if (!bizId) return;
+    setVoiceSaving(true);
+    try {
+      await supabase.from("businesses").update({ agent_voice_id: voiceId }).eq("id", bizId);
+      await Promise.allSettled(
+        agentRows
+          .filter((r) => r.assistantId)
+          .map((r) => updateAssistant({ data: { phoneNumberId: r.phoneNumberId, voiceId } })),
+      );
+      setStep(7);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not save voice");
+    } finally {
+      setVoiceSaving(false);
+    }
+  }
+
+  async function saveScriptAndContinue() {
+    setScriptSaving(true);
+    try {
+      await Promise.allSettled(
+        agentRows
+          .filter((r) => r.assistantId)
+          .map((r) =>
+            updateAssistant({
+              data: {
+                phoneNumberId: r.phoneNumberId,
+                firstMessage: scriptFirst,
+                systemPrompt: scriptSystem,
+                contractorType: state.contractor_type || undefined,
+              },
+            }),
+          ),
+      );
+      setStep(8);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not save script");
+    } finally {
+      setScriptSaving(false);
+    }
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[image:var(--gradient-subtle)] p-6">
       <div className="w-full max-w-xl">
