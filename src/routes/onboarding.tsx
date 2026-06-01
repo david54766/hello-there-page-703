@@ -404,15 +404,9 @@ function AgentStep({ loading, rows }: { loading: boolean; rows: { number: string
 function VoiceStep({
   voiceId,
   setVoiceId,
-  played,
-  playing,
-  onPreview,
 }: {
   voiceId: string;
   setVoiceId: (id: string) => void;
-  played: Set<string>;
-  playing: string | null;
-  onPreview: (id: string) => void;
 }) {
   return (
     <div>
@@ -420,11 +414,10 @@ function VoiceStep({
         <Mic2 className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-semibold tracking-tight">Pick your agent's voice</h2>
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">Preview each voice, then approve the one you'd like callers to hear.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Choose the voice callers will hear when your agent answers.</p>
       <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {VOICE_OPTIONS.map((v) => {
           const selected = voiceId === v.id;
-          const isPlaying = playing === v.id;
           return (
             <div
               key={v.id}
@@ -440,23 +433,11 @@ function VoiceStep({
                 </div>
                 <div className="text-xs text-muted-foreground">{v.description}</div>
               </div>
-              <Button
-                type="button"
-                variant={selected ? "default" : "outline"}
-                size="sm"
-                onClick={(e) => { e.stopPropagation(); onPreview(v.id); }}
-                disabled={!!playing}
-              >
-                {isPlaying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
-                {played.has(v.id) ? "Replay" : "Play"}
-              </Button>
+              {selected && <Check className="h-4 w-4 text-primary" />}
             </div>
           );
         })}
       </div>
-      {!played.has(voiceId) && (
-        <p className="mt-3 text-xs text-muted-foreground">Tip: play your selected voice at least once before approving.</p>
-      )}
     </div>
   );
 }
