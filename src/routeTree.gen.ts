@@ -26,6 +26,7 @@ import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVoiceTestRouteImport } from './routes/_authenticated/voice-test'
+import { Route as AuthenticatedVapiRouteImport } from './routes/_authenticated/vapi'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
@@ -117,6 +118,11 @@ const AuthenticatedVoiceTestRoute = AuthenticatedVoiceTestRouteImport.update({
   path: '/voice-test',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedVapiRoute = AuthenticatedVapiRouteImport.update({
+  id: '/vapi',
+  path: '/vapi',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/revenue': typeof AuthenticatedRevenueRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/vapi': typeof AuthenticatedVapiRoute
   '/voice-test': typeof AuthenticatedVoiceTestRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/revenue': typeof AuthenticatedRevenueRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
+  '/vapi': typeof AuthenticatedVapiRoute
   '/voice-test': typeof AuthenticatedVoiceTestRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
+  '/_authenticated/vapi': typeof AuthenticatedVapiRoute
   '/_authenticated/voice-test': typeof AuthenticatedVoiceTestRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
@@ -245,6 +254,7 @@ export interface FileRouteTypes {
     | '/revenue'
     | '/settings'
     | '/team'
+    | '/vapi'
     | '/voice-test'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
@@ -269,6 +279,7 @@ export interface FileRouteTypes {
     | '/revenue'
     | '/settings'
     | '/team'
+    | '/vapi'
     | '/voice-test'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/_authenticated/revenue'
     | '/_authenticated/settings'
     | '/_authenticated/team'
+    | '/_authenticated/vapi'
     | '/_authenticated/voice-test'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
@@ -441,6 +453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVoiceTestRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/vapi': {
+      id: '/_authenticated/vapi'
+      path: '/vapi'
+      fullPath: '/vapi'
+      preLoaderRoute: typeof AuthenticatedVapiRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/team': {
       id: '/_authenticated/team'
       path: '/team'
@@ -491,6 +510,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
+  AuthenticatedVapiRoute: typeof AuthenticatedVapiRoute
   AuthenticatedVoiceTestRoute: typeof AuthenticatedVoiceTestRoute
 }
 
@@ -499,6 +519,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
+  AuthenticatedVapiRoute: AuthenticatedVapiRoute,
   AuthenticatedVoiceTestRoute: AuthenticatedVoiceTestRoute,
 }
 
@@ -529,13 +550,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
