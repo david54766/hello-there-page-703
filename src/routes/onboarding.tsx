@@ -3,17 +3,19 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber } from "@/lib/vapi.functions";
+import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber, updateAssistantForNumber, previewVoice } from "@/lib/vapi.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, type Carrier, type ContractorType } from "@/lib/contractor-data";
+import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, getStandardScript, type Carrier, type ContractorType } from "@/lib/contractor-data";
+import { VOICE_OPTIONS, DEFAULT_VOICE_ID } from "@/lib/voices";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2 } from "lucide-react";
+import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2, Play, Mic2, CalendarCheck } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
 
@@ -38,9 +40,22 @@ function Onboarding() {
   const fetchNumbers = useServerFn(listVapiPhoneNumbers);
   const fetchNumberAssistants = useServerFn(listNumberAssistants);
   const ensureAssistant = useServerFn(ensureAssistantForNumber);
+  const updateAssistant = useServerFn(updateAssistantForNumber);
+  const previewVoiceFn = useServerFn(previewVoice);
   const [agentLoading, setAgentLoading] = useState(false);
-  const [agentRows, setAgentRows] = useState<{ number: string; assistantId: string | null }[]>([]);
+  const [agentRows, setAgentRows] = useState<{ number: string; assistantId: string | null; phoneNumberId: string }[]>([]);
   const [agentRan, setAgentRan] = useState(false);
+
+  const [voiceId, setVoiceId] = useState<string>(DEFAULT_VOICE_ID);
+  const [voicePlayed, setVoicePlayed] = useState<Set<string>>(new Set());
+  const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
+  const [voiceSaving, setVoiceSaving] = useState(false);
+
+  const [schedulingEnabled, setSchedulingEnabled] = useState(false);
+  const [bookingUrl, setBookingUrl] = useState<string | null>(null);
+  const [scriptFirst, setScriptFirst] = useState("");
+  const [scriptSystem, setScriptSystem] = useState("");
+  const [scriptSaving, setScriptSaving] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -56,11 +71,19 @@ function Onboarding() {
         owner_phone: data.owner_phone ?? "",
         carrier: (data.carrier ?? "") as Carrier | "",
       });
+      if ((data as any).agent_voice_id) setVoiceId((data as any).agent_voice_id);
+      setSchedulingEnabled(!!(data as any).scheduling_enabled);
+      setBookingUrl(
+        ((data as any).booking_url as string | null) ||
+        ((data as any).cal_url as string | null) ||
+        ((data as any).calendly_url as string | null) ||
+        null,
+      );
       if (data.onboarding_complete) navigate({ to: "/dashboard" });
     });
   }, [user, authLoading, navigate]);
 
-  const steps = ["Business", "Type", "Business phone", "Your cell", "Carrier", "AI agent", "Forwarding", "Test"];
+  const steps = ["Business", "Type", "Business phone", "Your cell", "Carrier", "AI agent", "Voice", "Script", "Forwarding", "Test"];
   const totalSteps = steps.length;
 
   async function next() {
