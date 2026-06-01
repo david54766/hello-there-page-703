@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber } from "@/lib/vapi.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, type Carrier, type ContractorType } from "@/lib/contractor-data";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-import { Check, Copy, PhoneCall, ShieldCheck } from "lucide-react";
+import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
 
@@ -33,6 +35,12 @@ function Onboarding() {
   const [state, setState] = useState<State>({
     business_name: "", contractor_type: "", business_phone: "", owner_phone: "", carrier: "",
   });
+  const fetchNumbers = useServerFn(listVapiPhoneNumbers);
+  const fetchNumberAssistants = useServerFn(listNumberAssistants);
+  const ensureAssistant = useServerFn(ensureAssistantForNumber);
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [agentRows, setAgentRows] = useState<{ number: string; assistantId: string | null }[]>([]);
+  const [agentRan, setAgentRan] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -52,7 +60,7 @@ function Onboarding() {
     });
   }, [user, authLoading, navigate]);
 
-  const steps = ["Business", "Type", "Business phone", "Your cell", "Carrier", "Forwarding", "Test"];
+  const steps = ["Business", "Type", "Business phone", "Your cell", "Carrier", "AI agent", "Forwarding", "Test"];
   const totalSteps = steps.length;
 
   async function next() {
@@ -83,6 +91,33 @@ function Onboarding() {
   }
 
   const fwd = state.carrier ? getForwardingInstructions(state.carrier as Carrier, twilioNumber) : null;
+
+  // Provision Vapi assistants when entering the AI agent step
+  useEffect(() => {
+    if (step !== 5 || agentRan || agentLoading) return;
+    setAgentLoading(true);
+    (async () => {
+      try {
+        const [{ numbers }, { rows }] = await Promise.all([fetchNumbers(), fetchNumberAssistants()]);
+        const provisioned = new Set(rows.map((r: any) => r.phone_number_id));
+        const missing = numbers.filter((n) => !provisioned.has(n.id));
+        await Promise.allSettled(
+          missing.map((n) =>
+            ensureAssistant({ data: { phoneNumberId: n.id, phoneNumber: n.number, contractorType: state.contractor_type || undefined } }),
+          ),
+        );
+        const fresh = await fetchNumberAssistants();
+        const map = new Map(fresh.rows.map((r: any) => [r.phone_number_id, r]));
+        setAgentRows(numbers.map((n) => ({ number: n.number, assistantId: (map.get(n.id) as any)?.assistant_id ?? null })));
+      } catch (e: any) {
+        toast.error(e?.message ?? "Could not provision AI agent");
+      } finally {
+        setAgentLoading(false);
+        setAgentRan(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[image:var(--gradient-subtle)] p-6">
@@ -138,6 +173,9 @@ function Onboarding() {
                 </Field>
               )}
               {step === 5 && fwd && (
+                <AgentStep loading={agentLoading} rows={agentRows} />
+              )}
+              {step === 6 && fwd && (
                 <div>
                   <h2 className="text-xl font-semibold tracking-tight">{fwd.title}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Set up forwarding so we can catch missed calls.</p>
@@ -156,7 +194,7 @@ function Onboarding() {
                   <p className="mt-5 text-xs text-muted-foreground">Your CallRecover number: <span className="font-mono">{twilioNumber}</span></p>
                 </div>
               )}
-              {step === 6 && (
+              {step === 7 && (
                 <div className="text-center">
                   {!testDone ? (
                     <>
@@ -199,7 +237,15 @@ function Onboarding() {
           {step === 5 && (
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
-              <Button onClick={() => setStep(6)}><Check className="h-4 w-4" /> I set it up</Button>
+              <Button onClick={() => setStep(6)} disabled={agentLoading}>
+                {agentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Continue
+              </Button>
+            </div>
+          )}
+          {step === 6 && (
+            <div className="mt-8 flex justify-between">
+              <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>
+              <Button onClick={() => setStep(7)}><Check className="h-4 w-4" /> I set it up</Button>
             </div>
           )}
         </Card>
@@ -214,6 +260,38 @@ function Field({ label, desc, children }: { label: string; desc: string; childre
       <Label className="text-xl font-semibold tracking-tight">{label}</Label>
       <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
       <div className="mt-5">{children}</div>
+    </div>
+  );
+}
+
+function AgentStep({ loading, rows }: { loading: boolean; rows: { number: string; assistantId: string | null }[] }) {
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold tracking-tight">Your AI agent</h2>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        We're assigning a Vapi assistant to your number with trade-aware defaults. You can customize the name, greeting, and script anytime from the <span className="font-medium">AI agent</span> tab.
+      </p>
+      <div className="mt-5 space-y-2">
+        {loading ? (
+          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Provisioning your assistant…
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
+            No Vapi number yet — we'll finish this the first time you visit the AI agent tab.
+          </div>
+        ) : rows.map((r) => (
+          <div key={r.number} className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+            <div className="font-medium">{r.number}</div>
+            <div className={r.assistantId ? "text-success" : "text-muted-foreground"}>
+              {r.assistantId ? "Assistant ready" : "Pending"}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
