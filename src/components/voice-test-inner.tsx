@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useConversation } from "@elevenlabs/react";
+import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { useServerFn } from "@tanstack/react-start";
 import { mintAgentToken } from "@/lib/voice.functions";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,6 +11,14 @@ import { Mic, MicOff, Loader2, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VoiceTestInner() {
+  return (
+    <ConversationProvider>
+      <VoiceTestControls />
+    </ConversationProvider>
+  );
+}
+
+function VoiceTestControls() {
   const { user } = useAuth();
   const [agentId, setAgentId] = useState("");
   const [connecting, setConnecting] = useState(false);
