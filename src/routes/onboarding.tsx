@@ -90,7 +90,8 @@ function Onboarding() {
     toast.success("Copied");
   }
 
-  const fwd = state.carrier ? getForwardingInstructions(state.carrier as Carrier, twilioNumber) : null;
+  const provisionedNumber = agentRows.find((r) => r.assistantId)?.number ?? agentRows[0]?.number ?? twilioNumber;
+  const fwd = state.carrier ? getForwardingInstructions(state.carrier as Carrier, provisionedNumber) : null;
 
   // Provision Vapi assistants when entering the AI agent step
   useEffect(() => {
@@ -191,7 +192,7 @@ function Onboarding() {
                       </li>
                     ))}
                   </ol>
-                  <p className="mt-5 text-xs text-muted-foreground">Your CallRecover number: <span className="font-mono">{twilioNumber}</span></p>
+                  <p className="mt-5 text-xs text-muted-foreground">Your CallRecover number: <span className="font-mono">{provisionedNumber}</span></p>
                 </div>
               )}
               {step === 7 && (
