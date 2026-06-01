@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendWelcomeEmail } from "@/lib/welcome-email.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,11 @@ function Signup() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
+    // Fire-and-forget branded welcome email via Resend (separate from
+    // Supabase's verification email).
+    sendWelcomeEmail({ data: { email } }).catch((e) =>
+      console.warn("welcome email failed", e),
+    );
     toast.success("Account created — check your email to confirm.");
     navigate({ to: "/onboarding" });
   }
