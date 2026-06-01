@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/voice-test")({ component: VoiceTest });
 
-const VoiceTestInner = lazy(() => import("@/components/voice-test-inner"));
+const VoiceTestInner = lazy(() => import("@/components/voice-test-inner.tsx"));
 
 function VoiceTest() {
   const [mounted, setMounted] = useState(false);
