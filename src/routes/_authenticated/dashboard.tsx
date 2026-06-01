@@ -69,20 +69,40 @@ function Dashboard() {
       if (!biz) { setLoading(false); return; }
       setBusiness(biz);
       if (!biz.onboarding_complete) { navigate({ to: "/onboarding" }); return; }
-      const { data: c } = await supabase
+      // Fetch this business's provisioned vapi numbers to scope recent calls
+      const { data: vapiNums } = await supabase
+        .from("vapi_number_assistants")
+        .select("phone_number")
+        .eq("business_id", biz.id);
+      const assignedNumbers = (vapiNums ?? [])
+        .map((r: any) => r.phone_number)
+        .filter(Boolean) as string[];
+
+      let query = supabase
         .from("calls")
         .select("id, business_id, caller_number, caller_name, transcript, ai_summary, ai_summary_short, urgency, status, lead_status, priority, qualification, callback_requested, created_at")
         .eq("business_id", biz.id)
         .order("created_at", { ascending: false })
         .limit(50);
+      if (assignedNumbers.length > 0) {
+        // include legacy rows with null to_number for backward compatibility
+        query = query.or(
+          `to_number.in.(${assignedNumbers.map((n) => `"${n}"`).join(",")}),to_number.is.null`,
+        );
+      }
+      const { data: c } = await query;
       setCalls((c ?? []) as Call[]);
       setLoading(false);
 
       const channel = supabase
         .channel(`calls:${biz.id}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "calls", filter: `business_id=eq.${biz.id}` }, (p) => {
-          if (p.eventType === "INSERT") setCalls((prev) => [p.new as Call, ...prev]);
-          if (p.eventType === "UPDATE") setCalls((prev) => prev.map((x) => x.id === (p.new as Call).id ? (p.new as Call) : x));
+          const row = p.new as any;
+          const matchesAssigned =
+            assignedNumbers.length === 0 || !row?.to_number || assignedNumbers.includes(row.to_number);
+          if (!matchesAssigned) return;
+          if (p.eventType === "INSERT") setCalls((prev) => [row as Call, ...prev]);
+          if (p.eventType === "UPDATE") setCalls((prev) => prev.map((x) => x.id === row.id ? (row as Call) : x));
         })
         .subscribe();
       return () => { supabase.removeChannel(channel); };
