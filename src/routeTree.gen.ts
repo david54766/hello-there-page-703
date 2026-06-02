@@ -33,6 +33,10 @@ import { Route as AuthenticatedSchedulingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
+import { Route as ApiMobileSendSmsRouteImport } from './routes/api/mobile/send-sms'
+import { Route as ApiMobileRecordingUrlRouteImport } from './routes/api/mobile/recording-url'
+import { Route as ApiMobilePushTokenRouteImport } from './routes/api/mobile/push-token'
+import { Route as ApiMobileForwardingStatusRouteImport } from './routes/api/mobile/forwarding-status'
 import { Route as ApiPublicTwilioSmsInboundRouteImport } from './routes/api/public/twilio/sms-inbound'
 
 const TosRoute = TosRouteImport.update({
@@ -154,6 +158,27 @@ const ApiPublicSmsOptInRoute = ApiPublicSmsOptInRouteImport.update({
   path: '/api/public/sms-opt-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMobileSendSmsRoute = ApiMobileSendSmsRouteImport.update({
+  id: '/api/mobile/send-sms',
+  path: '/api/mobile/send-sms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMobileRecordingUrlRoute = ApiMobileRecordingUrlRouteImport.update({
+  id: '/api/mobile/recording-url',
+  path: '/api/mobile/recording-url',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMobilePushTokenRoute = ApiMobilePushTokenRouteImport.update({
+  id: '/api/mobile/push-token',
+  path: '/api/mobile/push-token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMobileForwardingStatusRoute =
+  ApiMobileForwardingStatusRouteImport.update({
+    id: '/api/mobile/forwarding-status',
+    path: '/api/mobile/forwarding-status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicTwilioSmsInboundRoute =
   ApiPublicTwilioSmsInboundRouteImport.update({
     id: '/api/public/twilio/sms-inbound',
@@ -184,6 +209,10 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/vapi': typeof AuthenticatedVapiRoute
+  '/api/mobile/forwarding-status': typeof ApiMobileForwardingStatusRoute
+  '/api/mobile/push-token': typeof ApiMobilePushTokenRoute
+  '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
+  '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -210,6 +239,10 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/vapi': typeof AuthenticatedVapiRoute
+  '/api/mobile/forwarding-status': typeof ApiMobileForwardingStatusRoute
+  '/api/mobile/push-token': typeof ApiMobilePushTokenRoute
+  '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
+  '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -238,6 +271,10 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/vapi': typeof AuthenticatedVapiRoute
+  '/api/mobile/forwarding-status': typeof ApiMobileForwardingStatusRoute
+  '/api/mobile/push-token': typeof ApiMobilePushTokenRoute
+  '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
+  '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -266,6 +303,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/vapi'
+    | '/api/mobile/forwarding-status'
+    | '/api/mobile/push-token'
+    | '/api/mobile/recording-url'
+    | '/api/mobile/send-sms'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   fileRoutesByTo: FileRoutesByTo
@@ -292,6 +333,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/vapi'
+    | '/api/mobile/forwarding-status'
+    | '/api/mobile/push-token'
+    | '/api/mobile/recording-url'
+    | '/api/mobile/send-sms'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   id:
@@ -319,6 +364,10 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/team'
     | '/_authenticated/vapi'
+    | '/api/mobile/forwarding-status'
+    | '/api/mobile/push-token'
+    | '/api/mobile/recording-url'
+    | '/api/mobile/send-sms'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   fileRoutesById: FileRoutesById
@@ -340,6 +389,10 @@ export interface RootRouteChildren {
   TermsAndConditionsRoute: typeof TermsAndConditionsRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
   TosRoute: typeof TosRoute
+  ApiMobileForwardingStatusRoute: typeof ApiMobileForwardingStatusRoute
+  ApiMobilePushTokenRoute: typeof ApiMobilePushTokenRoute
+  ApiMobileRecordingUrlRoute: typeof ApiMobileRecordingUrlRoute
+  ApiMobileSendSmsRoute: typeof ApiMobileSendSmsRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
   ApiPublicTwilioSmsInboundRoute: typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -514,6 +567,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSmsOptInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mobile/send-sms': {
+      id: '/api/mobile/send-sms'
+      path: '/api/mobile/send-sms'
+      fullPath: '/api/mobile/send-sms'
+      preLoaderRoute: typeof ApiMobileSendSmsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mobile/recording-url': {
+      id: '/api/mobile/recording-url'
+      path: '/api/mobile/recording-url'
+      fullPath: '/api/mobile/recording-url'
+      preLoaderRoute: typeof ApiMobileRecordingUrlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mobile/push-token': {
+      id: '/api/mobile/push-token'
+      path: '/api/mobile/push-token'
+      fullPath: '/api/mobile/push-token'
+      preLoaderRoute: typeof ApiMobilePushTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mobile/forwarding-status': {
+      id: '/api/mobile/forwarding-status'
+      path: '/api/mobile/forwarding-status'
+      fullPath: '/api/mobile/forwarding-status'
+      preLoaderRoute: typeof ApiMobileForwardingStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/twilio/sms-inbound': {
       id: '/api/public/twilio/sms-inbound'
       path: '/api/public/twilio/sms-inbound'
@@ -565,6 +646,10 @@ const rootRouteChildren: RootRouteChildren = {
   TermsAndConditionsRoute: TermsAndConditionsRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
   TosRoute: TosRoute,
+  ApiMobileForwardingStatusRoute: ApiMobileForwardingStatusRoute,
+  ApiMobilePushTokenRoute: ApiMobilePushTokenRoute,
+  ApiMobileRecordingUrlRoute: ApiMobileRecordingUrlRoute,
+  ApiMobileSendSmsRoute: ApiMobileSendSmsRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
   ApiPublicTwilioSmsInboundRoute: ApiPublicTwilioSmsInboundRoute,
 }
