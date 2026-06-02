@@ -16,16 +16,40 @@ function ResetPassword() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [linkError, setLinkError] = useState("");
 
   useEffect(() => {
-    // Supabase puts the recovery session in the URL hash and signs the user in automatically.
+    let mounted = true;
+
+    async function prepareRecoverySession() {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!mounted) return;
+        if (error) {
+          setLinkError(error.message);
+          return;
+        }
+        window.history.replaceState({}, document.title, "/reset-password");
+        setReady(true);
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (mounted && data.session) setReady(true);
+    }
+
+    // Supabase may put a recovery session in the URL hash, or a code in the query string.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
-    return () => subscription.unsubscribe();
+    prepareRecoverySession();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function onSubmit(e: React.FormEvent) {
@@ -56,7 +80,7 @@ function ResetPassword() {
           </p>
           {!ready ? (
             <div className="mt-6 rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-              Open this page from the reset link in your email. If the link expired, request a new one.
+              {linkError || "Open this page from the reset link in your email. If the link expired, request a new one."}
               <div className="mt-3">
                 <Link to="/forgot-password" className="font-medium text-primary hover:underline">
                   Request a new link
