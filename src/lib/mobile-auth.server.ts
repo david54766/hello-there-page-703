@@ -17,8 +17,9 @@ export function optionsResponse() {
 }
 
 export async function requireMobileSupabase(request: Request) {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const supabaseUrl = process.env.CALLRECOVER_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey =
+    process.env.CALLRECOVER_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!supabaseUrl || !supabaseKey) {
     throw new Error("Supabase is not configured");
   }
