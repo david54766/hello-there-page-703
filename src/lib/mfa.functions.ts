@@ -194,8 +194,16 @@ export const startChallenge = createServerFn({ method: "POST" })
     z.object({ email: z.string().email(), password: z.string().min(1) }).parse(input),
   )
   .handler(async ({ data }) => {
-    const SUPABASE_URL = (process.env.CALLRECOVER_SUPABASE_URL || process.env.SUPABASE_URL)!;
-    const KEY = (process.env.CALLRECOVER_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY)!;
+    const SUPABASE_URL = (
+      import.meta.env.VITE_SUPABASE_URL ||
+      process.env.CALLRECOVER_SUPABASE_URL ||
+      process.env.SUPABASE_URL
+    )!;
+    const KEY = (
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.CALLRECOVER_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.SUPABASE_PUBLISHABLE_KEY
+    )!;
     // Verify credentials in an isolated client that does not persist a session.
     const probe = createClient(SUPABASE_URL, KEY, {
       auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
