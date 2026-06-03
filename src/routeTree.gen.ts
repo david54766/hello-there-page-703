@@ -33,6 +33,7 @@ import { Route as AuthenticatedSchedulingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
+import { Route as ApiMobileTestPushRouteImport } from './routes/api/mobile/test-push'
 import { Route as ApiMobileSendSmsRouteImport } from './routes/api/mobile/send-sms'
 import { Route as ApiMobileRecordingUrlRouteImport } from './routes/api/mobile/recording-url'
 import { Route as ApiMobilePushTokenRouteImport } from './routes/api/mobile/push-token'
@@ -158,6 +159,11 @@ const ApiPublicSmsOptInRoute = ApiPublicSmsOptInRouteImport.update({
   path: '/api/public/sms-opt-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMobileTestPushRoute = ApiMobileTestPushRouteImport.update({
+  id: '/api/mobile/test-push',
+  path: '/api/mobile/test-push',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMobileSendSmsRoute = ApiMobileSendSmsRouteImport.update({
   id: '/api/mobile/send-sms',
   path: '/api/mobile/send-sms',
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/api/mobile/push-token': typeof ApiMobilePushTokenRoute
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
+  '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/api/mobile/push-token': typeof ApiMobilePushTokenRoute
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
+  '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/api/mobile/push-token': typeof ApiMobilePushTokenRoute
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
+  '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -307,6 +316,7 @@ export interface FileRouteTypes {
     | '/api/mobile/push-token'
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
+    | '/api/mobile/test-push'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   fileRoutesByTo: FileRoutesByTo
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/api/mobile/push-token'
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
+    | '/api/mobile/test-push'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   id:
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/api/mobile/push-token'
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
+    | '/api/mobile/test-push'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
   fileRoutesById: FileRoutesById
@@ -393,6 +405,7 @@ export interface RootRouteChildren {
   ApiMobilePushTokenRoute: typeof ApiMobilePushTokenRoute
   ApiMobileRecordingUrlRoute: typeof ApiMobileRecordingUrlRoute
   ApiMobileSendSmsRoute: typeof ApiMobileSendSmsRoute
+  ApiMobileTestPushRoute: typeof ApiMobileTestPushRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
   ApiPublicTwilioSmsInboundRoute: typeof ApiPublicTwilioSmsInboundRoute
 }
@@ -567,6 +580,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSmsOptInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mobile/test-push': {
+      id: '/api/mobile/test-push'
+      path: '/api/mobile/test-push'
+      fullPath: '/api/mobile/test-push'
+      preLoaderRoute: typeof ApiMobileTestPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mobile/send-sms': {
       id: '/api/mobile/send-sms'
       path: '/api/mobile/send-sms'
@@ -650,6 +670,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMobilePushTokenRoute: ApiMobilePushTokenRoute,
   ApiMobileRecordingUrlRoute: ApiMobileRecordingUrlRoute,
   ApiMobileSendSmsRoute: ApiMobileSendSmsRoute,
+  ApiMobileTestPushRoute: ApiMobileTestPushRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
   ApiPublicTwilioSmsInboundRoute: ApiPublicTwilioSmsInboundRoute,
 }
