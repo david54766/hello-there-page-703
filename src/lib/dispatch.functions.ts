@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { sendMobilePushForNotification } from "./mobile-push.server";
 
 type Role = "emergency" | "office" | "sales";
 
@@ -54,13 +55,22 @@ export const assignLead = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    await supabase.from("notifications").insert({
+    const notification = {
       business_id: call.business_id,
       call_id: call.id,
       kind: call.priority === "high" ? "emergency" : "dashboard",
       title: call.priority === "high" ? `🚨 Emergency assigned to ${member.name}` : `New lead → ${member.name}`,
       body: `${call.caller_number} · role: ${role}`,
-    } as any);
+    };
+
+    await supabase.from("notifications").insert(notification as any);
+    await sendMobilePushForNotification(supabase, {
+      businessId: call.business_id,
+      callId: call.id,
+      title: notification.title,
+      body: notification.body,
+      data: { kind: notification.kind, assignmentId: assignment.id },
+    });
 
     return { assigned: true, assignment, member, role };
   });

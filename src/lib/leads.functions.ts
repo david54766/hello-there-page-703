@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { aiJSON } from "./ai.server";
 import { scanForEmergency } from "./emergency-keywords";
+import { sendMobilePushForNotification } from "./mobile-push.server";
 
 type Qualification = {
   service_needed?: string;
@@ -67,13 +68,22 @@ export const qualifyLead = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     if (priority === "high") {
-      await supabase.from("notifications").insert({
+      const notification = {
         business_id: call.business_id,
         call_id: call.id,
         kind: "dashboard",
         title: "🚨 High-priority lead",
         body: result.summary_short ?? `Emergency keywords detected from ${call.caller_number}`,
-      } as any);
+      };
+
+      await supabase.from("notifications").insert(notification as any);
+      await sendMobilePushForNotification(supabase, {
+        businessId: call.business_id,
+        callId: call.id,
+        title: notification.title,
+        body: notification.body,
+        data: { kind: notification.kind },
+      });
     }
 
     return { qualification: result, urgency, priority, emergencyMatches: emergency.matches };
