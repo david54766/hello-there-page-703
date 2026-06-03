@@ -350,6 +350,7 @@ function Landing() {
           <p className="text-xs">
             SMS &amp; voice powered by Twilio. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
           </p>
+          <p className="text-xs">Owned by Easy Fill AI Corp</p>
         </div>
       </footer>
     </main>
