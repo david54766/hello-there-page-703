@@ -40,11 +40,16 @@ export async function requireMobileSupabase(request: Request) {
   });
 
   const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data.claims?.sub) {
-    throw new Error("Invalid token");
+  let userId = data.claims?.sub ?? null;
+  if (error || !userId) {
+    const fallback = await supabase.auth.getUser(token);
+    userId = fallback.data.user?.id ?? null;
+    if (fallback.error || !userId) {
+      throw new Error("Invalid token");
+    }
   }
 
-  return { supabase, userId: data.claims.sub };
+  return { supabase, userId };
 }
 
 export async function getMobileBusinessId(supabase: any): Promise<string | null> {
