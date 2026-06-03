@@ -40,7 +40,7 @@ export async function requireMobileSupabase(request: Request) {
   });
 
   const { data, error } = await supabase.auth.getClaims(token);
-  let userId = data.claims?.sub ?? null;
+  let userId = data?.claims?.sub ?? null;
   if (error || !userId) {
     const fallback = await supabase.auth.getUser(token);
     userId = fallback.data.user?.id ?? null;
