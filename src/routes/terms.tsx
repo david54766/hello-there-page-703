@@ -60,7 +60,7 @@ function TermsPage() {
           <ul className="list-disc space-y-1 pl-5">
             <li>Email: David@callrecover.net</li>
             <li>Phone: (878) 234-0176</li>
-            <li>Business: CallRecover</li>
+            <li>Business: Classroom Panda LLC dba CallRecover</li>
           </ul>
         </Section>
 
