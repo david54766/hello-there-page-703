@@ -118,7 +118,8 @@ export function CampaignRegistrationCard() {
 
       <Section title="Brand Information" icon={<Building2 className="h-4 w-4" />}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li><strong>Brand Name:</strong> CallRecover</li>
+          <li><strong>Legal Brand Name:</strong> Classroom Panda LLC</li>
+          <li><strong>DBA / Product Name:</strong> CallRecover</li>
           <li><strong>Brand Type:</strong> Private (non-publicly traded)</li>
           <li><strong>Legal Entity Type:</strong> LLC</li>
           <li><strong>Business Phone:</strong> (878) 234-0176</li>
@@ -143,16 +144,16 @@ export function CampaignRegistrationCard() {
       <Section title="Sample Messages (required by carriers)" icon={<MessageSquare className="h-4 w-4" />}>
         <div className="space-y-2">
           <code className="block whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 text-xs">
-{`Hi Dan, this is CallRecover. We received your voicemail about a service request.
+{`Hi Dan, this is Classroom Panda LLC dba CallRecover. We received your voicemail about a service request.
 Can we schedule a quick call? Reply YES or a time that works. Reply STOP to opt out,
 HELP for help. Msg & data rates may apply.`}
           </code>
           <code className="block whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 text-xs">
-{`Thanks Dan! We'll call you back shortly at (878) 234-0176. If you need to reschedule,
+{`Thanks Dan! Classroom Panda LLC dba CallRecover will call you back shortly at (878) 234-0176. If you need to reschedule,
 just reply here or email David@callrecover.net. Reply STOP to opt out, HELP for help. Msg & data rates may apply.`}
           </code>
           <code className="block whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 text-xs">
-{`Hi Dan, just confirming your appointment with CallRecover for May 27th.
+{`Hi Dan, just confirming your appointment with Classroom Panda LLC dba CallRecover for May 27th.
 Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP for help.`}
           </code>
         </div>
@@ -163,7 +164,7 @@ Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP f
           <li><strong>AI Voice Agent — Verbal Consent (Layer 1, primary):</strong> When a customer calls a business that uses CallRecover and the call is missed, it forwards to our AI voice agent. The agent collects the message and verbally asks: "Would you like a text confirmation and priority callback details at this number? Message frequency varies, msg &amp; data rates may apply, reply STOP to opt out." The caller's verbal yes/no is recorded as proof of consent.</li>
           <li><strong>SMS Confirmation — YES Reply (Layer 2, primary):</strong> If verbal consent is given and the number is mobile, one confirmation text is sent: "[Business] here — reply YES to confirm and get priority callback details. Reply STOP to opt out, HELP for help. Msg freq varies. Msg &amp; data rates may apply." No further messages are sent until the caller replies <strong>YES</strong>.</li>
           <li><strong>Landline Fallback:</strong> If the caller is on a landline or declines verbal consent, no SMS is attempted. The agent confirms the message is logged and the business will call back.</li>
-          <li><strong>Web Form (Secondary CTA):</strong> Customers may also opt in at <a className="underline" href="https://callrecover.net/sms-opt-in" target="_blank" rel="noreferrer">https://callrecover.net/sms-opt-in</a>. The form collects full name and mobile number, and requires an unchecked-by-default consent checkbox with the disclosure: "By checking this box and submitting, I agree to receive SMS messages from CallRecover related to my service request, appointment scheduling, and lead follow-up at the phone number provided. Message frequency varies. Message &amp; data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase."</li>
+          <li><strong>Web Form (Secondary CTA):</strong> Customers may also opt in at <a className="underline" href="https://callrecover.net/sms-opt-in" target="_blank" rel="noreferrer">https://callrecover.net/sms-opt-in</a>. The form collects full name and mobile number, and requires an unchecked-by-default consent checkbox with the disclosure: "By checking this box and submitting, I agree to receive SMS messages from Classroom Panda LLC dba CallRecover related to my service request, appointment scheduling, and lead follow-up at the phone number provided. Message frequency varies. Message &amp; data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase."</li>
           <li><strong>Consent Record:</strong> Every opt-in is logged with timestamp, phone number, source (AI voice agent / SMS YES reply / web form / SMS keyword), IP address (where applicable), user agent (where applicable), call recording or transcript reference, and the exact consent disclosure text or audio prompt shown to the customer.</li>
           <li><strong>Consent Disclaimers:</strong> Customers are informed verbally (on the call) and in writing (in the SMS confirmation) that message frequency varies and that standard messaging rates apply.</li>
         </ul>
