@@ -46,7 +46,7 @@ function Signup() {
           CallRecover AI
         </Link>
         <Card className="p-8 shadow-[var(--shadow-card)]">
-          <h1 className="text-2xl font-semibold tracking-tight">Start protecting calls</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Start Protecting Calls</h1>
           <p className="mt-1 text-sm text-muted-foreground">Free to start. No credit card.</p>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="space-y-1.5">
@@ -63,12 +63,12 @@ function Signup() {
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link>
+            <Link to="/login" className="font-medium text-primary hover:underline">Sign In</Link>
           </p>
           <p className="mt-3 text-center text-[11px] leading-snug text-muted-foreground">
             By creating an account you agree that CallRecover AI may send SMS and place calls on
             your business's behalf via Twilio in line with our{" "}
-            <Link to="/compliance" className="underline">SMS &amp; voice compliance</Link>{" "}
+            <Link to="/compliance" className="underline">SMS &amp; Voice Compliance</Link>{" "}
             policy. Standard carrier rates apply. Reply STOP to opt out, HELP for help.
           </p>
         </Card>

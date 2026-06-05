@@ -52,6 +52,7 @@ function Onboarding() {
   const [bookingUrl, setBookingUrl] = useState<string | null>(null);
   const [scriptFirst, setScriptFirst] = useState("");
   const [scriptSystem, setScriptSystem] = useState("");
+  const [scriptSourceKey, setScriptSourceKey] = useState("");
   const [scriptSaving, setScriptSaving] = useState(false);
 
   useEffect(() => {
@@ -140,18 +141,24 @@ function Onboarding() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
-  // Build the trade-tailored script the moment the user lands on the Script step.
+  // Build or refresh the trade-tailored script when the selected occupation changes.
   useEffect(() => {
     if (step !== 7) return;
-    if (scriptFirst && scriptSystem) return;
+    const nextKey = [
+      state.contractor_type || "general",
+      state.business_name || "",
+      schedulingEnabled ? "scheduling" : "manual",
+      bookingUrl || "",
+    ].join("|");
+    if (scriptSourceKey === nextKey) return;
     const tpl = getStandardScript(state.contractor_type || null, state.business_name, {
       schedulingEnabled,
       bookingUrl,
     });
     setScriptFirst(tpl.firstMessage);
     setScriptSystem(tpl.systemPrompt);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+    setScriptSourceKey(nextKey);
+  }, [step, state.contractor_type, state.business_name, schedulingEnabled, bookingUrl, scriptSourceKey]);
 
   async function saveVoiceAndContinue() {
     if (!bizId) return;

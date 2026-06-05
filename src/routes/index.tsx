@@ -29,9 +29,9 @@ function Landing() {
             <span className="tracking-tight">CallRecover AI</span>
           </Link>
           <nav className="flex items-center gap-3 text-sm">
-            <Link to="/login" className="text-muted-foreground hover:text-foreground">Sign in</Link>
+            <Link to="/login" className="text-muted-foreground hover:text-foreground">Sign In</Link>
             <Link to="/signup">
-              <Button size="sm">Get started</Button>
+              <Button size="sm">Get Started</Button>
             </Link>
           </nav>
         </div>
@@ -83,13 +83,13 @@ function Landing() {
           >
             <Link to="/signup">
               <Button size="lg" className="h-12 px-6 text-base shadow-[var(--shadow-elevated)]">
-                Start recovering calls
+                Start Recovering Calls
               </Button>
             </Link>
             <Link to="/sms-opt-in">
               <Button size="lg" variant="secondary" className="h-12 px-6 text-base gap-2">
                 <MessageSquareText className="h-4 w-4" />
-                Subscribe to SMS updates
+                Subscribe to SMS Updates
               </Button>
             </Link>
           </motion.div>
@@ -329,7 +329,7 @@ function Landing() {
             Set up in minutes. Works with any carrier. Cancel anytime.
           </p>
           <Link to="/signup" className="mt-6 inline-block">
-            <Button size="lg" className="h-12 px-8 text-base">Get started free</Button>
+            <Button size="lg" className="h-12 px-8 text-base">Get Started Free</Button>
           </Link>
         </div>
       </section>
@@ -343,14 +343,13 @@ function Landing() {
             <Link to="/cookies" className="hover:text-foreground">Cookie Policy</Link>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <Link to="/compliance" className="hover:text-foreground">SMS &amp; voice compliance</Link>
-            <Link to="/sms-opt-in" className="hover:text-foreground">SMS opt-in</Link>
-            <a href="https://www.twilio.com/legal/messaging-policy" target="_blank" rel="noreferrer" className="hover:text-foreground">Twilio messaging policy</a>
+            <Link to="/compliance" className="hover:text-foreground">SMS &amp; Voice Compliance</Link>
+            <Link to="/sms-opt-in" className="hover:text-foreground">SMS Opt-In</Link>
+            <a href="https://www.twilio.com/legal/messaging-policy" target="_blank" rel="noreferrer" className="hover:text-foreground">Twilio Messaging Policy</a>
           </div>
           <p className="text-xs">
             SMS &amp; voice powered by Twilio. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
           </p>
-          <p className="text-xs">CallRecover AI is operated by Classroom Panda LLC dba CallRecover.</p>
         </div>
       </footer>
     </main>

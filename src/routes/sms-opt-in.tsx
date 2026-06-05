@@ -64,7 +64,7 @@ function SmsOptInPage() {
         </Link>
       </Button>
 
-      <h1 className="text-3xl font-semibold tracking-tight">SMS opt-in</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">SMS Opt-In</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Subscribe to receive SMS updates from CallRecover about your service
         request, appointment scheduling, and lead follow-up.
@@ -85,7 +85,7 @@ function SmsOptInPage() {
         {done ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <CheckCircle2 className="h-10 w-10 text-primary" />
-            <h2 className="text-lg font-semibold">You're subscribed</h2>
+            <h2 className="text-lg font-semibold">You're Subscribed</h2>
             <p className="text-sm text-muted-foreground">
               You will receive SMS updates at the number you provided. Reply
               STOP at any time to unsubscribe, or HELP for help.

@@ -15,6 +15,21 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/scripts")({ component: ScriptsPage });
 
+const KIND_LABELS: Record<string, string> = {
+  hello: "Greeting",
+  first_message: "First Message",
+  system: "System Prompt",
+};
+
+function contractorLabel(value?: string | null) {
+  if (!value) return "Any Trade";
+  return CONTRACTOR_TYPES.find((c) => c.value === value)?.label ?? value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function kindLabel(value: string) {
+  return KIND_LABELS[value] ?? value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function ScriptsPage() {
   const fetchTemplates = useServerFn(listScriptTemplates);
   const upsert = useServerFn(upsertScriptTemplate);
@@ -53,7 +68,7 @@ function ScriptsPage() {
         <div className="text-sm font-semibold">New template</div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <Label className="text-xs">Contractor type</Label>
+            <Label className="text-xs">Contractor Type</Label>
             <Select value={draft.contractor_type} onValueChange={(v) => setDraft({ ...draft, contractor_type: v })}>
               <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
               <SelectContent>
@@ -62,30 +77,30 @@ function ScriptsPage() {
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Kind</Label>
+            <Label className="text-xs">Template Type</Label>
             <Select value={draft.kind} onValueChange={(v: any) => setDraft({ ...draft, kind: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="hello">Greeting / hello</SelectItem>
-                <SelectItem value="first_message">First message</SelectItem>
-                <SelectItem value="system">System prompt</SelectItem>
+                <SelectItem value="hello">Greeting</SelectItem>
+                <SelectItem value="first_message">First Message</SelectItem>
+                <SelectItem value="system">System Prompt</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
         <div>
-          <Label className="text-xs">Label</Label>
+          <Label className="text-xs">Template Label</Label>
           <Input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} placeholder="e.g. Friendly receptionist" maxLength={120} />
         </div>
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <Label className="text-xs">Body</Label>
+            <Label className="text-xs">Script Body</Label>
             <TagPicker value={draft.body} onChange={(v) => setDraft({ ...draft, body: v })} />
           </div>
           <Textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} rows={6} maxLength={8000} placeholder="Use {business}, {website}, {book_consult}…" />
         </div>
         <Button onClick={save} disabled={saving} size="sm">
-          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />} Save template
+          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />} Save Template
         </Button>
       </Card>
 
@@ -100,7 +115,7 @@ function ScriptsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-sm font-semibold">{t.label}</div>
-                  <div className="text-xs text-muted-foreground">{t.kind} · {t.contractor_type ?? "any"}</div>
+                  <div className="text-xs text-muted-foreground">{kindLabel(t.kind)} · {contractorLabel(t.contractor_type)}</div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={async () => { await remove({ data: { id: t.id } }); await reload(); }}>
                   <Trash2 className="h-3 w-3" />

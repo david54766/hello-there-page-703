@@ -6,7 +6,7 @@ export function SmsComplianceCard() {
     <Card className="space-y-4 p-6">
       <div className="flex items-center gap-2">
         <ShieldCheck className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-semibold">SMS &amp; voice compliance</h2>
+        <h2 className="text-lg font-semibold">SMS &amp; Voice Compliance</h2>
       </div>
       <p className="text-sm text-muted-foreground">
         CallRecover AI sends SMS and places calls through Twilio. To stay compliant

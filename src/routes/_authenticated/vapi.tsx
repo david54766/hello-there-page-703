@@ -46,6 +46,11 @@ function normalizeE164(raw: string): string {
   return "+" + raw.trim().slice(1).replace(/\D/g, "");
 }
 
+function contractorLabel(value?: string | null) {
+  if (!value) return "Any Trade";
+  return CONTRACTOR_TYPES.find((c) => c.value === value)?.label ?? value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 type CallRow = {
   id: string;
   createdAt?: string;
@@ -183,18 +188,21 @@ function VapiPage() {
     toast.success(`Loaded "${t.label}"`);
   };
 
-  const filteredTemplates = (kind: string) =>
-    templates.filter(
+  const filteredTemplates = (kind: string) => {
+    const currentType = business?.contractor_type;
+    const matched = templates.filter(
       (t) =>
         t.kind === kind &&
-        (!business?.contractor_type ||
+        (!currentType ||
           !t.contractor_type ||
-          t.contractor_type === business.contractor_type),
+          t.contractor_type === currentType),
     );
+    return matched.length ? matched : templates.filter((t) => t.kind === kind);
+  };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Vapi · outbound test call</h1>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Vapi · Outbound Test Call</h1>
       <p className="mb-6 text-sm text-muted-foreground">Trigger a real phone call, manage one assistant per Vapi number, and review transcripts. Use <code className="rounded bg-muted px-1 text-xs">{"{tags}"}</code> in scripts — they're filled from your business profile at call time.</p>
 
       {loading ? (
@@ -202,9 +210,9 @@ function VapiPage() {
       ) : (
         <Tabs defaultValue="call">
           <TabsList className="mb-4">
-            <TabsTrigger value="call">Place call</TabsTrigger>
-            <TabsTrigger value="numbers">Numbers & assistants</TabsTrigger>
-            <TabsTrigger value="recent">Recent calls</TabsTrigger>
+            <TabsTrigger value="call">Place Call</TabsTrigger>
+            <TabsTrigger value="numbers">Numbers & Assistants</TabsTrigger>
+            <TabsTrigger value="recent">Recent Calls</TabsTrigger>
           </TabsList>
 
           <TabsContent value="call">
@@ -271,7 +279,7 @@ function VapiPage() {
                     <SelectTrigger className="h-7 w-40 text-xs"><SelectValue placeholder="Load template" /></SelectTrigger>
                     <SelectContent>
                       {filteredTemplates("first_message").map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}>{t.label} · {contractorLabel(t.contractor_type)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -301,7 +309,7 @@ function VapiPage() {
                     <SelectTrigger className="h-7 w-40 text-xs"><SelectValue placeholder="Load template" /></SelectTrigger>
                     <SelectContent>
                       {filteredTemplates("system").map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}>{t.label} · {contractorLabel(t.contractor_type)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -334,7 +342,7 @@ function VapiPage() {
           </details>
 
           <Button onClick={placeCall} disabled={calling} className="w-full sm:w-auto">
-            {calling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />} Place call
+            {calling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />} Place Call
           </Button>
         </Card>
           </TabsContent>
@@ -357,7 +365,7 @@ function VapiPage() {
 
           <TabsContent value="recent">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold tracking-tight">Recent calls</h2>
+              <h2 className="text-lg font-semibold tracking-tight">Recent Calls</h2>
               <Button variant="outline" size="sm" onClick={loadCalls} disabled={callsLoading}>
                 {callsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Refresh
               </Button>
