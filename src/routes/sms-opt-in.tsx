@@ -127,7 +127,7 @@ function SmsOptInPage() {
               />
               <Label htmlFor="consent" className="text-xs leading-relaxed font-normal text-muted-foreground">
                 By checking this box and submitting, I agree to receive SMS
-                messages from <strong>CallRecover</strong> related to my
+                messages from <strong>Classroom Panda LLC dba CallRecover</strong> related to my
                 service request, appointment scheduling, and lead follow-up
                 at the phone number provided. Message frequency varies.
                 Message &amp; data rates may apply. Reply <strong>STOP</strong>{" "}
