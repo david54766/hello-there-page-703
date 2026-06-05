@@ -25,7 +25,7 @@ function TermsPage() {
         <h1 className="text-3xl font-semibold tracking-tight">Terms & Conditions</h1>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
-        Effective date: May 27, 2026 · CallRecover (David@callrecover.net · (878) 234-0176)
+        Effective date: May 27, 2026 · Classroom Panda LLC dba CallRecover (David@callrecover.net · (878) 234-0176)
       </p>
 
       <Card className="space-y-6 p-6">

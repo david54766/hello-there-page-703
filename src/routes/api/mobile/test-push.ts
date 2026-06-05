@@ -20,7 +20,7 @@ export const Route = createFileRoute("/api/mobile/test-push")({
           const result = await sendMobilePushForNotification(supabase, {
             businessId,
             title: "CallRecover test alert",
-            body: "Production push is connected for Easy Fill AI.",
+            body: "Production push is connected for Classroom Panda LLC dba CallRecover.",
             data: { kind: "test" },
           });
 

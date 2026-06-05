@@ -118,7 +118,7 @@ export function CampaignRegistrationCard() {
 
       <Section title="Brand Information" icon={<Building2 className="h-4 w-4" />}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li><strong>Legal Brand Name:</strong> Classroom Panda LLC</li>
+          <li><strong>Legal Brand Name:</strong> Classroom Panda LLC dba CallRecover</li>
           <li><strong>DBA / Product Name:</strong> CallRecover</li>
           <li><strong>Brand Type:</strong> Private (non-publicly traded)</li>
           <li><strong>Legal Entity Type:</strong> LLC</li>

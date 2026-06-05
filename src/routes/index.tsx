@@ -337,7 +337,7 @@ function Landing() {
       <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
         <div className="mx-auto max-w-4xl space-y-3 px-6">
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <span>© {new Date().getFullYear()} CallRecover AI</span>
+            <span>© {new Date().getFullYear()} Classroom Panda LLC dba CallRecover</span>
             <Link to="/privacy-policy" className="hover:text-foreground">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-foreground">Terms & Conditions</Link>
             <Link to="/cookies" className="hover:text-foreground">Cookie Policy</Link>
@@ -350,7 +350,7 @@ function Landing() {
           <p className="text-xs">
             SMS &amp; voice powered by Twilio. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
           </p>
-          <p className="text-xs">Owned by Easy Fill AI Corp</p>
+          <p className="text-xs">CallRecover AI is operated by Classroom Panda LLC dba CallRecover.</p>
         </div>
       </footer>
     </main>

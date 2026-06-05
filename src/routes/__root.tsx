@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "CallRecover AI — Recover Every Missed Call" },
       { name: "description", content: "AI-powered voicemail transcription and instant SMS recovery for contractors. Never lose a job to a missed call again." },
-      { name: "author", content: "CallRecover AI" },
+      { name: "author", content: "Classroom Panda LLC dba CallRecover" },
       { property: "og:title", content: "CallRecover AI — Recover Every Missed Call" },
       { property: "og:description", content: "AI-powered voicemail transcription and instant SMS recovery for contractors. Never lose a job to a missed call again." },
       { property: "og:type", content: "website" },
