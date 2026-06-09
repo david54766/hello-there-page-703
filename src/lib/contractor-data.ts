@@ -189,12 +189,16 @@ export function getStandardScript(
       ? `After you have their name, number, and the reason for the call, offer: "Would you like me to book a quick consultation right now?" If yes, share this link: ${opts.bookingUrl}`
       : `After you have their name, number, and the reason for the call, close with: "I'll have someone call you back shortly."`;
 
+  const smsConsentLine =
+    `After taking the message, ask exactly: "Would you also like a text confirmation at this number? This is optional — we'll call you back either way. Msg frequency varies, msg and data rates may apply, reply STOP to opt out." If the caller declines SMS, continue normally and confirm the business will call back. Never imply SMS consent is required for callback, scheduling, service, or any transaction.`;
+
   const systemPrompt = [
     `You are the phone receptionist for ${businessName || "{business}"}.`,
     `Keep every reply to one or two short sentences. Be warm, calm, and direct.`,
     `Step 1: confirm the caller's name and best callback number.`,
     `Step 2: ask one qualifying question — ${qualifier}`,
-    `Step 3: ${bookingLine}`,
+    `Step 3: ${smsConsentLine}`,
+    `Step 4: ${bookingLine}`,
     `Never argue. Never repeat yourself. If the caller is frustrated or asks for a person, say someone will call them right back and end the call politely.`,
     `Do not invent prices, appointment times, or technician names.`,
   ].join(" ");

@@ -33,7 +33,7 @@ function SmsOptInPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!consent) {
-      toast.error("Please check the consent box to continue.");
+      toast.error("Please check the consent box to subscribe to SMS.");
       return;
     }
     setSubmitting(true);
@@ -67,7 +67,9 @@ function SmsOptInPage() {
       <h1 className="text-3xl font-semibold tracking-tight">SMS Opt-In</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Subscribe to receive SMS updates from CallRecover about your service
-        request, appointment scheduling, and lead follow-up.
+        request, appointment scheduling, and lead follow-up. Consent to receive
+        SMS messages is not required to receive a callback, schedule service, or
+        complete any transaction.
       </p>
 
       <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
@@ -77,11 +79,11 @@ function SmsOptInPage() {
         <em>verbally</em> if you'd <em>also</em> like a text confirmation. Saying yes
         to SMS is <strong>completely optional</strong> — you will receive a callback
         from the business either way. Consent to receive SMS is <strong>not a
-        condition</strong> of any callback, service, or transaction. If you do
-        opt in verbally and called from a mobile number, we send one confirmation
-        text and only continue messaging after you reply <strong>YES</strong>
-        (double opt-in). This page is an alternative web opt-in for visitors who
-        want to subscribe directly.
+        condition</strong> of receiving a callback, scheduling service, or completing
+        any transaction. If you do opt in verbally and called from a mobile number,
+        we send one confirmation text and only continue messaging after you reply{" "}
+        <strong>YES</strong> (double opt-in). This page is an alternative web opt-in
+        for visitors who want to subscribe directly.
       </div>
 
       <Card className="mt-6 p-6">
@@ -134,8 +136,11 @@ function SmsOptInPage() {
                 service request, appointment scheduling, and lead follow-up
                 at the phone number provided. Message frequency varies.
                 Message &amp; data rates may apply. Reply <strong>STOP</strong>{" "}
-                to opt out, <strong>HELP</strong> for help. Consent is not a
-                condition of purchase. See our{" "}
+                to opt out, <strong>HELP</strong> for help. Consent to receive
+                SMS messages is not required to receive a callback, schedule
+                service, or complete any transaction. You will receive a
+                callback from the business regardless of whether you agree to
+                text messages. Consent is not a condition of purchase. See our{" "}
                 <Link to="/privacy-policy" className="underline">privacy policy</Link>{" "}
                 and{" "}
                 <Link to="/terms" className="underline">terms</Link>.

@@ -45,7 +45,7 @@ function PrivacyPage() {
           <ul className="list-disc space-y-1 pl-5">
             <li>Transcribe and qualify calls handled by our AI voice agent</li>
             <li>Record and store verbal + SMS double opt-in consent as proof</li>
-            <li>Send transactional SMS for appointment reminders, callbacks, and scheduling</li>
+            <li>Send transactional SMS for appointment reminders, callbacks, and scheduling only after opt-in</li>
             <li>Store internal records for your service request</li>
             <li>Improve AI accuracy and response quality</li>
           </ul>
@@ -84,8 +84,8 @@ function PrivacyPage() {
 
         <Section title="8. How to opt in (CTA)">
           <p>
-            The primary opt-in path is a two-layer (double) opt-in handled by our AI voice agent: (1) when your call is forwarded to the agent, it verbally asks whether you want a text confirmation and priority callback details — your yes/no is recorded as proof; (2) if you say yes and your number is mobile, you receive one confirmation text and must reply <strong>YES</strong> to start receiving transactional SMS. If you say no or call from a landline, no SMS is attempted. As a secondary path, you may also opt in at{" "}
-            <Link to="/sms-opt-in" className="underline text-primary">callrecover.net/sms-opt-in</Link> (full name + mobile number + an unchecked-by-default consent checkbox), or by texting <strong>YES, START, JOIN, BEGIN, CONFIRM,</strong> or <strong>UNSTOP</strong> to our business number. Consent is not a condition of purchase.
+            The primary opt-in path is a two-layer (double) opt-in handled by our AI voice agent: (1) when your call is forwarded to the agent, it verbally asks whether you would also like an optional text confirmation — your yes/no is recorded as proof; (2) if you say yes and your number is mobile, you receive one confirmation text and must reply <strong>YES</strong> to start receiving transactional SMS. If you say no or cannot receive SMS, no SMS is attempted. As a secondary path, you may also opt in at{" "}
+            <Link to="/sms-opt-in" className="underline text-primary">callrecover.net/sms-opt-in</Link> (full name + mobile number + an unchecked-by-default consent checkbox), or by texting <strong>YES, START, JOIN, BEGIN, CONFIRM,</strong> or <strong>UNSTOP</strong> to our business number. Consent to receive SMS messages is not required to receive a callback, schedule service, or complete any transaction. You will receive a callback from the business regardless of whether you agree to text messages. Consent is not a condition of purchase.
           </p>
         </Section>
 

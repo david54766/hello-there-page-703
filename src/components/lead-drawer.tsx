@@ -221,7 +221,7 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
             </Button>
           </div>
           <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
-            By replying, the customer consents to SMS about their service request. Every first
+            Send SMS only after the customer has opted in or replied YES. Every first
             reply auto-appends: <em>“Reply STOP to opt out, HELP for help. Msg &amp; data rates may apply.”</em>
           </p>
         </div>

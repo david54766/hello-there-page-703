@@ -244,11 +244,10 @@ function Landing() {
           <MessageSquareText className="mx-auto h-8 w-8 text-primary" />
           <h2 className="mt-3 text-2xl font-semibold tracking-tight">How we message you</h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
-            CallRecover only texts callers after they've explicitly opted in — with{" "}
-            <strong>two layers of consent</strong>: verbal confirmation on the call,
-            then a confirmation text they must reply <strong>YES</strong> to. Business
-            owners can also opt in directly via our{" "}
-            <Link to="/sms-opt-in" className="underline">web opt-in page</Link>.
+            CallRecover only texts callers after they've explicitly opted in. Consent
+            to receive SMS messages is not required to receive a callback, schedule
+            service, or complete any transaction. You will receive a callback from
+            the business regardless of whether you agree to text messages.
           </p>
 
           <div className="mx-auto mt-6 max-w-2xl space-y-3 text-left">
@@ -256,17 +255,16 @@ function Landing() {
               <p className="font-medium text-foreground">1. Call is forwarded to our AI agent</p>
               <p className="mt-1">
                 When the business misses your call, it forwards to our AI voice agent.
-                The agent takes your message and reason for calling so you get{" "}
-                <strong>priority service placement</strong> — your job is logged before
-                the callback even happens.
+                The agent takes your message and reason for calling so the business
+                can call you back with the right details.
               </p>
             </div>
             <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">2. Verbal consent on the call</p>
+              <p className="font-medium text-foreground">2. Optional SMS consent on the call</p>
               <p className="mt-1 italic">
-                "Would you like a text confirmation and priority callback details at
-                this number? Message frequency varies, msg &amp; data rates may apply,
-                reply STOP to opt out."
+                "Would you also like a text confirmation at this number? This is
+                optional — we'll call you back either way. Message frequency varies,
+                msg &amp; data rates may apply, reply STOP to opt out."
               </p>
               <p className="mt-2">Your verbal response is recorded as proof of consent.</p>
             </div>
@@ -275,17 +273,16 @@ function Landing() {
               <p className="mt-1">If you agreed verbally and called from a mobile number, we send one text:</p>
               <p className="mt-2 italic">
                 "[Business] here — reply <strong>YES</strong> to confirm text updates
-                and get priority callback. Msg freq varies. Msg &amp; data rates may
+                about your service request. Msg freq varies. Msg &amp; data rates may
                 apply. Reply <strong>STOP</strong> to opt out, <strong>HELP</strong> for help."
               </p>
               <p className="mt-2">We only continue messaging after you reply YES.</p>
             </div>
             <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Calling from a landline?</p>
+              <p className="font-medium text-foreground">No SMS required for service</p>
               <p className="mt-1">
-                No text is sent. The agent confirms your message is logged with the
-                operator and a callback is scheduled with additional details as quickly
-                as possible.
+                If you decline SMS or cannot receive text messages, no SMS is sent.
+                Your message is still logged and the business will call you back.
               </p>
             </div>
           </div>
@@ -297,7 +294,7 @@ function Landing() {
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
-              <span>Landlines get a callback only — no SMS attempted.</span>
+              <span>SMS consent is optional and never required for callback, scheduling, service, or any transaction.</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />

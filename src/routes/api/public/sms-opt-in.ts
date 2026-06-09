@@ -17,7 +17,7 @@ function toE164(raw: string): string | null {
 }
 
 const CONSENT_TEXT =
-  "By checking this box and submitting, I agree to receive SMS messages from Classroom Panda LLC dba CallRecover related to my service request, appointment scheduling, and lead follow-up at the phone number provided. Message frequency varies. Message & data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase. See https://callrecover.net/privacy-policy and https://callrecover.net/terms.";
+  "By checking this box and submitting, I agree to receive SMS messages from Classroom Panda LLC dba CallRecover related to my service request, appointment scheduling, and lead follow-up at the phone number provided. Message frequency varies. Message & data rates may apply. Reply STOP to opt out, HELP for help. Consent to receive SMS messages is not required to receive a callback, schedule service, or complete any transaction. You will receive a callback from the business regardless of whether you agree to text messages. Consent is not a condition of purchase. See https://callrecover.net/privacy-policy and https://callrecover.net/terms.";
 
 export const Route = createFileRoute("/api/public/sms-opt-in")({
   server: {
@@ -46,7 +46,7 @@ export const Route = createFileRoute("/api/public/sms-opt-in")({
         const parsed = Body.safeParse(json);
         if (!parsed.success) {
           return new Response(
-            JSON.stringify({ error: "You must enter your name, phone, and check the consent box." }),
+            JSON.stringify({ error: "You must enter your name, phone, and check the consent box to subscribe to SMS." }),
             { status: 400, headers: cors },
           );
         }
