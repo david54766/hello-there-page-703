@@ -32,6 +32,9 @@ export const CARRIERS = [
 
 export type Carrier = (typeof CARRIERS)[number]["value"];
 
+const FORWARDING_FEE_NOTICE =
+  "Carrier notice: your provider may charge additional fees or use plan minutes for call forwarding. Check your carrier's terms if you are unsure.";
+
 export function getForwardingInstructions(carrier: Carrier, twilioNumber: string) {
   const digits = twilioNumber.replace(/\D/g, "");
   switch (carrier) {
@@ -44,6 +47,7 @@ export function getForwardingInstructions(carrier: Carrier, twilioNumber: string
           `Dial ${`*71${digits}`} and press call`,
           `Listen for confirmation tone, then hang up`,
           `Your missed calls will now forward to CallRecover`,
+          FORWARDING_FEE_NOTICE,
         ],
       };
     case "att":
@@ -60,6 +64,7 @@ export function getForwardingInstructions(carrier: Carrier, twilioNumber: string
           `Wait for the confirmation message`,
           `Hang up — forwarding is active for busy, no-answer, and unreachable calls`,
           `To turn it off later, dial ##004#`,
+          FORWARDING_FEE_NOTICE,
         ],
       };
     case "tmobile":
@@ -70,6 +75,7 @@ export function getForwardingInstructions(carrier: Carrier, twilioNumber: string
           `Open your phone dialer`,
           `Dial ${`**61*${digits}#`} and press call`,
           `Wait for confirmation, then hang up`,
+          FORWARDING_FEE_NOTICE,
         ],
       };
     case "comcast":
@@ -80,6 +86,7 @@ export function getForwardingInstructions(carrier: Carrier, twilioNumber: string
           `Sign in to your Xfinity Voice account or dial ${`*72${digits}`}`,
           `Enable "Forward When No Answer" and enter the number above`,
           `Save changes`,
+          FORWARDING_FEE_NOTICE,
         ],
       };
     case "ringcentral":
@@ -91,6 +98,7 @@ export function getForwardingInstructions(carrier: Carrier, twilioNumber: string
           `Go to Phone System → Users → your line → Call Handling`,
           `Add a rule: When unanswered after 20 seconds, forward to ${digits}`,
           `Save`,
+          FORWARDING_FEE_NOTICE,
         ],
       };
     case "google_voice":
@@ -101,6 +109,7 @@ export function getForwardingInstructions(carrier: Carrier, twilioNumber: string
           `Open voice.google.com → Settings → Calls`,
           `Under "Forward calls to" add ${digits}`,
           `Enable "Forward when no answer"`,
+          FORWARDING_FEE_NOTICE,
         ],
       };
     default:
@@ -111,6 +120,7 @@ export function getForwardingInstructions(carrier: Carrier, twilioNumber: string
           `Contact your carrier and ask to enable conditional call forwarding`,
           `Forward unanswered calls to ${digits}`,
           `Most carriers use ${`*72${digits}`} or ${`**61*${digits}#`}`,
+          FORWARDING_FEE_NOTICE,
         ],
       };
   }
