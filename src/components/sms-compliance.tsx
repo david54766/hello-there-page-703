@@ -15,17 +15,21 @@ export function SmsComplianceCard() {
       </p>
 
       <Section title="Consent" icon={<User className="h-4 w-4" />}>
-        Consent is captured through a <strong>two-layer (double) opt-in</strong>.
-        When a missed call is forwarded to our AI voice agent, the agent collects
-        the caller's message and verbally asks whether they'd like a text
-        confirmation and priority callback details (frequency, rates, and STOP
-        are disclosed in the same sentence). The verbal yes/no is recorded as
-        proof. If the caller agrees and the number is mobile, one confirmation
-        SMS is sent requiring a <strong>YES</strong> reply before any further
-        messages are sent. Landline callers and anyone who declines verbally
-        receive a callback only — no SMS is attempted. We do not send marketing
-        or promotional SMS — messages are limited to lead qualification,
-        scheduling, and callback confirmations.
+        Consent to receive SMS is <strong>always optional</strong> and is{" "}
+        <strong>never a condition</strong> of receiving a callback, scheduling
+        service, or completing any transaction. Callers receive a callback from
+        the business regardless of whether they agree to text messages.
+        When given, consent is captured through a{" "}
+        <strong>two-layer (double) opt-in</strong>: the AI voice agent collects
+        the caller's message and verbally asks if they would <em>also</em> like a
+        text confirmation (frequency, rates, STOP, and the "optional / not
+        required" disclosure are stated in the same prompt). The verbal yes/no
+        is recorded as proof. If the caller agrees and the number is mobile,
+        one confirmation SMS is sent and no further messages are sent until the
+        caller replies <strong>YES</strong>. Anyone who declines, or who is on
+        a landline, still gets a callback — no SMS is attempted. We do not send
+        marketing or promotional SMS — messages are limited to lead
+        qualification, scheduling, and callback confirmations.
       </Section>
 
       <Section title="Standard disclosure (appended to first reply)" icon={<MessageSquare className="h-4 w-4" />}>
@@ -161,10 +165,11 @@ Reply CONFIRM or call us if you need to change it. Reply STOP to opt out, HELP f
 
       <Section title="Opt-In & Consent Mechanism" icon={<CheckCircle className="h-4 w-4" />}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li><strong>AI Voice Agent — Verbal Consent (Layer 1, primary):</strong> When a customer calls a business that uses CallRecover and the call is missed, it forwards to our AI voice agent. The agent collects the message and verbally asks: "Would you like a text confirmation and priority callback details at this number? Message frequency varies, msg &amp; data rates may apply, reply STOP to opt out." The caller's verbal yes/no is recorded as proof of consent.</li>
-          <li><strong>SMS Confirmation — YES Reply (Layer 2, primary):</strong> If verbal consent is given and the number is mobile, one confirmation text is sent: "[Business] here — reply YES to confirm and get priority callback details. Reply STOP to opt out, HELP for help. Msg freq varies. Msg &amp; data rates may apply." No further messages are sent until the caller replies <strong>YES</strong>.</li>
-          <li><strong>Landline Fallback:</strong> If the caller is on a landline or declines verbal consent, no SMS is attempted. The agent confirms the message is logged and the business will call back.</li>
-          <li><strong>Web Form (Secondary CTA):</strong> Customers may also opt in at <a className="underline" href="https://callrecover.net/sms-opt-in" target="_blank" rel="noreferrer">https://callrecover.net/sms-opt-in</a>. The form collects full name and mobile number, and requires an unchecked-by-default consent checkbox with the disclosure: "By checking this box and submitting, I agree to receive SMS messages from Classroom Panda LLC dba CallRecover related to my service request, appointment scheduling, and lead follow-up at the phone number provided. Message frequency varies. Message &amp; data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase."</li>
+          <li><strong>Consent is optional, never required:</strong> SMS opt-in is <strong>not a condition</strong> of receiving a callback, scheduling service, or completing any transaction. Customers receive a callback regardless of whether they agree to text messages.</li>
+          <li><strong>AI Voice Agent — Verbal Consent (Layer 1, primary):</strong> When a customer calls a business that uses CallRecover and the call is missed, it forwards to our AI voice agent. The agent collects the message and verbally asks: "Would you <em>also</em> like a text confirmation at this number? This is optional — we will call you back either way. Message frequency varies, msg &amp; data rates may apply, reply STOP to opt out." The caller's verbal yes/no is recorded as proof of consent.</li>
+          <li><strong>SMS Confirmation — YES Reply (Layer 2, primary):</strong> If verbal consent is given and the number is mobile, one confirmation text is sent: "[Business] here — reply YES to confirm SMS updates. Reply STOP to opt out, HELP for help. Msg freq varies. Msg &amp; data rates may apply." No further messages are sent until the caller replies <strong>YES</strong>.</li>
+          <li><strong>Landline / decline fallback:</strong> If the caller is on a landline or declines SMS, no text is attempted. The agent confirms the message is logged and the business will call back. Service is unaffected.</li>
+          <li><strong>Web Form (Secondary CTA):</strong> Customers may also opt in at <a className="underline" href="https://callrecover.net/sms-opt-in" target="_blank" rel="noreferrer">https://callrecover.net/sms-opt-in</a>. The form collects full name and mobile number, and requires an unchecked-by-default consent checkbox with the disclosure: "By checking this box and submitting, I agree to receive SMS messages from Classroom Panda LLC dba CallRecover related to my service request, appointment scheduling, and lead follow-up at the phone number provided. Message frequency varies. Message &amp; data rates may apply. Reply STOP to opt out, HELP for help. <strong>Consent is not a condition of purchase or service.</strong>"</li>
           <li><strong>Consent Record:</strong> Every opt-in is logged with timestamp, phone number, source (AI voice agent / SMS YES reply / web form / SMS keyword), IP address (where applicable), user agent (where applicable), call recording or transcript reference, and the exact consent disclosure text or audio prompt shown to the customer.</li>
           <li><strong>Consent Disclaimers:</strong> Customers are informed verbally (on the call) and in writing (in the SMS confirmation) that message frequency varies and that standard messaging rates apply.</li>
         </ul>
