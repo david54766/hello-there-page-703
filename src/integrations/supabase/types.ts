@@ -330,6 +330,7 @@ export type Database = {
           twilio_call_sid: string | null
           updated_at: string
           urgency: Database["public"]["Enums"]["call_urgency"]
+          vapi_call_id: string | null
         }
         Insert: {
           ai_summary?: string | null
@@ -352,6 +353,7 @@ export type Database = {
           twilio_call_sid?: string | null
           updated_at?: string
           urgency?: Database["public"]["Enums"]["call_urgency"]
+          vapi_call_id?: string | null
         }
         Update: {
           ai_summary?: string | null
@@ -374,6 +376,7 @@ export type Database = {
           twilio_call_sid?: string | null
           updated_at?: string
           urgency?: Database["public"]["Enums"]["call_urgency"]
+          vapi_call_id?: string | null
         }
         Relationships: [
           {
@@ -607,6 +610,7 @@ export type Database = {
       sms_consents: {
         Row: {
           business_id: string
+          call_id: string | null
           caller_number: string
           consent_text: string | null
           created_at: string
@@ -614,12 +618,14 @@ export type Database = {
           id: string
           ip_address: string | null
           keyword: string | null
+          provider_ref: string | null
           source: string | null
           status: Database["public"]["Enums"]["sms_consent_status"]
           user_agent: string | null
         }
         Insert: {
           business_id: string
+          call_id?: string | null
           caller_number: string
           consent_text?: string | null
           created_at?: string
@@ -627,12 +633,14 @@ export type Database = {
           id?: string
           ip_address?: string | null
           keyword?: string | null
+          provider_ref?: string | null
           source?: string | null
           status: Database["public"]["Enums"]["sms_consent_status"]
           user_agent?: string | null
         }
         Update: {
           business_id?: string
+          call_id?: string | null
           caller_number?: string
           consent_text?: string | null
           created_at?: string
@@ -640,6 +648,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           keyword?: string | null
+          provider_ref?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["sms_consent_status"]
           user_agent?: string | null
@@ -925,7 +934,7 @@ export type Database = {
       lead_priority: "normal" | "high"
       lead_status: "open" | "contacted" | "scheduled" | "closed"
       notification_kind: "sms" | "email" | "dashboard" | "emergency"
-      sms_consent_status: "opted_in" | "opted_out"
+      sms_consent_status: "opted_in" | "opted_out" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1093,7 +1102,7 @@ export const Constants = {
       lead_priority: ["normal", "high"],
       lead_status: ["open", "contacted", "scheduled", "closed"],
       notification_kind: ["sms", "email", "dashboard", "emergency"],
-      sms_consent_status: ["opted_in", "opted_out"],
+      sms_consent_status: ["opted_in", "opted_out", "pending"],
     },
   },
 } as const

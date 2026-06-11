@@ -5,6 +5,7 @@ import { applyTags, mergeTagDefaults, type TagValues } from "@/lib/tags";
 import { DEFAULT_VOICE_ID } from "@/lib/voices";
 
 const BASE = "https://api.vapi.ai";
+const VAPI_SERVER_MESSAGES = ["end-of-call-report"];
 
 async function vapi(path: string, init: RequestInit = {}) {
   const key = process.env.VAPI_API_KEY;
@@ -20,6 +21,23 @@ async function vapi(path: string, init: RequestInit = {}) {
   const text = await res.text();
   if (!res.ok) throw new Error(`Vapi ${res.status}: ${text.slice(0, 300)}`);
   return text ? JSON.parse(text) : {};
+}
+
+function publicBaseUrl() {
+  return (
+    process.env.CALLRECOVER_PUBLIC_URL ||
+    process.env.PUBLIC_APP_URL ||
+    "https://callrecover.net"
+  ).replace(/\/+$/, "");
+}
+
+function vapiServerConfig() {
+  const credentialId = process.env.VAPI_WEBHOOK_CREDENTIAL_ID?.trim();
+  return {
+    url: `${publicBaseUrl()}/api/public/vapi/webhook`,
+    timeoutSeconds: 20,
+    ...(credentialId ? { credentialId } : {}),
+  };
 }
 
 async function loadBusinessForUser(supabase: any) {
@@ -146,6 +164,8 @@ function defaultAssistantPayload(
     },
     voice: { provider: "11labs", voiceId },
     transcriber: { provider: "deepgram", model: "nova-2", language: "en" },
+    server: vapiServerConfig(),
+    serverMessages: VAPI_SERVER_MESSAGES,
     // Let the assistant finish its sentence; don't yield on filler words.
     startSpeakingPlan: { waitSeconds: 0.6, smartEndpointingEnabled: true },
     stopSpeakingPlan: { numWords: 3, voiceSeconds: 0.4, backoffSeconds: 1.2 },
@@ -193,7 +213,10 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
           "You are a friendly receptionist for {business}.",
           "Confirm the caller's name and reason for calling.",
           "If they want to book, offer: {book_consult}.",
-          "Stay concise — keep replies to one or two short sentences.",
+          "Before ending, ask: Would you also like a text confirmation? This is optional; we'll call you back either way.",
+          "If they say yes to text messages, SMS is still pending until they reply YES to the first confirmation text.",
+          "Consent to receive SMS is not required to receive a callback, schedule service, or complete any transaction.",
+          "Stay concise - keep replies to one or two short sentences.",
         ].join(" "),
       tags,
     );
@@ -271,6 +294,8 @@ export const updateAssistantForNumber = createServerFn({ method: "POST" })
     }
     // Always re-apply the "don't interrupt" speaking plan on update so
     // older assistants get the new behavior the first time they're saved.
+    patch.server = vapiServerConfig();
+    patch.serverMessages = VAPI_SERVER_MESSAGES;
     patch.startSpeakingPlan = { waitSeconds: 0.6, smartEndpointingEnabled: true };
     patch.stopSpeakingPlan = { numWords: 3, voiceSeconds: 0.4, backoffSeconds: 1.2 };
     if (Object.keys(patch).length) {

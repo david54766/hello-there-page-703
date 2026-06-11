@@ -38,6 +38,7 @@ import { Route as ApiMobileSendSmsRouteImport } from './routes/api/mobile/send-s
 import { Route as ApiMobileRecordingUrlRouteImport } from './routes/api/mobile/recording-url'
 import { Route as ApiMobilePushTokenRouteImport } from './routes/api/mobile/push-token'
 import { Route as ApiMobileForwardingStatusRouteImport } from './routes/api/mobile/forwarding-status'
+import { Route as ApiPublicVapiWebhookRouteImport } from './routes/api/public/vapi/webhook'
 import { Route as ApiPublicTwilioSmsInboundRouteImport } from './routes/api/public/twilio/sms-inbound'
 
 const TosRoute = TosRouteImport.update({
@@ -185,6 +186,11 @@ const ApiMobileForwardingStatusRoute =
     path: '/api/mobile/forwarding-status',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicVapiWebhookRoute = ApiPublicVapiWebhookRouteImport.update({
+  id: '/api/public/vapi/webhook',
+  path: '/api/public/vapi/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTwilioSmsInboundRoute =
   ApiPublicTwilioSmsInboundRouteImport.update({
     id: '/api/public/twilio/sms-inbound',
@@ -222,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
+  '/api/public/vapi/webhook': typeof ApiPublicVapiWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -253,6 +260,7 @@ export interface FileRoutesByTo {
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
+  '/api/public/vapi/webhook': typeof ApiPublicVapiWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -286,6 +294,7 @@ export interface FileRoutesById {
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
+  '/api/public/vapi/webhook': typeof ApiPublicVapiWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -319,6 +328,7 @@ export interface FileRouteTypes {
     | '/api/mobile/test-push'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
+    | '/api/public/vapi/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
     | '/api/mobile/test-push'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
+    | '/api/public/vapi/webhook'
   id:
     | '__root__'
     | '/'
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '/api/mobile/test-push'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
+    | '/api/public/vapi/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -408,6 +420,7 @@ export interface RootRouteChildren {
   ApiMobileTestPushRoute: typeof ApiMobileTestPushRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
   ApiPublicTwilioSmsInboundRoute: typeof ApiPublicTwilioSmsInboundRoute
+  ApiPublicVapiWebhookRoute: typeof ApiPublicVapiWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -615,6 +628,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMobileForwardingStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/vapi/webhook': {
+      id: '/api/public/vapi/webhook'
+      path: '/api/public/vapi/webhook'
+      fullPath: '/api/public/vapi/webhook'
+      preLoaderRoute: typeof ApiPublicVapiWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/twilio/sms-inbound': {
       id: '/api/public/twilio/sms-inbound'
       path: '/api/public/twilio/sms-inbound'
@@ -673,7 +693,18 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMobileTestPushRoute: ApiMobileTestPushRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
   ApiPublicTwilioSmsInboundRoute: ApiPublicTwilioSmsInboundRoute,
+  ApiPublicVapiWebhookRoute: ApiPublicVapiWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

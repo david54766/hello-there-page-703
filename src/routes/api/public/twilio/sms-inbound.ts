@@ -53,6 +53,60 @@ function verifyTwilioSignature(
   }
 }
 
+async function resolveBusinessId(from: string, to: string) {
+  const { data: byNumber } = await supabaseAdmin
+    .from("businesses")
+    .select("id")
+    .eq("twilio_number", to)
+    .maybeSingle();
+  if (byNumber?.id) return byNumber.id as string;
+
+  const { data: pendingConsent } = await supabaseAdmin
+    .from("sms_consents" as any)
+    .select("business_id")
+    .eq("caller_number", from)
+    .in("status", ["pending", "opted_in"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if ((pendingConsent as any)?.business_id) return (pendingConsent as any).business_id as string;
+
+  const { data: recentThread } = await supabaseAdmin
+    .from("sms_threads")
+    .select("business_id")
+    .eq("caller_number", from)
+    .order("last_message_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (recentThread as any)?.business_id as string | undefined;
+}
+
+async function buildOptInReply(businessId: string, callerNumber: string) {
+  const { data: pending } = await supabaseAdmin
+    .from("sms_consents" as any)
+    .select("call_id")
+    .eq("business_id", businessId)
+    .eq("caller_number", callerNumber)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!(pending as any)?.call_id) return OPT_IN_REPLY;
+
+  const { data: call } = await supabaseAdmin
+    .from("calls")
+    .select("priority")
+    .eq("id", (pending as any).call_id)
+    .maybeSingle();
+
+  if ((call as any)?.priority === "high") {
+    return "Classroom Panda LLC dba CallRecover: Thanks, you are confirmed for SMS updates. Your request is marked urgent and the business will call back as soon as possible. Reply STOP to opt out, HELP for help. Msg & data rates may apply.";
+  }
+
+  return "Classroom Panda LLC dba CallRecover: Thanks, you are confirmed for SMS updates. The business received your message and will call you back. Reply STOP to opt out, HELP for help. Msg & data rates may apply.";
+}
+
 export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
   server: {
     handlers: {
@@ -82,14 +136,12 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
         const keyword = body.toUpperCase().replace(/[^A-Z]/g, "");
         if (!from || !to) return twiml();
 
-        // Resolve which business owns this Twilio number.
-        const { data: biz } = await supabaseAdmin
-          .from("businesses")
-          .select("id")
-          .eq("twilio_number", to)
-          .maybeSingle();
+        // Resolve which business owns this Twilio number. If one central
+        // messaging number is shared, fall back to this caller's latest
+        // pending consent/thread so YES and STOP still route correctly.
+        const businessId = await resolveBusinessId(from, to);
 
-        if (!biz) {
+        if (!businessId) {
           // Number not provisioned to a business yet — acknowledge silently.
           return twiml();
         }
@@ -99,7 +151,7 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
         const { data: thread } = await supabaseAdmin
           .from("sms_threads")
           .select("id")
-          .eq("business_id", biz.id)
+          .eq("business_id", businessId)
           .eq("caller_number", from)
           .maybeSingle();
 
@@ -108,7 +160,7 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
         } else {
           const { data: created } = await supabaseAdmin
             .from("sms_threads")
-            .insert({ business_id: biz.id, caller_number: from } as any)
+            .insert({ business_id: businessId, caller_number: from } as any)
             .select("id")
             .single();
           threadId = created?.id ?? null;
@@ -129,7 +181,7 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
         // Keyword handling.
         if (OPT_OUT.has(keyword)) {
           await supabaseAdmin.from("sms_consents").insert({
-            business_id: biz.id,
+            business_id: businessId,
             caller_number: from,
             status: "opted_out",
             keyword,
@@ -142,12 +194,12 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
 
         if (OPT_IN.has(keyword)) {
           await supabaseAdmin.from("sms_consents").insert({
-            business_id: biz.id,
+            business_id: businessId,
             caller_number: from,
             status: "opted_in",
             keyword,
           } as any);
-          return twiml(OPT_IN_REPLY);
+          return twiml(await buildOptInReply(businessId, from));
         }
 
         if (HELP.has(keyword)) {
