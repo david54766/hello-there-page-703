@@ -32,6 +32,19 @@ function escapeXml(s: string) {
     .replace(/'/g, "&apos;");
 }
 
+async function recordOutboundReply(threadId: string | null, body: string) {
+  if (!threadId) return;
+  await supabaseAdmin.from("sms_messages").insert({
+    thread_id: threadId,
+    direction: "outbound",
+    body,
+  } as any);
+  await supabaseAdmin
+    .from("sms_threads")
+    .update({ last_message_at: new Date().toISOString() } as any)
+    .eq("id", threadId);
+}
+
 /**
  * Validate Twilio's X-Twilio-Signature header.
  * https://www.twilio.com/docs/usage/security#validating-requests
@@ -199,10 +212,19 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
             status: "opted_in",
             keyword,
           } as any);
-          return twiml(await buildOptInReply(businessId, from));
+          const reply = await buildOptInReply(businessId, from);
+          await recordOutboundReply(threadId, reply);
+          await supabaseAdmin.from("notifications").insert({
+            business_id: businessId,
+            kind: "sms",
+            title: "SMS confirmed",
+            body: `${from} confirmed SMS updates.`,
+          } as any);
+          return twiml(reply);
         }
 
         if (HELP.has(keyword)) {
+          await recordOutboundReply(threadId, HELP_REPLY);
           return twiml(HELP_REPLY);
         }
 
