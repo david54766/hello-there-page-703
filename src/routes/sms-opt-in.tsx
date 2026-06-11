@@ -7,6 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AI_VERBAL_SMS_OPT_IN_PROMPT,
+  DOUBLE_OPT_IN_CONFIRMATION_SMS,
+  WEB_FORM_SMS_CONSENT_TEXT,
+} from "@/lib/sms-consent-copy";
 
 export const Route = createFileRoute("/sms-opt-in")({
   component: SmsOptInPage,
@@ -16,7 +21,7 @@ export const Route = createFileRoute("/sms-opt-in")({
       {
         name: "description",
         content:
-          "Sign up to receive SMS updates from CallRecover about your service request, appointment scheduling, and lead follow-up.",
+          "Sign up to receive transactional SMS updates from Classroom Panda LLC dba CallRecover.",
       },
       { name: "robots", content: "index,follow" },
     ],
@@ -66,24 +71,21 @@ function SmsOptInPage() {
 
       <h1 className="text-3xl font-semibold tracking-tight">SMS Opt-In</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Subscribe to receive SMS updates from CallRecover about your service
-        request, appointment scheduling, and lead follow-up. Consent to receive
-        SMS messages is not required to receive a callback, schedule service, or
-        complete any transaction.
+        Subscribe to receive transactional SMS updates from Classroom Panda LLC
+        dba CallRecover about your request. Consent is not a condition of
+        purchase.
       </p>
 
       <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-        <strong className="text-foreground">How consent normally works:</strong> when
-        you call a business using CallRecover and the call is forwarded to our AI
-        voice agent, the agent collects your message and asks{" "}
-        <em>verbally</em> if you'd <em>also</em> like a text confirmation. Saying yes
-        to SMS is <strong>completely optional</strong> — you will receive a callback
-        from the business either way. Consent to receive SMS is <strong>not a
-        condition</strong> of receiving a callback, scheduling service, or completing
-        any transaction. If you do opt in verbally and called from a mobile number,
-        we send one confirmation text and only continue messaging after you reply{" "}
-        <strong>YES</strong> (double opt-in). This page is an alternative web opt-in
-        for visitors who want to subscribe directly.
+        <strong className="text-foreground">Verbal + SMS double opt-in:</strong>{" "}
+        our AI voice agent answers the caller's forwarded call, takes their
+        details, then asks:{" "}
+        <span className="italic">"{AI_VERBAL_SMS_OPT_IN_PROMPT}"</span> If they
+        say yes and called from a mobile, we send one message:{" "}
+        <span className="italic">"{DOUBLE_OPT_IN_CONFIRMATION_SMS}"</span> Only
+        after they reply <strong>YES</strong> do further messages send. Call
+        recording, transcript, number, timestamp, and YES reply are stored.
+        This page is the alternate web form opt-in.
       </div>
 
       <Card className="mt-6 p-6">
@@ -131,24 +133,17 @@ function SmsOptInPage() {
                 className="mt-1"
               />
               <Label htmlFor="consent" className="text-xs leading-relaxed font-normal text-muted-foreground">
-                By checking this box and submitting, I agree to receive SMS
-                messages from <strong>Classroom Panda LLC dba CallRecover</strong> related to my
-                service request, appointment scheduling, and lead follow-up
-                at the phone number provided. Message frequency varies.
-                Message &amp; data rates may apply. Reply <strong>STOP</strong>{" "}
-                to opt out, <strong>HELP</strong> for help. Consent to receive
-                SMS messages is not required to receive a callback, schedule
-                service, or complete any transaction. You will receive a
-                callback from the business regardless of whether you agree to
-                text messages. Consent is not a condition of purchase. See our{" "}
-                <Link to="/privacy-policy" className="underline">privacy policy</Link>{" "}
-                and{" "}
-                <Link to="/terms" className="underline">terms</Link>.
+                {WEB_FORM_SMS_CONSENT_TEXT.replace(
+                  " See https://callrecover.net/privacy-policy and https://callrecover.net/terms.",
+                  "",
+                )}{" "}
+                See our <Link to="/privacy-policy" className="underline">privacy policy</Link>{" "}
+                and <Link to="/terms" className="underline">terms</Link>.
               </Label>
             </div>
 
             <Button type="submit" disabled={submitting || !consent} className="w-full">
-              {submitting ? "Submitting…" : "Subscribe to SMS updates"}
+              {submitting ? "Submitting..." : "Subscribe to SMS updates"}
             </Button>
 
             <div className="flex items-center gap-2 pt-2 text-xs text-muted-foreground">

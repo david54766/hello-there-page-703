@@ -1,3 +1,5 @@
+import { AI_VERBAL_SMS_OPT_IN_PROMPT, DOUBLE_OPT_IN_CONFIRMATION_SMS } from "@/lib/sms-consent-copy";
+
 const COMPLIANCE_SUFFIX = "\nReply STOP to opt out, HELP for help. Msg & data rates may apply.";
 
 type TwilioSendResult = {
@@ -171,19 +173,7 @@ export async function sendDoubleOptInForCall(
     return { ok: true, skipped: "already_opted_in" };
   }
 
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("business_name")
-    .eq("id", (call as CallRow).business_id)
-    .maybeSingle();
-
-  const businessName = ((business as any)?.business_name || "the business").toString().slice(0, 80);
-  const body = [
-    `CallRecover for ${businessName}: you asked to receive SMS updates about your missed call.`,
-    "Reply YES to confirm.",
-    "SMS is optional; the business will call you back either way.",
-    "Reply STOP to opt out. Msg & data rates may apply.",
-  ].join(" ");
+  const body = DOUBLE_OPT_IN_CONFIRMATION_SMS;
 
   const threadId = await getOrCreateThread(supabase, (call as CallRow).business_id, callerNumber);
   const result = await sendTwilioSms(callerNumber, body);
@@ -195,8 +185,7 @@ export async function sendDoubleOptInForCall(
     status: "pending",
     keyword: "VERBAL_YES",
     source: "vapi_voice",
-    consent_text:
-      "Would you also like a text confirmation? This is optional; we'll call you back either way.",
+    consent_text: AI_VERBAL_SMS_OPT_IN_PROMPT,
     call_id: (call as CallRow).id,
     provider_ref: data.providerRef ?? null,
   } as any);

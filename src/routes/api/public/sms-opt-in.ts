@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { WEB_FORM_SMS_CONSENT_TEXT } from "@/lib/sms-consent-copy";
 
 const Body = z.object({
   full_name: z.string().min(1).max(120),
@@ -15,9 +16,6 @@ function toE164(raw: string): string | null {
   if (raw.startsWith("+") && digits.length >= 8) return `+${digits}`;
   return null;
 }
-
-const CONSENT_TEXT =
-  "By checking this box and submitting, I agree to receive SMS messages from Classroom Panda LLC dba CallRecover related to my service request, appointment scheduling, and lead follow-up at the phone number provided. Message frequency varies. Message & data rates may apply. Reply STOP to opt out, HELP for help. Consent to receive SMS messages is not required to receive a callback, schedule service, or complete any transaction. You will receive a callback from the business regardless of whether you agree to text messages. Consent is not a condition of purchase. See https://callrecover.net/privacy-policy and https://callrecover.net/terms.";
 
 export const Route = createFileRoute("/api/public/sms-opt-in")({
   server: {
@@ -89,7 +87,7 @@ export const Route = createFileRoute("/api/public/sms-opt-in")({
           status: "opted_in",
           keyword: "WEB_FORM",
           source: "web_form:/sms-opt-in",
-          consent_text: CONSENT_TEXT,
+          consent_text: WEB_FORM_SMS_CONSENT_TEXT,
           full_name: parsed.data.full_name,
           ip_address: ip,
           user_agent: ua,

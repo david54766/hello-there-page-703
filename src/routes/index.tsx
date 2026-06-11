@@ -5,6 +5,7 @@ import {
   PhoneCall, MessageSquareText, Sparkles, Shield, Clock, TrendingUp, CheckCircle2,
   PhoneMissed, Bot, ClipboardList, Send, BellRing, Wrench, Zap, BarChart3, Headset, Settings2
 } from "lucide-react";
+import { AI_VERBAL_SMS_OPT_IN_PROMPT, DOUBLE_OPT_IN_CONFIRMATION_SMS } from "@/lib/sms-consent-copy";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -261,21 +262,13 @@ function Landing() {
             </div>
             <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">2. Optional SMS consent on the call</p>
-              <p className="mt-1 italic">
-                "Would you also like a text confirmation at this number? This is
-                optional — we'll call you back either way. Message frequency varies,
-                msg &amp; data rates may apply, reply STOP to opt out."
-              </p>
+              <p className="mt-1 italic">"{AI_VERBAL_SMS_OPT_IN_PROMPT}"</p>
               <p className="mt-2">Your verbal response is recorded as proof of consent.</p>
             </div>
             <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">3. Confirmation text (double opt-in)</p>
               <p className="mt-1">If you agreed verbally and called from a mobile number, we send one text:</p>
-              <p className="mt-2 italic">
-                "[Business] here — reply <strong>YES</strong> to confirm text updates
-                about your service request. Msg freq varies. Msg &amp; data rates may
-                apply. Reply <strong>STOP</strong> to opt out, <strong>HELP</strong> for help."
-              </p>
+              <p className="mt-2 italic">"{DOUBLE_OPT_IN_CONFIRMATION_SMS}"</p>
               <p className="mt-2">We only continue messaging after you reply YES.</p>
             </div>
             <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">

@@ -3,6 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, FileText } from "lucide-react";
+import {
+  AI_VERBAL_SMS_OPT_IN_PROMPT,
+  DOUBLE_OPT_IN_CONFIRMATION_SMS,
+} from "@/lib/sms-consent-copy";
 
 export const Route = createFileRoute("/terms")({
   component: TermsPage,
@@ -31,7 +35,17 @@ function TermsPage() {
       <Card className="space-y-6 p-6">
         <Section title="1. SMS Program Description">
           <p>
-            CallRecover provides an automated customer care and lead follow-up service for home service contractors. When you call a business that uses CallRecover and the call is missed, the call is forwarded to our AI voice agent, which collects your message and may ask whether you would also like an optional text confirmation. Consent to receive SMS messages is not required to receive a callback, schedule service, or complete any transaction. You will receive a callback from the business regardless of whether you agree to text messages. If you verbally agree and your number is a mobile number, we send one confirmation SMS asking you to reply <strong>YES</strong> to complete a two-layer (double) opt-in. Only after that YES reply do we send transactional SMS to schedule appointments, confirm callbacks, and share service details.
+            CallRecover provides automated customer care and lead follow-up for
+            service businesses. When you call a business that uses CallRecover
+            and the call is missed, the call forwards to our AI voice agent. The
+            agent takes your details, then asks:{" "}
+            <span className="italic">&quot;{AI_VERBAL_SMS_OPT_IN_PROMPT}&quot;</span>{" "}
+            Consent to receive SMS messages is not required to receive a
+            callback, schedule service, or complete any transaction. If you say
+            yes and called from a mobile number, we send one message:{" "}
+            <span className="italic">&quot;{DOUBLE_OPT_IN_CONFIRMATION_SMS}&quot;</span>{" "}
+            Only after you reply <strong>YES</strong> do further transactional
+            SMS messages send.
           </p>
         </Section>
 
@@ -63,10 +77,21 @@ function TermsPage() {
             <li>Business: Classroom Panda LLC dba CallRecover</li>
           </ul>
         </Section>
-
         <Section title="6. Consent">
           <p>
-            Consent is captured through a two-layer (double) opt-in: (1) verbal yes/no recorded on the call with our AI voice agent after a clear disclosure of message frequency, rates, STOP instructions, and the fact that SMS is optional; and (2) a <strong>YES</strong> reply to the single confirmation text sent to mobile numbers. Both layers are required before any further SMS is sent. If verbal consent is declined or the caller cannot receive SMS, no SMS is attempted. Consent to receive SMS messages is not required to receive a callback, schedule service, or complete any transaction. You will receive a callback from the business regardless of whether you agree to text messages. Consent is not a condition of purchase. Opt-in keywords accepted on inbound SMS: <strong>YES, START, JOIN, BEGIN, CONFIRM, UNSTOP</strong>.
+            Consent is captured through verbal + SMS double opt-in. Our AI voice
+            agent answers the caller&apos;s forwarded call, takes their details,
+            then asks: <span className="italic">&quot;{AI_VERBAL_SMS_OPT_IN_PROMPT}&quot;</span>{" "}
+            If they say yes and called from a mobile number, CallRecover sends
+            one message: <span className="italic">&quot;{DOUBLE_OPT_IN_CONFIRMATION_SMS}&quot;</span>{" "}
+            Only after they reply <strong>YES</strong> do further messages send.
+            Call recording, transcript, number, timestamp, and YES reply are
+            stored. Web form opt-in is also available at{" "}
+            <Link to="/sms-opt-in" className="underline text-primary">https://callrecover.net/sms-opt-in</Link>,
+            where visitors enter name and mobile and check an unchecked box
+            agreeing to receive transactional SMS from Classroom Panda LLC dba
+            CallRecover, with STOP/HELP language and "Consent is not a condition
+            of purchase." Timestamp, IP, and consent text are stored.
           </p>
         </Section>
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { applyTags, mergeTagDefaults, type TagValues } from "@/lib/tags";
 import { DEFAULT_VOICE_ID } from "@/lib/voices";
+import { AI_VERBAL_SMS_OPT_IN_PROMPT, DOUBLE_OPT_IN_CONFIRMATION_SMS } from "@/lib/sms-consent-copy";
 
 const BASE = "https://api.vapi.ai";
 const VAPI_SERVER_MESSAGES = ["end-of-call-report"];
@@ -215,8 +216,9 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
           "You are a friendly receptionist for {business}.",
           "Confirm the caller's name and reason for calling.",
           "If they want to book, offer: {book_consult}.",
-          "Before ending, ask: Would you also like a text confirmation? This is optional; we'll call you back either way.",
-          "If they say yes to text messages, SMS is still pending until they reply YES to the first confirmation text.",
+          `Before ending, ask exactly: "${AI_VERBAL_SMS_OPT_IN_PROMPT}"`,
+          `If they say yes and called from a mobile number, CallRecover sends one confirmation SMS: "${DOUBLE_OPT_IN_CONFIRMATION_SMS}"`,
+          "Only after they reply YES do further SMS messages send.",
           "Consent to receive SMS is not required to receive a callback, schedule service, or complete any transaction.",
           "Stay concise - keep replies to one or two short sentences.",
         ].join(" "),

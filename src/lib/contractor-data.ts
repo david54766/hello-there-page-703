@@ -1,3 +1,5 @@
+import { AI_VERBAL_SMS_OPT_IN_PROMPT, DOUBLE_OPT_IN_CONFIRMATION_SMS } from "@/lib/sms-consent-copy";
+
 export const CONTRACTOR_TYPES = [
   { value: "roofing", label: "Roofing" },
   { value: "plumbing", label: "Plumbing" },
@@ -200,7 +202,7 @@ export function getStandardScript(
       : `After you have their name, number, and the reason for the call, close with: "I'll have someone call you back shortly."`;
 
   const smsConsentLine =
-    `After taking the message, ask exactly: "Would you also like a text confirmation at this number? This is optional — we'll call you back either way. Msg frequency varies, msg and data rates may apply, reply STOP to opt out." If the caller declines SMS, continue normally and confirm the business will call back. Never imply SMS consent is required for callback, scheduling, service, or any transaction.`;
+    `After taking the message, ask exactly: "${AI_VERBAL_SMS_OPT_IN_PROMPT}" If the caller says yes and called from a mobile number, CallRecover sends one confirmation SMS: "${DOUBLE_OPT_IN_CONFIRMATION_SMS}" Only after the caller replies YES do further SMS messages send. If the caller declines SMS, continue normally and confirm the business will call back. Never imply SMS consent is required for callback, scheduling, service, or any transaction.`;
 
   const systemPrompt = [
     `You are the phone receptionist for ${businessName || "{business}"}.`,

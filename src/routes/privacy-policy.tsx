@@ -3,6 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+import {
+  AI_VERBAL_SMS_OPT_IN_PROMPT,
+  DOUBLE_OPT_IN_CONFIRMATION_SMS,
+  WEB_FORM_SMS_CONSENT_TEXT,
+} from "@/lib/sms-consent-copy";
 
 export const Route = createFileRoute("/privacy-policy")({
   component: PrivacyPage,
@@ -81,11 +86,21 @@ function PrivacyPage() {
             You can opt out of SMS communications at any time by replying <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>END</strong>, <strong>QUIT</strong>, <strong>OPTOUT</strong>, or <strong>REVOKE</strong> to any message. Once opted out, you will no longer receive SMS from CallRecover unless you initiate a new service request and complete the double opt-in again.
           </p>
         </Section>
-
         <Section title="8. How to opt in (CTA)">
           <p>
-            The primary opt-in path is a two-layer (double) opt-in handled by our AI voice agent: (1) when your call is forwarded to the agent, it verbally asks whether you would also like an optional text confirmation — your yes/no is recorded as proof; (2) if you say yes and your number is mobile, you receive one confirmation text and must reply <strong>YES</strong> to start receiving transactional SMS. If you say no or cannot receive SMS, no SMS is attempted. As a secondary path, you may also opt in at{" "}
-            <Link to="/sms-opt-in" className="underline text-primary">callrecover.net/sms-opt-in</Link> (full name + mobile number + an unchecked-by-default consent checkbox), or by texting <strong>YES, START, JOIN, BEGIN, CONFIRM,</strong> or <strong>UNSTOP</strong> to our business number. Consent to receive SMS messages is not required to receive a callback, schedule service, or complete any transaction. You will receive a callback from the business regardless of whether you agree to text messages. Consent is not a condition of purchase.
+            The primary opt-in path is verbal + SMS double opt-in. Our AI voice
+            agent answers the caller&apos;s forwarded call, takes their details,
+            then asks: <span className="italic">&quot;{AI_VERBAL_SMS_OPT_IN_PROMPT}&quot;</span>{" "}
+            If they say yes and called from a mobile number, we send one
+            message: <span className="italic">&quot;{DOUBLE_OPT_IN_CONFIRMATION_SMS}&quot;</span>{" "}
+            Only after they reply <strong>YES</strong> do further messages send.
+            Call recording, transcript, number, timestamp, and YES reply are
+            stored. As a secondary path, visitors may opt in at{" "}
+            <Link to="/sms-opt-in" className="underline text-primary">callrecover.net/sms-opt-in</Link>{" "}
+            by entering name and mobile and checking an unchecked box agreeing
+            to receive transactional SMS from Classroom Panda LLC dba
+            CallRecover. The web form records timestamp, IP, and consent text:
+            <span className="mt-2 block rounded-md border bg-muted/40 p-2 text-xs">{WEB_FORM_SMS_CONSENT_TEXT}</span>
           </p>
         </Section>
 
