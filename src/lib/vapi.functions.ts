@@ -33,10 +33,12 @@ function publicBaseUrl() {
 
 function vapiServerConfig() {
   const credentialId = process.env.VAPI_WEBHOOK_CREDENTIAL_ID?.trim();
+  const webhookSecret = process.env.VAPI_WEBHOOK_SECRET?.trim();
   return {
     url: `${publicBaseUrl()}/api/public/vapi/webhook`,
     timeoutSeconds: 20,
     ...(credentialId ? { credentialId } : {}),
+    ...(!credentialId && webhookSecret ? { headers: { "X-Vapi-Secret": webhookSecret } } : {}),
   };
 }
 
