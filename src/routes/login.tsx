@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { PhoneCall } from "lucide-react";
+import { AppIcon } from "@/components/app-icon";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
@@ -75,9 +75,7 @@ function Login() {
     <main className="flex min-h-screen items-center justify-center bg-[image:var(--gradient-subtle)] p-6">
       <div className="w-full max-w-md">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 font-semibold">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground">
-            <PhoneCall className="h-4 w-4" />
-          </span>
+          <AppIcon />
           CallRecover AI
         </Link>
         <Card className="p-8 shadow-[var(--shadow-card)]">
