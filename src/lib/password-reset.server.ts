@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sendResendEmail } from "@/lib/resend.server";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const BRANDED_FROM = "CallRecover AI <noreply@callrecover.net>";
 const FALLBACK_FROM = "CallRecover AI <onboarding@resend.dev>";
 const APP_URL = "https://callrecover.net";
@@ -25,7 +25,7 @@ function renderResetHtml(link: string) {
           <p style="margin:0;font-size:12px;line-height:1.6;color:#737067;">If the button does not work, paste this URL into your browser:<br/><a href="${link}" style="color:#171717;word-break:break-all;">${link}</a></p>
         </td></tr>
         <tr><td style="padding:20px 32px;background:#f8f7f3;border-top:1px solid #ece8df;font-size:12px;color:#737067;text-align:center;">
-          CallRecover AI · <a href="${APP_URL}" style="color:#171717;text-decoration:none;">callrecover.net</a>
+          CallRecover AI &middot; <a href="${APP_URL}" style="color:#171717;text-decoration:none;">callrecover.net</a>
         </td></tr>
       </table>
     </td></tr>
@@ -49,63 +49,35 @@ export async function sendPasswordResetEmail(email: string) {
     return { ok: true as const, sent: false as const };
   }
 
-  const lov = process.env.LOVABLE_API_KEY;
-  const resend = process.env.RESEND_API_KEY;
-  if (!lov || !resend) {
+  if (!process.env.RESEND_API_KEY) {
     return sendSupabaseRecoveryEmail(safeEmail);
   }
 
-  const sent = await sendResendEmail({
-    lov,
-    resend,
-    from: BRANDED_FROM,
-    to: safeEmail,
-    link: data.properties.action_link,
-  });
-  if (sent.ok) return { ok: true as const, sent: true as const };
-
-  console.warn("Branded reset email failed; trying fallback sender:", sent.error);
-  const fallbackSent = await sendResendEmail({
-    lov,
-    resend,
-    from: FALLBACK_FROM,
-    to: safeEmail,
-    link: data.properties.action_link,
-  });
-  if (fallbackSent.ok) return { ok: true as const, sent: true as const };
-
-  console.warn("Fallback reset email failed; trying Supabase recovery:", fallbackSent.error);
-  return sendSupabaseRecoveryEmail(safeEmail);
-}
-
-async function sendResendEmail(opts: {
-  lov: string;
-  resend: string;
-  from: string;
-  to: string;
-  link: string;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const res = await fetch(`${GATEWAY_URL}/emails`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${opts.lov}`,
-      "X-Connection-Api-Key": opts.resend,
-    },
-    body: JSON.stringify({
-      from: opts.from,
-      to: [opts.to],
+  try {
+    await sendResendEmail({
+      from: BRANDED_FROM,
+      to: safeEmail,
       subject: "Reset your CallRecover AI password",
-      html: renderResetHtml(opts.link),
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    return { ok: false, error: `Resend ${res.status} ${text.slice(0, 220)}` };
+      html: renderResetHtml(data.properties.action_link),
+    });
+    return { ok: true as const, sent: true as const };
+  } catch (error) {
+    console.warn("Branded reset email failed; trying fallback sender:", error instanceof Error ? error.message : error);
   }
 
-  return { ok: true };
+  try {
+    await sendResendEmail({
+      from: FALLBACK_FROM,
+      to: safeEmail,
+      subject: "Reset your CallRecover AI password",
+      html: renderResetHtml(data.properties.action_link),
+    });
+    return { ok: true as const, sent: true as const };
+  } catch (error) {
+    console.warn("Fallback reset email failed; trying Supabase recovery:", error instanceof Error ? error.message : error);
+  }
+
+  return sendSupabaseRecoveryEmail(safeEmail);
 }
 
 async function sendSupabaseRecoveryEmail(email: string) {

@@ -4,6 +4,7 @@ import { createHash, randomInt } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sendResendEmail } from "@/lib/resend.server";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -25,31 +26,16 @@ function maskEmail(e: string): string {
 
 function maskPhone(p: string): string {
   const last = p.slice(-4);
-  return `••• ••• ${last}`;
+  return `*** *** ${last}`;
 }
 
 async function sendEmailCode(to: string, code: string) {
-  const lov = process.env.LOVABLE_API_KEY;
-  const resend = process.env.RESEND_API_KEY;
-  if (!lov || !resend) throw new Error("Email 2FA is not configured. Add RESEND_API_KEY.");
-  const res = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${lov}`,
-      "X-Connection-Api-Key": resend,
-    },
-    body: JSON.stringify({
-      from: "CallRecover AI <onboarding@resend.dev>",
-      to: [to],
-      subject: `Your CallRecover verification code: ${code}`,
-      html: `<div style="font-family:system-ui;padding:24px"><h2>Your verification code</h2><p style="font-size:32px;letter-spacing:4px;font-weight:600">${code}</p><p style="color:#666">This code expires in 10 minutes. If you didn't request it, ignore this email.</p></div>`,
-    }),
+  await sendResendEmail({
+    from: "CallRecover AI <onboarding@resend.dev>",
+    to,
+    subject: `Your CallRecover verification code: ${code}`,
+    html: `<div style="font-family:system-ui;padding:24px"><h2>Your verification code</h2><p style="font-size:32px;letter-spacing:4px;font-weight:600">${code}</p><p style="color:#666">This code expires in 10 minutes. If you didn't request it, ignore this email.</p></div>`,
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Email send failed (${res.status}): ${text}`);
-  }
 }
 
 async function sendSmsCode(to: string, code: string) {
