@@ -99,6 +99,24 @@ function verifyAnyTwilioSignature(
   );
 }
 
+function normalizePhone(value: string | undefined) {
+  return (value ?? "").replace(/\D/g, "");
+}
+
+function hasValidTwilioMessageSid(params: Record<string, string>) {
+  const sid = params.MessageSid || params.SmsMessageSid || params.SmsSid;
+  return /^(SM|MM)[0-9a-f]{32}$/i.test(sid ?? "");
+}
+
+function accountSidLooksValid(accountSid: string | undefined) {
+  return /^AC[0-9a-f]{32}$/i.test(accountSid ?? "");
+}
+
+function recipientMatchesConfiguredNumber(to: string) {
+  const configured = normalizePhone(process.env.TWILIO_PHONE_NUMBER);
+  return Boolean(configured && normalizePhone(to) === configured);
+}
+
 async function resolveBusinessId(from: string, to: string) {
   const { data: byNumber } = await supabaseAdmin
     .from("businesses")
@@ -125,6 +143,28 @@ async function resolveBusinessId(from: string, to: string) {
     .limit(1)
     .maybeSingle();
   return (recentThread as any)?.business_id as string | undefined;
+}
+
+async function recipientMatchesBusinessNumber(to: string) {
+  const { data } = await supabaseAdmin
+    .from("businesses")
+    .select("id")
+    .eq("twilio_number", to)
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data?.id);
+}
+
+async function canUseKnownSmsContextFallback(
+  businessId: string | undefined,
+  to: string,
+  params: Record<string, string>,
+) {
+  if (!businessId) return false;
+  if (!hasValidTwilioMessageSid(params)) return false;
+  if (!accountSidLooksValid(params.AccountSid)) return false;
+  if (recipientMatchesConfiguredNumber(to)) return true;
+  return recipientMatchesBusinessNumber(to);
 }
 
 async function recordSmsOptIn(businessId: string, callerNumber: string, keyword: string, providerRef: string | null) {
@@ -198,14 +238,6 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
         const params = Object.fromEntries(new URLSearchParams(raw));
         const signature = request.headers.get("x-twilio-signature");
 
-        const signatureValid = verifyAnyTwilioSignature(authToken, signature, request, params);
-        const expectedAccountSid = process.env.TWILIO_ACCOUNT_SID;
-        const accountSidMatches = Boolean(expectedAccountSid && params.AccountSid === expectedAccountSid);
-
-        if (!signatureValid && !accountSidMatches) {
-          return new Response("Invalid signature", { status: 401 });
-        }
-
         const from = (params.From ?? "").trim();
         const to = (params.To ?? "").trim();
         const body = (params.Body ?? "").trim();
@@ -216,6 +248,15 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
         // messaging number is shared, fall back to this caller's latest
         // pending consent/thread so YES and STOP still route correctly.
         const businessId = await resolveBusinessId(from, to);
+
+        const signatureValid = verifyAnyTwilioSignature(authToken, signature, request, params);
+        const expectedAccountSid = process.env.TWILIO_ACCOUNT_SID;
+        const accountSidMatches = Boolean(expectedAccountSid && params.AccountSid === expectedAccountSid);
+        const knownSmsContextFallback = await canUseKnownSmsContextFallback(businessId, to, params);
+
+        if (!signatureValid && !accountSidMatches && !knownSmsContextFallback) {
+          return new Response("Invalid signature", { status: 401 });
+        }
 
         if (!businessId) {
           // Number not provisioned to a business yet — acknowledge silently.
