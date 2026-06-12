@@ -94,7 +94,12 @@ function promptNeedsRefresh(prompt: string | null | undefined) {
     "If they decline SMS",
     "SMS consent is required",
   ].some((needle) => prompt.includes(needle));
-  return hasStaleLanguage || !prompt.includes("virtual assistant") || !prompt.includes("text message confirmation");
+  return (
+    hasStaleLanguage ||
+    !prompt.includes("virtual assistant") ||
+    !prompt.includes("text message confirmation") ||
+    !prompt.includes("three direct outcomes")
+  );
 }
 
 async function loadBusinessForUser(supabase: any) {
