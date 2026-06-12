@@ -1,10 +1,46 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sendSmsForCall } from "@/lib/sms-send.server";
 
 async function getBusinessId(supabase: any): Promise<string | null> {
   const { data } = await supabase.from("business_members").select("business_id").limit(1);
   return data?.[0]?.business_id ?? null;
+}
+
+function businessTimeZone(business: any) {
+  const tz = business?.business_hours?.timezone;
+  return typeof tz === "string" && tz ? tz : "America/Chicago";
+}
+
+function formatAppointmentTime(iso: string, timeZone: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone,
+    timeZoneName: "short",
+  }).format(new Date(iso));
+}
+
+function buildAppointmentConfirmation({
+  scheduledFor,
+  timeZone,
+  teamName,
+  service,
+}: {
+  scheduledFor: string;
+  timeZone: string;
+  teamName?: string | null;
+  service?: string | null;
+}) {
+  const when = formatAppointmentTime(scheduledFor, timeZone);
+  const assignment = teamName ? `${teamName.trim()} is assigned` : "The team is assigned";
+  const serviceLine = service?.trim() ? ` for ${service.trim()}` : "";
+  return `CallRecover: Appointment confirmed for ${when}. ${assignment}${serviceLine}. Reply here if you need to change it.`;
 }
 
 export const getSchedule = createServerFn({ method: "POST" })
@@ -67,6 +103,11 @@ export const bookAppointment = createServerFn({ method: "POST" })
     if (!businessId) throw new Error("No business found");
     const start = new Date(data.scheduledFor);
     const end = new Date(start.getTime() + data.durationMinutes * 60_000);
+    const { data: business } = await context.supabase
+      .from("businesses")
+      .select("business_hours")
+      .eq("id", businessId)
+      .maybeSingle();
 
     // Conflict check: same team member, overlapping window
     const { data: conflicts } = await context.supabase
@@ -114,7 +155,39 @@ export const bookAppointment = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { appointment: appt };
+
+    if (data.callId) {
+      await context.supabase
+        .from("calls")
+        .update({ lead_status: "scheduled", callback_requested: true } as any)
+        .eq("id", data.callId);
+    }
+
+    let smsConfirmation: { sent: boolean; sid?: string | null; error?: string } | null = null;
+    if (data.callId) {
+      const { data: teamMember } = await context.supabase
+        .from("team_members")
+        .select("name")
+        .eq("id", data.teamMemberId)
+        .maybeSingle();
+      const body = buildAppointmentConfirmation({
+        scheduledFor: data.scheduledFor,
+        timeZone: businessTimeZone(business),
+        teamName: (teamMember as any)?.name,
+        service: data.service,
+      });
+      try {
+        const sent = await sendSmsForCall(supabaseAdmin, { callId: data.callId, body });
+        smsConfirmation = { sent: true, sid: sent.sid };
+      } catch (sendError) {
+        smsConfirmation = {
+          sent: false,
+          error: sendError instanceof Error ? sendError.message : "Appointment text could not be sent",
+        };
+      }
+    }
+
+    return { appointment: appt, smsConfirmation };
   });
 
 export const cancelAppointment = createServerFn({ method: "POST" })

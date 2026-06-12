@@ -70,6 +70,48 @@ function buildDefaultScript(
   );
 }
 
+async function buildScriptForVapi(
+  supabase: any,
+  business: Record<string, unknown>,
+  contractorType?: string | null,
+  agentName?: string | null,
+) {
+  const fallback = buildDefaultScript(business, contractorType, agentName);
+  const businessId = (business as any)?.id;
+  if (!businessId) return fallback;
+
+  const activeType =
+    contractorType || ((business as any)?.contractor_type as string | null | undefined) || null;
+  const { data: templates } = await supabase
+    .from("script_templates")
+    .select("kind,body,contractor_type,is_default")
+    .eq("business_id", businessId)
+    .in("kind", ["first_message", "system"]);
+
+  const pick = (kind: "first_message" | "system") => {
+    const candidates = (templates ?? [])
+      .filter((t: any) => {
+        const type = t.contractor_type || null;
+        return t.kind === kind && (!type || !activeType || type === activeType);
+      })
+      .sort((a: any, b: any) => {
+        const aExact = activeType && a.contractor_type === activeType ? 0 : 1;
+        const bExact = activeType && b.contractor_type === activeType ? 0 : 1;
+        if (aExact !== bExact) return aExact - bExact;
+        const aDefault = a.is_default ? 0 : 1;
+        const bDefault = b.is_default ? 0 : 1;
+        return aDefault - bDefault;
+      });
+    const body = candidates[0]?.body;
+    return typeof body === "string" && body.trim() ? body.trim() : null;
+  };
+
+  return {
+    firstMessage: pick("first_message") ?? fallback.firstMessage,
+    systemPrompt: pick("system") ?? fallback.systemPrompt,
+  };
+}
+
 function vapiRuntimePatch() {
   return {
     server: vapiServerConfig(),
@@ -235,7 +277,7 @@ function defaultAssistantPayload(
 export async function syncVapiAssistantsForBusiness(
   supabase: any,
   businessId: string,
-  options: { linkPhoneNumbers?: boolean } = {},
+  options: { linkPhoneNumbers?: boolean; forceRefresh?: boolean } = {},
 ) {
   const { data: business, error: businessError } = await supabase
     .from("businesses")
@@ -251,21 +293,27 @@ export async function syncVapiAssistantsForBusiness(
   if (rowsError) throw new Error(rowsError.message);
 
   const results: Array<{ id: string; assistantId: string | null; promptRefreshed: boolean; linked: boolean }> = [];
+  const tags = mergeTagDefaults(business);
   for (const row of rows ?? []) {
     if (!(row as any).assistant_id) continue;
     const agentName = (row as any).assistant_name || DEFAULT_AGENT_NAME;
-    const script = buildDefaultScript(business, (row as any).contractor_type_preset, agentName);
-    const refreshPrompt = promptNeedsRefresh((row as any).custom_prompt);
+    const script = await buildScriptForVapi(supabase, business, (row as any).contractor_type_preset, agentName);
+    const refreshPrompt = Boolean(options.forceRefresh) || promptNeedsRefresh((row as any).custom_prompt);
     const nextPrompt = refreshPrompt ? script.systemPrompt : (row as any).custom_prompt;
+    const nextFirstMessage = refreshPrompt ? script.firstMessage : (row as any).custom_first_message;
+    const shouldPatchPrompt =
+      refreshPrompt ||
+      Boolean((row as any).custom_prompt) ||
+      Boolean((row as any).custom_first_message);
     const patch: Record<string, unknown> = {
       ...vapiRuntimePatch(),
-      ...(refreshPrompt
+      ...(shouldPatchPrompt
         ? {
-            firstMessage: script.firstMessage,
+            ...(nextFirstMessage ? { firstMessage: applyTags(nextFirstMessage, tags) } : {}),
             model: {
               provider: "openai",
               model: "gpt-4o-mini",
-              messages: [{ role: "system", content: nextPrompt }],
+              messages: [{ role: "system", content: applyTags(nextPrompt, tags) }],
             },
           }
         : {}),
@@ -290,7 +338,7 @@ export async function syncVapiAssistantsForBusiness(
         .from("vapi_number_assistants")
         .update({
           custom_prompt: nextPrompt,
-          custom_first_message: script.firstMessage,
+          custom_first_message: nextFirstMessage,
         })
         .eq("id", (row as any).id);
     }

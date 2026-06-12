@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { syncVapiAssistantsForBusiness } from "@/lib/vapi.functions";
 
 async function getBusinessId(supabase: any): Promise<string | null> {
   const { data } = await supabase.from("business_members").select("business_id").limit(1);
@@ -60,7 +61,21 @@ export const upsertScriptTemplate = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { template: saved };
+
+    let vapiSync: { ok?: boolean; error?: string } | null = null;
+    try {
+      vapiSync = await syncVapiAssistantsForBusiness(context.supabase, businessId, {
+        linkPhoneNumbers: true,
+        forceRefresh: true,
+      });
+    } catch (syncError) {
+      vapiSync = {
+        ok: false,
+        error: syncError instanceof Error ? syncError.message : "Could not sync Vapi assistant",
+      };
+    }
+
+    return { template: saved, vapiSync };
   });
 
 export const deleteScriptTemplate = createServerFn({ method: "POST" })

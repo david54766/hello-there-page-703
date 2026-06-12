@@ -11,9 +11,11 @@ export const Route = createFileRoute("/api/mobile/sync-vapi-agent")({
           const { supabase } = await requireMobileSupabase(request);
           const businessId = await getMobileBusinessId(supabase);
           if (!businessId) return jsonResponse({ error: "Business not found" }, 404);
+          const body = await request.json().catch(() => ({}));
 
           const result = await syncVapiAssistantsForBusiness(supabase, businessId, {
             linkPhoneNumbers: true,
+            forceRefresh: body?.forceRefresh === true,
           });
           return jsonResponse({ ok: true, result });
         } catch (error) {
