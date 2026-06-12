@@ -34,6 +34,7 @@ import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
 import { Route as ApiPublicPasswordResetRouteImport } from './routes/api/public/password-reset'
+import { Route as ApiPublicEmailDiagnosticsRouteImport } from './routes/api/public/email-diagnostics'
 import { Route as ApiMobileTestSmsAlertRouteImport } from './routes/api/mobile/test-sms-alert'
 import { Route as ApiMobileTestPushRouteImport } from './routes/api/mobile/test-push'
 import { Route as ApiMobileTestEmailAlertRouteImport } from './routes/api/mobile/test-email-alert'
@@ -169,6 +170,12 @@ const ApiPublicPasswordResetRoute = ApiPublicPasswordResetRouteImport.update({
   path: '/api/public/password-reset',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicEmailDiagnosticsRoute =
+  ApiPublicEmailDiagnosticsRouteImport.update({
+    id: '/api/public/email-diagnostics',
+    path: '/api/public/email-diagnostics',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiMobileTestSmsAlertRoute = ApiMobileTestSmsAlertRouteImport.update({
   id: '/api/mobile/test-sms-alert',
   path: '/api/mobile/test-sms-alert',
@@ -253,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
+  '/api/public/email-diagnostics': typeof ApiPublicEmailDiagnosticsRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
@@ -289,6 +297,7 @@ export interface FileRoutesByTo {
   '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
+  '/api/public/email-diagnostics': typeof ApiPublicEmailDiagnosticsRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
@@ -327,6 +336,7 @@ export interface FileRoutesById {
   '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
+  '/api/public/email-diagnostics': typeof ApiPublicEmailDiagnosticsRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
+    | '/api/public/email-diagnostics'
     | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
+    | '/api/public/email-diagnostics'
     | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
@@ -438,6 +450,7 @@ export interface FileRouteTypes {
     | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
+    | '/api/public/email-diagnostics'
     | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
@@ -469,6 +482,7 @@ export interface RootRouteChildren {
   ApiMobileTestEmailAlertRoute: typeof ApiMobileTestEmailAlertRoute
   ApiMobileTestPushRoute: typeof ApiMobileTestPushRoute
   ApiMobileTestSmsAlertRoute: typeof ApiMobileTestSmsAlertRoute
+  ApiPublicEmailDiagnosticsRoute: typeof ApiPublicEmailDiagnosticsRoute
   ApiPublicPasswordResetRoute: typeof ApiPublicPasswordResetRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
   ApiPublicTwilioSmsInboundRoute: typeof ApiPublicTwilioSmsInboundRoute
@@ -652,6 +666,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPasswordResetRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/email-diagnostics': {
+      id: '/api/public/email-diagnostics'
+      path: '/api/public/email-diagnostics'
+      fullPath: '/api/public/email-diagnostics'
+      preLoaderRoute: typeof ApiPublicEmailDiagnosticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mobile/test-sms-alert': {
       id: '/api/mobile/test-sms-alert'
       path: '/api/mobile/test-sms-alert'
@@ -774,6 +795,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMobileTestEmailAlertRoute: ApiMobileTestEmailAlertRoute,
   ApiMobileTestPushRoute: ApiMobileTestPushRoute,
   ApiMobileTestSmsAlertRoute: ApiMobileTestSmsAlertRoute,
+  ApiPublicEmailDiagnosticsRoute: ApiPublicEmailDiagnosticsRoute,
   ApiPublicPasswordResetRoute: ApiPublicPasswordResetRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
   ApiPublicTwilioSmsInboundRoute: ApiPublicTwilioSmsInboundRoute,

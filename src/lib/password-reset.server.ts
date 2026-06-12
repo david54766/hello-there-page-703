@@ -1,5 +1,8 @@
+import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { sendResendEmail } from "@/lib/resend.server";
+import type { Database } from "@/integrations/supabase/types";
+import { getFirstServerEnv } from "@/lib/env.server";
+import { hasResendConfig, sendResendEmail } from "@/lib/resend.server";
 
 const BRANDED_FROM = "CallRecover AI <noreply@callrecover.net>";
 const FALLBACK_FROM = "CallRecover AI <onboarding@resend.dev>";
@@ -37,19 +40,16 @@ export async function sendPasswordResetEmail(email: string) {
   const safeEmail = email.trim().toLowerCase();
   if (!safeEmail) return { ok: true as const, sent: false as const };
 
-  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-    type: "recovery",
-    email: safeEmail,
-    options: { redirectTo: `${APP_URL}/reset-password` },
-  });
+  const linkResult = await generateRecoveryLink(safeEmail);
 
   // Do not reveal whether an account exists.
-  if (error || !data?.properties?.action_link) {
-    console.warn("Password reset link skipped:", error?.message ?? "no action link");
-    return { ok: true as const, sent: false as const };
+  if (!linkResult.link) {
+    console.warn("Password reset link skipped:", linkResult.reason ?? "no action link");
+    return sendSupabaseRecoveryEmail(safeEmail);
   }
 
-  if (!process.env.RESEND_API_KEY) {
+  if (!hasResendConfig()) {
+    console.warn("Password reset using Supabase sender: missing RESEND_API_KEY");
     return sendSupabaseRecoveryEmail(safeEmail);
   }
 
@@ -58,9 +58,9 @@ export async function sendPasswordResetEmail(email: string) {
       from: BRANDED_FROM,
       to: safeEmail,
       subject: "Reset your CallRecover AI password",
-      html: renderResetHtml(data.properties.action_link),
+      html: renderResetHtml(linkResult.link),
     });
-    return { ok: true as const, sent: true as const };
+    return { ok: true as const, sent: true as const, channel: "resend" as const, from: BRANDED_FROM };
   } catch (error) {
     console.warn("Branded reset email failed; trying fallback sender:", error instanceof Error ? error.message : error);
   }
@@ -70,9 +70,9 @@ export async function sendPasswordResetEmail(email: string) {
       from: FALLBACK_FROM,
       to: safeEmail,
       subject: "Reset your CallRecover AI password",
-      html: renderResetHtml(data.properties.action_link),
+      html: renderResetHtml(linkResult.link),
     });
-    return { ok: true as const, sent: true as const };
+    return { ok: true as const, sent: true as const, channel: "resend" as const, from: FALLBACK_FROM };
   } catch (error) {
     console.warn("Fallback reset email failed; trying Supabase recovery:", error instanceof Error ? error.message : error);
   }
@@ -80,13 +80,56 @@ export async function sendPasswordResetEmail(email: string) {
   return sendSupabaseRecoveryEmail(safeEmail);
 }
 
+async function generateRecoveryLink(email: string) {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: `${APP_URL}/reset-password` },
+    });
+    if (error || !data?.properties?.action_link) {
+      return { link: null, reason: error?.message ?? "no action link" };
+    }
+    return { link: data.properties.action_link, reason: null };
+  } catch (error) {
+    return {
+      link: null,
+      reason: error instanceof Error ? error.message : "recovery link generation failed",
+    };
+  }
+}
+
 async function sendSupabaseRecoveryEmail(email: string) {
-  const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-    redirectTo: `${APP_URL}/reset-password`,
-  });
-  if (error) {
-    console.warn("Supabase recovery email failed:", error.message);
+  const supabaseUrl = getFirstServerEnv(["VITE_SUPABASE_URL", "CALLRECOVER_SUPABASE_URL", "SUPABASE_URL"]);
+  const supabaseKey = getFirstServerEnv([
+    "VITE_SUPABASE_PUBLISHABLE_KEY",
+    "CALLRECOVER_SUPABASE_PUBLISHABLE_KEY",
+    "SUPABASE_PUBLISHABLE_KEY",
+  ]);
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn("Supabase recovery email failed: missing public Supabase URL/key");
     return { ok: true as const, sent: false as const };
   }
-  return { ok: true as const, sent: true as const };
+
+  try {
+    const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
+      auth: {
+        storage: undefined,
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${APP_URL}/reset-password`,
+    });
+    if (error) {
+      console.warn("Supabase recovery email failed:", error.message);
+      return { ok: true as const, sent: false as const };
+    }
+    return { ok: true as const, sent: true as const, channel: "supabase" as const };
+  } catch (error) {
+    console.warn("Supabase recovery email failed:", error instanceof Error ? error.message : error);
+    return { ok: true as const, sent: false as const };
+  }
 }

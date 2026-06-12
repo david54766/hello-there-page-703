@@ -6,8 +6,14 @@ type SendEmailInput = {
   text?: string;
 };
 
+import { getServerEnv } from "@/lib/env.server";
+
+export function hasResendConfig() {
+  return Boolean(getServerEnv("RESEND_API_KEY"));
+}
+
 export async function sendResendEmail(input: SendEmailInput): Promise<{ id: string | null }> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = getServerEnv("RESEND_API_KEY");
   if (!apiKey) throw new Error("RESEND_API_KEY is not configured.");
 
   const res = await fetch("https://api.resend.com/emails", {
