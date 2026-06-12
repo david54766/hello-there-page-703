@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { AppIcon } from "@/components/app-icon";
 import {
-  PhoneCall, MessageSquareText, Sparkles, Shield, Clock, TrendingUp, CheckCircle2,
+  MessageSquareText, Sparkles, Shield, Clock, TrendingUp, CheckCircle2,
   PhoneMissed, Bot, ClipboardList, Send, BellRing, Wrench, Zap, BarChart3, Headset, Settings2
 } from "lucide-react";
 import { AI_VERBAL_SMS_OPT_IN_PROMPT, DOUBLE_OPT_IN_CONFIRMATION_SMS } from "@/lib/sms-consent-copy";
@@ -24,9 +25,7 @@ function Landing() {
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link to="/" className="flex items-center gap-2 font-semibold">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--shadow-elevated)]">
-              <PhoneCall className="h-4 w-4" />
-            </span>
+            <AppIcon />
             <span className="tracking-tight">CallRecover AI</span>
           </Link>
           <nav className="flex items-center gap-3 text-sm">

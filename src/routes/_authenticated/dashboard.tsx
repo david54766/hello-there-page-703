@@ -69,29 +69,12 @@ function Dashboard() {
       if (!biz) { setLoading(false); return; }
       setBusiness(biz);
       if (!biz.onboarding_complete) { navigate({ to: "/onboarding" }); return; }
-      // Fetch this business's provisioned vapi numbers to scope recent calls
-      const { data: vapiNums } = await supabase
-        .from("vapi_number_assistants")
-        .select("phone_number")
-        .eq("business_id", biz.id);
-      const assignedNumbers = (vapiNums ?? [])
-        .map((r: any) => r.phone_number)
-        .filter(Boolean) as string[];
-
-      let query = supabase
+      const { data: c } = await supabase
         .from("calls")
         .select("id, business_id, caller_number, caller_name, transcript, ai_summary, ai_summary_short, urgency, status, lead_status, priority, qualification, callback_requested, created_at")
         .eq("business_id", biz.id)
         .order("created_at", { ascending: false })
         .limit(50);
-      if (assignedNumbers.length > 0) {
-        // Only show calls explicitly routed to this business's assigned number(s)
-        query = query.in("to_number", assignedNumbers);
-      } else {
-        // No assigned numbers yet — show nothing rather than legacy/unscoped rows
-        query = query.eq("business_id", "00000000-0000-0000-0000-000000000000");
-      }
-      const { data: c } = await query;
       setCalls((c ?? []) as Call[]);
       setLoading(false);
 
@@ -99,9 +82,6 @@ function Dashboard() {
         .channel(`calls:${biz.id}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "calls", filter: `business_id=eq.${biz.id}` }, (p) => {
           const row = p.new as any;
-          const matchesAssigned =
-            assignedNumbers.length > 0 && row?.to_number && assignedNumbers.includes(row.to_number);
-          if (!matchesAssigned) return;
           if (p.eventType === "INSERT") setCalls((prev) => [row as Call, ...prev]);
           if (p.eventType === "UPDATE") setCalls((prev) => prev.map((x) => x.id === row.id ? (row as Call) : x));
         })

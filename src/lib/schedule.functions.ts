@@ -86,7 +86,7 @@ export const getSchedule = createServerFn({ method: "POST" })
         .lte("start_at", data.to),
       context.supabase
         .from("team_members")
-        .select("id,name,color,availability,active")
+        .select("id,name,role,color,availability,active")
         .eq("business_id", businessId)
         .eq("active", true),
     ]);

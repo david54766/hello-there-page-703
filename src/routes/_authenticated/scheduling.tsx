@@ -8,10 +8,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Trash2, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Plus, CalendarDays } from "lucide-react";
+import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, isToday, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/scheduling")({ component: SchedulingPage });
+
+const ROLE_STYLES: Record<string, string> = {
+  emergency: "border-red-200 bg-red-50 text-red-800",
+  sales: "border-amber-200 bg-amber-50 text-amber-900",
+  service: "border-sky-200 bg-sky-50 text-sky-900",
+  office: "border-stone-200 bg-stone-50 text-stone-800",
+  all: "border-purple-200 bg-purple-50 text-purple-800",
+};
+
+function roleLabel(role?: string | null) {
+  if (!role) return "Office";
+  return role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function dayKey(date: Date) {
+  return format(date, "yyyy-MM-dd");
+}
 
 function SchedulingPage() {
   const fetchSchedule = useServerFn(getSchedule);
@@ -28,22 +46,38 @@ function SchedulingPage() {
   const [blackouts, setBlackouts] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [business, setBusiness] = useState<any>(null);
+  const [month, setMonth] = useState(() => startOfMonth(new Date()));
 
   const [newAppt, setNewAppt] = useState({ teamMemberId: "", scheduledFor: "", customerName: "", customerPhone: "", service: "", durationMinutes: 60 });
   const [newBlack, setNewBlack] = useState({ teamMemberId: "", startAt: "", endAt: "", reason: "" });
 
-  const reload = async () => {
-    const from = new Date(); from.setDate(from.getDate() - 7);
-    const to = new Date(); to.setDate(to.getDate() + 60);
+  const reload = async (targetMonth = month) => {
+    const from = startOfWeek(startOfMonth(targetMonth));
+    const to = endOfWeek(endOfMonth(targetMonth));
     const r = await fetchSchedule({ data: { from: from.toISOString(), to: to.toISOString() } });
     setEnabledState(r.schedulingEnabled);
     setAppts(r.appointments); setBlackouts(r.blackouts); setTeam(r.teamMembers);
     setBusiness(r.business);
   };
 
-  useEffect(() => { reload().finally(() => setLoading(false)); /* eslint-disable-next-line */ }, []);
+  useEffect(() => {
+    setLoading(true);
+    reload(month).finally(() => setLoading(false));
+    /* eslint-disable-next-line */
+  }, [month]);
 
   if (loading) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
+
+  const days = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(month)),
+    end: endOfWeek(endOfMonth(month)),
+  });
+  const teamById = new Map(team.map((member) => [member.id, member]));
+  const apptsByDay = new Map<string, any[]>();
+  appts.forEach((appt) => {
+    const key = dayKey(new Date(appt.scheduled_for));
+    apptsByDay.set(key, [...(apptsByDay.get(key) ?? []), appt]);
+  });
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10 space-y-6">
@@ -57,6 +91,62 @@ function SchedulingPage() {
           <span className="text-xs">Enabled</span>
         </div>
       </div>
+
+      <Card className="overflow-hidden p-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              Monthly calendar
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">Color coded by assigned team role.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setMonth(subMonths(month, 1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setMonth(startOfMonth(new Date()))}>Today</Button>
+            <Button variant="outline" size="sm" onClick={() => setMonth(addMonths(month, 1))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="border-b border-border px-4 py-3 text-lg font-semibold">{format(month, "MMMM yyyy")}</div>
+        <div className="grid grid-cols-7 border-b border-border bg-muted/30 text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => <div key={day} className="px-2 py-2">{day}</div>)}
+        </div>
+        <div className="grid grid-cols-7">
+          {days.map((day) => {
+            const key = dayKey(day);
+            const dayAppts = apptsByDay.get(key) ?? [];
+            return (
+              <div key={key} className={`min-h-28 border-b border-r border-border p-2 ${isSameMonth(day, month) ? "bg-card" : "bg-muted/20 text-muted-foreground"}`}>
+                <div className={`mb-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-medium ${isToday(day) ? "bg-primary text-primary-foreground" : ""}`}>
+                  {format(day, "d")}
+                </div>
+                <div className="space-y-1">
+                  {dayAppts.slice(0, 3).map((appt) => {
+                    const agent = teamById.get(appt.team_member_id);
+                    const role = agent?.role ?? "office";
+                    return (
+                      <div key={appt.id} className={`rounded-md border px-1.5 py-1 text-[11px] leading-tight ${ROLE_STYLES[role] ?? ROLE_STYLES.office}`}>
+                        <div className="truncate font-medium">{format(new Date(appt.scheduled_for), "h:mm a")} · {appt.customer_name || "Appointment"}</div>
+                        <div className="truncate opacity-80">{roleLabel(role)}{agent?.name ? ` · ${agent.name}` : ""}</div>
+                      </div>
+                    );
+                  })}
+                  {dayAppts.length > 3 && <div className="text-[11px] text-muted-foreground">+{dayAppts.length - 3} more</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap gap-2 p-4 text-xs">
+          {Object.entries(ROLE_STYLES).map(([role, classes]) => (
+            <span key={role} className={`rounded-full border px-2 py-1 ${classes}`}>{roleLabel(role)}</span>
+          ))}
+        </div>
+      </Card>
 
       {!enabled ? (
         <Card className="p-5 text-sm text-muted-foreground">Scheduling is off. Toggle it on above to manage appointments and blackouts.</Card>
@@ -116,7 +206,7 @@ function SchedulingPage() {
                 await book({ data: { ...newAppt, scheduledFor: new Date(newAppt.scheduledFor).toISOString() } });
                 toast.success("Booked");
                 setNewAppt({ teamMemberId: "", scheduledFor: "", customerName: "", customerPhone: "", service: "", durationMinutes: 60 });
-                await reload();
+                await reload(month);
               } catch (e: any) { toast.error(e.message); }
             }}><Plus className="h-3 w-3" /> Book</Button>
           </Card>
@@ -134,7 +224,7 @@ function SchedulingPage() {
                       <div className="truncate text-xs text-muted-foreground">{a.customer_name ?? ""} {a.customer_phone ? `· ${a.customer_phone}` : ""} {a.service ? `· ${a.service}` : ""} · {a.status} · {a.source}</div>
                     </div>
                     {a.status !== "cancelled" && (
-                      <Button variant="ghost" size="sm" onClick={async () => { await cancel({ data: { id: a.id } }); await reload(); }}>Cancel</Button>
+                      <Button variant="ghost" size="sm" onClick={async () => { await cancel({ data: { id: a.id } }); await reload(month); }}>Cancel</Button>
                     )}
                   </div>
                 );
@@ -163,14 +253,14 @@ function SchedulingPage() {
               try {
                 await upBlackout({ data: { teamMemberId: newBlack.teamMemberId || null, startAt: new Date(newBlack.startAt).toISOString(), endAt: new Date(newBlack.endAt).toISOString(), reason: newBlack.reason || undefined } });
                 setNewBlack({ teamMemberId: "", startAt: "", endAt: "", reason: "" });
-                await reload(); toast.success("Blackout added");
+                await reload(month); toast.success("Blackout added");
               } catch (e: any) { toast.error(e.message); }
             }}><Plus className="h-3 w-3" /> Add blackout</Button>
             <div className="divide-y">
               {blackouts.map((b) => (
                 <div key={b.id} className="flex items-center justify-between gap-2 py-2 text-xs">
                   <div>{new Date(b.start_at).toLocaleString()} → {new Date(b.end_at).toLocaleString()} {b.reason ? `· ${b.reason}` : ""}</div>
-                  <Button variant="ghost" size="sm" onClick={async () => { await delBlackout({ data: { id: b.id } }); await reload(); }}><Trash2 className="h-3 w-3" /></Button>
+                  <Button variant="ghost" size="sm" onClick={async () => { await delBlackout({ data: { id: b.id } }); await reload(month); }}><Trash2 className="h-3 w-3" /></Button>
                 </div>
               ))}
             </div>

@@ -3,7 +3,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { PhoneCall, LayoutDashboard, Settings as SettingsIcon, LogOut, TrendingUp, Users, Phone, FileText, CalendarDays } from "lucide-react";
+import { AppIcon } from "@/components/app-icon";
+import { LayoutDashboard, Settings as SettingsIcon, LogOut, TrendingUp, Users, Phone, FileText, CalendarDays } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({ component: Layout });
 
@@ -51,9 +52,7 @@ function Layout() {
     <div className="flex min-h-screen bg-[image:var(--gradient-subtle)]">
       <aside className="hidden w-60 shrink-0 border-r border-border bg-card/60 p-4 md:flex md:flex-col">
         <Link to="/" className="mb-8 flex items-center gap-2 font-semibold">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground">
-            <PhoneCall className="h-4 w-4" />
-          </span>
+          <AppIcon />
           CallRecover
         </Link>
         <nav className="flex flex-col gap-1 text-sm">
