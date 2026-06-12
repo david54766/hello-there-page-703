@@ -36,6 +36,7 @@ import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-o
 import { Route as ApiPublicPasswordResetRouteImport } from './routes/api/public/password-reset'
 import { Route as ApiMobileTestSmsAlertRouteImport } from './routes/api/mobile/test-sms-alert'
 import { Route as ApiMobileTestPushRouteImport } from './routes/api/mobile/test-push'
+import { Route as ApiMobileTestEmailAlertRouteImport } from './routes/api/mobile/test-email-alert'
 import { Route as ApiMobileSetupScanRouteImport } from './routes/api/mobile/setup-scan'
 import { Route as ApiMobileSendSmsRouteImport } from './routes/api/mobile/send-sms'
 import { Route as ApiMobileRecordingUrlRouteImport } from './routes/api/mobile/recording-url'
@@ -178,6 +179,11 @@ const ApiMobileTestPushRoute = ApiMobileTestPushRouteImport.update({
   path: '/api/mobile/test-push',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMobileTestEmailAlertRoute = ApiMobileTestEmailAlertRouteImport.update({
+  id: '/api/mobile/test-email-alert',
+  path: '/api/mobile/test-email-alert',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMobileSetupScanRoute = ApiMobileSetupScanRouteImport.update({
   id: '/api/mobile/setup-scan',
   path: '/api/mobile/setup-scan',
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
   '/api/mobile/setup-scan': typeof ApiMobileSetupScanRoute
+  '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
   '/api/mobile/setup-scan': typeof ApiMobileSetupScanRoute
+  '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
@@ -316,6 +324,7 @@ export interface FileRoutesById {
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
   '/api/mobile/setup-scan': typeof ApiMobileSetupScanRoute
+  '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
     | '/api/mobile/setup-scan'
+    | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
     | '/api/public/password-reset'
@@ -388,6 +398,7 @@ export interface FileRouteTypes {
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
     | '/api/mobile/setup-scan'
+    | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
     | '/api/public/password-reset'
@@ -424,6 +435,7 @@ export interface FileRouteTypes {
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
     | '/api/mobile/setup-scan'
+    | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
     | '/api/public/password-reset'
@@ -454,6 +466,7 @@ export interface RootRouteChildren {
   ApiMobileRecordingUrlRoute: typeof ApiMobileRecordingUrlRoute
   ApiMobileSendSmsRoute: typeof ApiMobileSendSmsRoute
   ApiMobileSetupScanRoute: typeof ApiMobileSetupScanRoute
+  ApiMobileTestEmailAlertRoute: typeof ApiMobileTestEmailAlertRoute
   ApiMobileTestPushRoute: typeof ApiMobileTestPushRoute
   ApiMobileTestSmsAlertRoute: typeof ApiMobileTestSmsAlertRoute
   ApiPublicPasswordResetRoute: typeof ApiPublicPasswordResetRoute
@@ -653,6 +666,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMobileTestPushRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mobile/test-email-alert': {
+      id: '/api/mobile/test-email-alert'
+      path: '/api/mobile/test-email-alert'
+      fullPath: '/api/mobile/test-email-alert'
+      preLoaderRoute: typeof ApiMobileTestEmailAlertRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mobile/setup-scan': {
       id: '/api/mobile/setup-scan'
       path: '/api/mobile/setup-scan'
@@ -751,6 +771,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMobileRecordingUrlRoute: ApiMobileRecordingUrlRoute,
   ApiMobileSendSmsRoute: ApiMobileSendSmsRoute,
   ApiMobileSetupScanRoute: ApiMobileSetupScanRoute,
+  ApiMobileTestEmailAlertRoute: ApiMobileTestEmailAlertRoute,
   ApiMobileTestPushRoute: ApiMobileTestPushRoute,
   ApiMobileTestSmsAlertRoute: ApiMobileTestSmsAlertRoute,
   ApiPublicPasswordResetRoute: ApiPublicPasswordResetRoute,

@@ -44,15 +44,17 @@ export async function requireMobileSupabase(request: Request) {
 
   const { data, error } = await supabase.auth.getClaims(token);
   let userId = data?.claims?.sub ?? null;
+  let userEmail = typeof data?.claims?.email === "string" ? data.claims.email : null;
   if (error || !userId) {
     const fallback = await supabase.auth.getUser(token);
     userId = fallback.data.user?.id ?? null;
+    userEmail = fallback.data.user?.email ?? null;
     if (fallback.error || !userId) {
       throw new Error("Invalid token");
     }
   }
 
-  return { supabase, userId };
+  return { supabase, userId, userEmail };
 }
 
 export async function getMobileBusinessId(supabase: any): Promise<string | null> {
