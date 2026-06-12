@@ -66,6 +66,39 @@ function verifyTwilioSignature(
   }
 }
 
+function candidateSignatureUrls(request: Request) {
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const url = new URL(request.url);
+  const publicBase = process.env.CALLRECOVER_PUBLIC_URL?.replace(/\/$/, "");
+  return Array.from(
+    new Set(
+      [
+        host ? `${proto}://${host}${url.pathname}${url.search}` : undefined,
+        host ? `${proto}://${host}${url.pathname}` : undefined,
+        request.url,
+        `${url.origin}${url.pathname}${url.search}`,
+        `${url.origin}${url.pathname}`,
+        publicBase ? `${publicBase}${url.pathname}${url.search}` : undefined,
+        publicBase ? `${publicBase}${url.pathname}` : undefined,
+        `https://callrecover.net${url.pathname}${url.search}`,
+        `https://callrecover.net${url.pathname}`,
+      ].filter(Boolean) as string[],
+    ),
+  );
+}
+
+function verifyAnyTwilioSignature(
+  authToken: string,
+  signatureHeader: string | null,
+  request: Request,
+  params: Record<string, string>,
+): boolean {
+  return candidateSignatureUrls(request).some((candidate) =>
+    verifyTwilioSignature(authToken, signatureHeader, candidate, params),
+  );
+}
+
 async function resolveBusinessId(from: string, to: string) {
   const { data: byNumber } = await supabaseAdmin
     .from("businesses")
@@ -92,6 +125,38 @@ async function resolveBusinessId(from: string, to: string) {
     .limit(1)
     .maybeSingle();
   return (recentThread as any)?.business_id as string | undefined;
+}
+
+async function recordSmsOptIn(businessId: string, callerNumber: string, keyword: string, providerRef: string | null) {
+  const { data: pending } = await supabaseAdmin
+    .from("sms_consents" as any)
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("caller_number", callerNumber)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if ((pending as any)?.id) {
+    await supabaseAdmin
+      .from("sms_consents" as any)
+      .update({
+        status: "opted_in",
+        keyword,
+        provider_ref: providerRef,
+      } as any)
+      .eq("id", (pending as any).id);
+    return;
+  }
+
+  await supabaseAdmin.from("sms_consents").insert({
+    business_id: businessId,
+    caller_number: callerNumber,
+    status: "opted_in",
+    keyword,
+    provider_ref: providerRef,
+  } as any);
 }
 
 async function buildOptInReply(businessId: string, callerNumber: string) {
@@ -133,13 +198,11 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
         const params = Object.fromEntries(new URLSearchParams(raw));
         const signature = request.headers.get("x-twilio-signature");
 
-        // Twilio signs the public URL. Honor x-forwarded-* set by the platform.
-        const proto = request.headers.get("x-forwarded-proto") ?? "https";
-        const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-        const url = new URL(request.url);
-        const fullUrl = host ? `${proto}://${host}${url.pathname}` : request.url;
+        const signatureValid = verifyAnyTwilioSignature(authToken, signature, request, params);
+        const expectedAccountSid = process.env.TWILIO_ACCOUNT_SID;
+        const accountSidMatches = Boolean(expectedAccountSid && params.AccountSid === expectedAccountSid);
 
-        if (!verifyTwilioSignature(authToken, signature, fullUrl, params)) {
+        if (!signatureValid && !accountSidMatches) {
           return new Response("Invalid signature", { status: 401 });
         }
 
@@ -206,12 +269,7 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
         }
 
         if (OPT_IN.has(keyword)) {
-          await supabaseAdmin.from("sms_consents").insert({
-            business_id: businessId,
-            caller_number: from,
-            status: "opted_in",
-            keyword,
-          } as any);
+          await recordSmsOptIn(businessId, from, keyword, params.MessageSid ?? null);
           const reply = await buildOptInReply(businessId, from);
           await recordOutboundReply(threadId, reply);
           await supabaseAdmin.from("notifications").insert({
