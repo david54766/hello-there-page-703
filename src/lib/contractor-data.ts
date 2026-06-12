@@ -147,26 +147,6 @@ export function getSmsTemplate(contractorType: string | null | undefined, busine
 // Returns a short, direct first message + a system prompt that keeps
 // every reply to 1-2 sentences and (optionally) offers to book a consult.
 
-const TRADE_TEAM_WORDS: Record<string, string> = {
-  roofing: "roofers",
-  plumbing: "plumbers",
-  hvac: "HVAC techs",
-  electrical: "electricians",
-  landscaping: "landscapers",
-  pest_control: "pest control techs",
-  restoration: "restoration crew",
-  general_contractor: "contractors",
-  painting: "painters",
-  concrete: "concrete crew",
-  pool_services: "pool techs",
-  pressure_washing: "crew",
-  tree_services: "tree crew",
-  flooring: "flooring crew",
-  handyman: "handymen",
-  solar: "solar techs",
-  fencing: "fencing crew",
-};
-
 const TRADE_QUALIFIER: Record<string, string> = {
   roofing: "Is this a leak or general repair?",
   plumbing: "Is water actively running, or contained?",
@@ -181,32 +161,94 @@ const TRADE_QUALIFIER: Record<string, string> = {
   solar: "Is this for a new install or existing system service?",
 };
 
+const TRADE_ASSESSMENT_WORDS: Record<string, string> = {
+  roofing: "roofing assessment",
+  plumbing: "plumbing assessment",
+  hvac: "HVAC assessment",
+  electrical: "electrical assessment",
+  landscaping: "landscaping request",
+  pest_control: "pest control request",
+  restoration: "restoration assessment",
+  general_contractor: "project assessment",
+  painting: "painting estimate request",
+  concrete: "concrete estimate request",
+  pool_services: "pool service request",
+  pressure_washing: "pressure washing request",
+  tree_services: "tree service request",
+  flooring: "flooring estimate request",
+  handyman: "repair request",
+  solar: "solar service request",
+  fencing: "fencing estimate request",
+};
+
+const TRADE_SCHEDULING_WORDS: Record<string, string> = {
+  roofing: "roof inspections and estimates",
+  plumbing: "plumbing appointments and estimates",
+  hvac: "HVAC appointments and estimates",
+  electrical: "electrical appointments and estimates",
+  landscaping: "landscaping appointments and estimates",
+  pest_control: "pest control appointments",
+  restoration: "restoration appointments and estimates",
+  general_contractor: "appointments and estimates",
+  painting: "painting estimates",
+  concrete: "concrete estimates",
+  pool_services: "pool service appointments",
+  pressure_washing: "pressure washing estimates",
+  tree_services: "tree service estimates",
+  flooring: "flooring estimates",
+  handyman: "repair appointments and estimates",
+  solar: "solar consultations and estimates",
+  fencing: "fencing estimates",
+};
+
+export const DEFAULT_AGENT_NAME = "Alex";
+
+function cleanAgentName(value: string | null | undefined) {
+  const name = (value ?? "").trim();
+  if (!name) return DEFAULT_AGENT_NAME;
+  if (/\d/.test(name) || name.length > 32) return DEFAULT_AGENT_NAME;
+  return name;
+}
+
 export function getStandardScript(
   contractorType: string | null | undefined,
   businessName: string,
-  opts: { schedulingEnabled?: boolean; bookingUrl?: string | null } = {},
+  opts: { schedulingEnabled?: boolean; bookingUrl?: string | null; agentName?: string | null } = {},
 ): { firstMessage: string; systemPrompt: string } {
-  const team = (contractorType && TRADE_TEAM_WORDS[contractorType]) || "team";
   const qualifier =
     (contractorType && TRADE_QUALIFIER[contractorType]) ||
     "Can you briefly describe what you need help with?";
+  const agentName = cleanAgentName(opts.agentName);
+  const assessment =
+    (contractorType && TRADE_ASSESSMENT_WORDS[contractorType]) ||
+    "request";
+  const schedulingPhrase =
+    (contractorType && TRADE_SCHEDULING_WORDS[contractorType]) ||
+    "appointments and estimates";
+  const schedulingReady = Boolean(opts.schedulingEnabled && opts.bookingUrl);
 
   const firstMessage =
-    `Thanks for calling ${businessName || "{business}"}. ` +
-    `All of our ${team} are on another line right now - ` +
-    `but I can take your details and pass them along immediately so they get back to you as fast as possible.`;
+    `Thank you for calling ${businessName || "{business}"}. ` +
+    `My name is ${agentName}. I am a virtual assistant here to help with a quick ${assessment}. ` +
+    `If you would rather speak with a staff member, just say so and I will take a message for the team. ` +
+    (schedulingReady
+      ? `I can also help schedule ${schedulingPhrase}. `
+      : "") +
+    `How can we help today?`;
 
   const bookingLine =
-    opts.schedulingEnabled && opts.bookingUrl
-      ? `After you have their name, number, and the reason for the call, offer: "Would you like me to book a quick consultation right now?" If yes, share this link: ${opts.bookingUrl}`
+    schedulingReady
+      ? `After you have their name, number, and the reason for the call, you may offer scheduling with this exact wording: "I can help start scheduling ${schedulingPhrase}. The team will confirm the exact time if needed." If they want to schedule, share this booking link: ${opts.bookingUrl}. Do not invent appointment times, availability, prices, or technician names.`
       : `After you have their name, number, and the reason for the call, close with: "I'll have someone call you back shortly."`;
 
   const smsConsentLine =
     `After taking the message, ask exactly: "${AI_VERBAL_SMS_OPT_IN_PROMPT}" If the caller says yes and called from a mobile number, CallRecover sends one confirmation text message: "${DOUBLE_OPT_IN_CONFIRMATION_SMS}" Only after the caller replies YES do further text messages send. If the caller declines text messages, continue normally and confirm the business will call back. Never imply text message consent is required for callback, scheduling, service, or any transaction.`;
 
   const systemPrompt = [
-    `You are the phone receptionist for ${businessName || "{business}"}.`,
+    `You are ${agentName}, the virtual phone assistant for ${businessName || "{business}"}.`,
+    `The opening message must disclose that you are a virtual assistant and give callers a quick path to staff follow-up.`,
     `Keep every reply to one or two short sentences. Be warm, calm, and direct.`,
+    `If the caller says they do not want to speak with a virtual assistant, asks for a human, asks for staff, or sounds uncomfortable, do not argue. Collect their name, best callback number, and brief reason for calling, then say a staff member will follow up.`,
     `Step 1: confirm the caller's name and best callback number.`,
     `Step 2: ask one qualifying question - ${qualifier}`,
     `Step 3: ${smsConsentLine}`,

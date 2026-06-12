@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Phone, Loader2, RefreshCw, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { CONTRACTOR_TYPES } from "@/lib/contractor-data";
+import { CONTRACTOR_TYPES, DEFAULT_AGENT_NAME } from "@/lib/contractor-data";
 
 export const Route = createFileRoute("/_authenticated/vapi")({ component: VapiPage });
 
@@ -322,7 +322,7 @@ function VapiPage() {
               ref={promptRef}
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder={"You are a friendly agent for {business}. If asked about our site share {website_info}. Offer to book via {book_consult}."}
+              placeholder={"You are a virtual assistant for {business}. Collect the caller's name, callback number, and reason for calling. Only offer scheduling when scheduling is enabled and a booking link exists."}
               rows={6}
               maxLength={8000}
             />
@@ -484,8 +484,16 @@ function NumberRow({ number, row, onSave }: { number: { id: string; number: stri
         </Select>
       </div>
       <div>
-        <Label className="text-xs">Assistant name</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+        <Label className="text-xs">Agent name callers hear</Label>
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={80}
+          placeholder={DEFAULT_AGENT_NAME}
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Used in the opening line, for example: "My name is {name || DEFAULT_AGENT_NAME}."
+        </p>
       </div>
       <div>
         <div className="mb-1 flex items-center justify-between">

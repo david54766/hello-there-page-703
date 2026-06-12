@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { applyTags, mergeTagDefaults, type TagValues } from "@/lib/tags";
 import { DEFAULT_VOICE_ID } from "@/lib/voices";
-import { getStandardScript } from "@/lib/contractor-data";
+import { DEFAULT_AGENT_NAME, getStandardScript } from "@/lib/contractor-data";
 
 const BASE = "https://api.vapi.ai";
 const VAPI_SERVER_MESSAGES = ["end-of-call-report"];
@@ -55,6 +55,7 @@ function bookingUrlForBusiness(business: Record<string, unknown> | null | undefi
 function buildDefaultScript(
   business: Record<string, unknown> | null | undefined,
   contractorType?: string | null,
+  agentName?: string | null,
 ) {
   const businessName =
     typeof (business as any)?.business_name === "string" ? (business as any).business_name : "";
@@ -64,6 +65,7 @@ function buildDefaultScript(
     {
       schedulingEnabled: Boolean((business as any)?.scheduling_enabled),
       bookingUrl: bookingUrlForBusiness(business),
+      agentName,
     },
   );
 }
@@ -81,14 +83,18 @@ function vapiRuntimePatch() {
 
 function promptNeedsRefresh(prompt: string | null | undefined) {
   if (!prompt) return true;
-  return [
+  const hasStaleLanguage = [
     "{book_consult}",
     "If they want to book, offer",
+    "How can I help today?",
+    "friendly receptionist",
+    "phone receptionist",
     "one confirmation SMS",
     "further SMS messages",
     "If they decline SMS",
     "SMS consent is required",
   ].some((needle) => prompt.includes(needle));
+  return hasStaleLanguage || !prompt.includes("virtual assistant") || !prompt.includes("text message confirmation");
 }
 
 async function loadBusinessForUser(supabase: any) {
@@ -242,13 +248,15 @@ export async function syncVapiAssistantsForBusiness(
   const results: Array<{ id: string; assistantId: string | null; promptRefreshed: boolean; linked: boolean }> = [];
   for (const row of rows ?? []) {
     if (!(row as any).assistant_id) continue;
-    const script = buildDefaultScript(business, (row as any).contractor_type_preset);
+    const agentName = (row as any).assistant_name || DEFAULT_AGENT_NAME;
+    const script = buildDefaultScript(business, (row as any).contractor_type_preset, agentName);
     const refreshPrompt = promptNeedsRefresh((row as any).custom_prompt);
     const nextPrompt = refreshPrompt ? script.systemPrompt : (row as any).custom_prompt;
     const patch: Record<string, unknown> = {
       ...vapiRuntimePatch(),
       ...(refreshPrompt
         ? {
+            firstMessage: script.firstMessage,
             model: {
               provider: "openai",
               model: "gpt-4o-mini",
@@ -277,7 +285,7 @@ export async function syncVapiAssistantsForBusiness(
         .from("vapi_number_assistants")
         .update({
           custom_prompt: nextPrompt,
-          custom_first_message: (row as any).custom_first_message || script.firstMessage,
+          custom_first_message: script.firstMessage,
         })
         .eq("id", (row as any).id);
     }
@@ -300,6 +308,7 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
       phoneNumberId: z.string().min(1),
       phoneNumber: z.string().optional(),
       contractorType: z.string().max(50).optional(),
+      assistantName: z.string().max(80).optional(),
       voiceId: z.string().max(60).optional(),
       firstMessage: z.string().max(2000).optional(),
       systemPrompt: z.string().max(8000).optional(),
@@ -321,8 +330,9 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
     }
 
     const tags = mergeTagDefaults(business);
-    const defaultScript = buildDefaultScript(business, data.contractorType);
-    const name = `${tags.business ?? "Business"} - ${data.phoneNumber ?? "agent"}`.slice(0, 80);
+    const agentName = data.assistantName?.trim() || DEFAULT_AGENT_NAME;
+    const defaultScript = buildDefaultScript(business, data.contractorType, agentName);
+    const name = agentName.slice(0, 80);
     const first = applyTags(
       data.firstMessage ?? defaultScript.firstMessage,
       tags,
@@ -353,7 +363,7 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
       phone_number_id: data.phoneNumberId,
       phone_number: data.phoneNumber ?? null,
       assistant_id: assistant.id,
-      assistant_name: name,
+      assistant_name: agentName,
       contractor_type_preset: data.contractorType ?? business?.contractor_type ?? null,
       custom_prompt: prompt,
       custom_first_message: first,
@@ -390,16 +400,33 @@ export const updateAssistantForNumber = createServerFn({ method: "POST" })
       .single();
     if (!existing?.assistant_id) throw new Error("Assistant not provisioned yet for this number");
     const tags = mergeTagDefaults(business);
-    const defaultScript = buildDefaultScript(business, data.contractorType ?? existing.contractor_type_preset);
-    const refreshPrompt = data.systemPrompt === undefined && promptNeedsRefresh(existing.custom_prompt);
+    const agentName = data.assistantName?.trim() || existing.assistant_name || DEFAULT_AGENT_NAME;
+    const nameChanged = data.assistantName !== undefined && agentName !== existing.assistant_name;
+    const defaultScript = buildDefaultScript(
+      business,
+      data.contractorType ?? existing.contractor_type_preset,
+      agentName,
+    );
+    const canAutoRefreshPrompt =
+      data.systemPrompt === undefined || data.systemPrompt === existing.custom_prompt;
+    const canAutoRefreshFirst =
+      data.firstMessage === undefined || data.firstMessage === existing.custom_first_message;
+    const refreshScript =
+      (promptNeedsRefresh(existing.custom_prompt) || nameChanged) &&
+      canAutoRefreshPrompt &&
+      canAutoRefreshFirst;
     const patch: Record<string, unknown> = {};
-    if (data.assistantName) patch.name = data.assistantName;
-    if (data.firstMessage !== undefined) patch.firstMessage = applyTags(data.firstMessage, tags);
-    if (data.systemPrompt !== undefined || refreshPrompt) {
+    if (data.assistantName) patch.name = agentName;
+    if (refreshScript) {
+      patch.firstMessage = applyTags(defaultScript.firstMessage, tags);
+    } else if (data.firstMessage !== undefined) {
+      patch.firstMessage = applyTags(data.firstMessage, tags);
+    }
+    if (data.systemPrompt !== undefined || refreshScript) {
       patch.model = {
         provider: "openai",
         model: "gpt-4o-mini",
-        messages: [{ role: "system", content: applyTags(data.systemPrompt ?? defaultScript.systemPrompt, tags) }],
+        messages: [{ role: "system", content: applyTags(refreshScript ? defaultScript.systemPrompt : data.systemPrompt, tags) }],
       };
     }
     if (data.voiceId) {
@@ -421,9 +448,9 @@ export const updateAssistantForNumber = createServerFn({ method: "POST" })
     const { data: saved, error } = await context.supabase
       .from("vapi_number_assistants")
       .update({
-        assistant_name: data.assistantName ?? existing.assistant_name,
-        custom_prompt: data.systemPrompt ?? (refreshPrompt ? defaultScript.systemPrompt : existing.custom_prompt),
-        custom_first_message: data.firstMessage ?? existing.custom_first_message ?? defaultScript.firstMessage,
+        assistant_name: agentName,
+        custom_prompt: refreshScript ? defaultScript.systemPrompt : data.systemPrompt ?? existing.custom_prompt,
+        custom_first_message: refreshScript ? defaultScript.firstMessage : data.firstMessage ?? existing.custom_first_message ?? defaultScript.firstMessage,
         contractor_type_preset: data.contractorType ?? existing.contractor_type_preset,
       })
       .eq("id", existing.id)
