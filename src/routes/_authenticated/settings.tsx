@@ -70,6 +70,24 @@ function Settings() {
       });
   }, [user]);
 
+  async function syncVapiAgent() {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error("No active session");
+    const res = await fetch("/api/mobile/sync-vapi-agent", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ forceRefresh: true }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error ?? "Assistant sync failed");
+    }
+  }
+
   async function save() {
     if (!biz) return;
     setSaving(true);
@@ -129,8 +147,15 @@ function Settings() {
     } catch {
       /* non-fatal */
     }
+    try {
+      await syncVapiAgent();
+    } catch (error) {
+      setSaving(false);
+      toast.error(`Saved, but assistant sync failed: ${error instanceof Error ? error.message : "unknown error"}`);
+      return;
+    }
     setSaving(false);
-    toast.success("Saved");
+    toast.success("Saved and assistant synced");
   }
 
   async function autoFillFromWebsite() {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendSmsForCall } from "@/lib/sms-send.server";
+import { syncVapiAssistantsForBusiness } from "@/lib/vapi.functions";
 
 async function getBusinessId(supabase: any): Promise<string | null> {
   const { data } = await supabase.from("business_members").select("business_id").limit(1);
@@ -41,6 +42,20 @@ function buildAppointmentConfirmation({
   const assignment = teamName ? `${teamName.trim()} is assigned` : "The team is assigned";
   const serviceLine = service?.trim() ? ` for ${service.trim()}` : "";
   return `CallRecover: Appointment confirmed for ${when}. ${assignment}${serviceLine}. Reply here if you need to change it.`;
+}
+
+async function syncBusinessAssistant(supabase: any, businessId: string) {
+  try {
+    return await syncVapiAssistantsForBusiness(supabase, businessId, {
+      linkPhoneNumbers: true,
+      forceRefresh: true,
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not sync Vapi assistant",
+    };
+  }
 }
 
 export const getSchedule = createServerFn({ method: "POST" })
@@ -253,7 +268,8 @@ export const setSchedulingEnabled = createServerFn({ method: "POST" })
       .update({ scheduling_enabled: data.enabled })
       .eq("id", businessId);
     if (error) throw new Error(error.message);
-    return { ok: true };
+    const vapiSync = await syncBusinessAssistant(context.supabase, businessId);
+    return { ok: true, vapiSync };
   });
 
 export const updateBusinessTags = createServerFn({ method: "POST" })
@@ -276,7 +292,8 @@ export const updateBusinessTags = createServerFn({ method: "POST" })
     if (!businessId) throw new Error("No business found");
     const { error } = await context.supabase.from("businesses").update(data).eq("id", businessId);
     if (error) throw new Error(error.message);
-    return { ok: true };
+    const vapiSync = await syncBusinessAssistant(context.supabase, businessId);
+    return { ok: true, vapiSync };
   });
 
 export const getBusinessForTags = createServerFn({ method: "GET" })
