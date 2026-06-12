@@ -45,12 +45,15 @@ export async function sendPasswordResetEmail(email: string) {
   // Do not reveal whether an account exists.
   if (!linkResult.link) {
     console.warn("Password reset link skipped:", linkResult.reason ?? "no action link");
-    return sendSupabaseRecoveryEmail(safeEmail);
+    return {
+      ...(await sendSupabaseRecoveryEmail(safeEmail)),
+      fallbackReason: `recovery_link: ${linkResult.reason ?? "no action link"}`,
+    };
   }
 
   if (!hasResendConfig()) {
     console.warn("Password reset using Supabase sender: missing RESEND_API_KEY");
-    return sendSupabaseRecoveryEmail(safeEmail);
+    return { ...(await sendSupabaseRecoveryEmail(safeEmail)), fallbackReason: "missing_resend_api_key" };
   }
 
   try {
@@ -74,10 +77,10 @@ export async function sendPasswordResetEmail(email: string) {
     });
     return { ok: true as const, sent: true as const, channel: "resend" as const, from: FALLBACK_FROM };
   } catch (error) {
-    console.warn("Fallback reset email failed; trying Supabase recovery:", error instanceof Error ? error.message : error);
+    const fallbackReason = error instanceof Error ? error.message : "Resend fallback sender failed";
+    console.warn("Fallback reset email failed; trying Supabase recovery:", fallbackReason);
+    return { ...(await sendSupabaseRecoveryEmail(safeEmail)), fallbackReason: `resend: ${fallbackReason}` };
   }
-
-  return sendSupabaseRecoveryEmail(safeEmail);
 }
 
 async function generateRecoveryLink(email: string) {

@@ -4,12 +4,14 @@
 // For user-authenticated queries (with RLS), use the auth middleware instead.
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
+import { getFirstServerEnv } from '@/lib/env.server';
 
 function createSupabaseAdminClient() {
-  const SUPABASE_URL =
-    import.meta.env.VITE_SUPABASE_URL || process.env.CALLRECOVER_SUPABASE_URL || process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY =
-    process.env.CALLRECOVER_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const SUPABASE_URL = getFirstServerEnv(['VITE_SUPABASE_URL', 'CALLRECOVER_SUPABASE_URL', 'SUPABASE_URL']);
+  const SUPABASE_SERVICE_ROLE_KEY = getFirstServerEnv([
+    'CALLRECOVER_SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
+  ]);
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
