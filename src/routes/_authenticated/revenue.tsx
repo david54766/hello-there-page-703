@@ -75,14 +75,14 @@ function Revenue() {
             <AreaChart data={stats.sparkline}>
               <defs>
                 <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="oklch(0.58 0.21 257)" stopOpacity={0.55} />
-                  <stop offset="100%" stopColor="oklch(0.58 0.21 257)" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.55} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} fontSize={11} stroke="oklch(0.6 0.02 250)" />
               <YAxis allowDecimals={false} fontSize={11} stroke="oklch(0.6 0.02 250)" />
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Area type="monotone" dataKey="count" stroke="oklch(0.58 0.21 257)" fill="url(#g)" strokeWidth={2} />
+              <Area type="monotone" dataKey="count" stroke="var(--primary)" fill="url(#g)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

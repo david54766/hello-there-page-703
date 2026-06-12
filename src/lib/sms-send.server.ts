@@ -238,3 +238,37 @@ export async function sendBusinessLeadAlertSms(
 
   return { ok: failures.length === 0, sent, failures };
 }
+
+export async function sendBusinessOwnerTestSms(
+  supabase: any,
+  businessId: string,
+) {
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("business_name, notify_sms, owner_phone")
+    .eq("id", businessId)
+    .maybeSingle();
+
+  if (!(business as any)?.notify_sms) return { ok: true, skipped: "disabled", sent: 0 };
+
+  const recipients = uniqueNumbers([(business as any)?.owner_phone]);
+  if (!recipients.length) return { ok: true, skipped: "no_owner_phone", sent: 0 };
+
+  const name = (business as any)?.business_name || "your business";
+  const body = withCompliance(
+    `CallRecover test: SMS alerts are connected for ${name}. Future owner alerts will include caller priority, condition updates, and callback context.`,
+  );
+
+  let sent = 0;
+  const failures: string[] = [];
+  for (const recipient of recipients) {
+    try {
+      await sendTwilioSms(recipient, body);
+      sent += 1;
+    } catch (error) {
+      failures.push(`${recipient}: ${error instanceof Error ? error.message : "unknown error"}`);
+    }
+  }
+
+  return { ok: failures.length === 0, sent, failures };
+}

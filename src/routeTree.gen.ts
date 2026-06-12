@@ -33,7 +33,10 @@ import { Route as AuthenticatedSchedulingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
+import { Route as ApiPublicPasswordResetRouteImport } from './routes/api/public/password-reset'
+import { Route as ApiMobileTestSmsAlertRouteImport } from './routes/api/mobile/test-sms-alert'
 import { Route as ApiMobileTestPushRouteImport } from './routes/api/mobile/test-push'
+import { Route as ApiMobileSetupScanRouteImport } from './routes/api/mobile/setup-scan'
 import { Route as ApiMobileSendSmsRouteImport } from './routes/api/mobile/send-sms'
 import { Route as ApiMobileRecordingUrlRouteImport } from './routes/api/mobile/recording-url'
 import { Route as ApiMobilePushTokenRouteImport } from './routes/api/mobile/push-token'
@@ -160,9 +163,24 @@ const ApiPublicSmsOptInRoute = ApiPublicSmsOptInRouteImport.update({
   path: '/api/public/sms-opt-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPasswordResetRoute = ApiPublicPasswordResetRouteImport.update({
+  id: '/api/public/password-reset',
+  path: '/api/public/password-reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMobileTestSmsAlertRoute = ApiMobileTestSmsAlertRouteImport.update({
+  id: '/api/mobile/test-sms-alert',
+  path: '/api/mobile/test-sms-alert',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMobileTestPushRoute = ApiMobileTestPushRouteImport.update({
   id: '/api/mobile/test-push',
   path: '/api/mobile/test-push',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMobileSetupScanRoute = ApiMobileSetupScanRouteImport.update({
+  id: '/api/mobile/setup-scan',
+  path: '/api/mobile/setup-scan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMobileSendSmsRoute = ApiMobileSendSmsRouteImport.update({
@@ -225,7 +243,10 @@ export interface FileRoutesByFullPath {
   '/api/mobile/push-token': typeof ApiMobilePushTokenRoute
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
+  '/api/mobile/setup-scan': typeof ApiMobileSetupScanRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
+  '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
+  '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
   '/api/public/vapi/webhook': typeof ApiPublicVapiWebhookRoute
@@ -257,7 +278,10 @@ export interface FileRoutesByTo {
   '/api/mobile/push-token': typeof ApiMobilePushTokenRoute
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
+  '/api/mobile/setup-scan': typeof ApiMobileSetupScanRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
+  '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
+  '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
   '/api/public/vapi/webhook': typeof ApiPublicVapiWebhookRoute
@@ -291,7 +315,10 @@ export interface FileRoutesById {
   '/api/mobile/push-token': typeof ApiMobilePushTokenRoute
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
+  '/api/mobile/setup-scan': typeof ApiMobileSetupScanRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
+  '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
+  '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
   '/api/public/vapi/webhook': typeof ApiPublicVapiWebhookRoute
@@ -325,7 +352,10 @@ export interface FileRouteTypes {
     | '/api/mobile/push-token'
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
+    | '/api/mobile/setup-scan'
     | '/api/mobile/test-push'
+    | '/api/mobile/test-sms-alert'
+    | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
     | '/api/public/vapi/webhook'
@@ -357,7 +387,10 @@ export interface FileRouteTypes {
     | '/api/mobile/push-token'
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
+    | '/api/mobile/setup-scan'
     | '/api/mobile/test-push'
+    | '/api/mobile/test-sms-alert'
+    | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
     | '/api/public/vapi/webhook'
@@ -390,7 +423,10 @@ export interface FileRouteTypes {
     | '/api/mobile/push-token'
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
+    | '/api/mobile/setup-scan'
     | '/api/mobile/test-push'
+    | '/api/mobile/test-sms-alert'
+    | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
     | '/api/public/twilio/sms-inbound'
     | '/api/public/vapi/webhook'
@@ -417,7 +453,10 @@ export interface RootRouteChildren {
   ApiMobilePushTokenRoute: typeof ApiMobilePushTokenRoute
   ApiMobileRecordingUrlRoute: typeof ApiMobileRecordingUrlRoute
   ApiMobileSendSmsRoute: typeof ApiMobileSendSmsRoute
+  ApiMobileSetupScanRoute: typeof ApiMobileSetupScanRoute
   ApiMobileTestPushRoute: typeof ApiMobileTestPushRoute
+  ApiMobileTestSmsAlertRoute: typeof ApiMobileTestSmsAlertRoute
+  ApiPublicPasswordResetRoute: typeof ApiPublicPasswordResetRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
   ApiPublicTwilioSmsInboundRoute: typeof ApiPublicTwilioSmsInboundRoute
   ApiPublicVapiWebhookRoute: typeof ApiPublicVapiWebhookRoute
@@ -593,11 +632,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSmsOptInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/password-reset': {
+      id: '/api/public/password-reset'
+      path: '/api/public/password-reset'
+      fullPath: '/api/public/password-reset'
+      preLoaderRoute: typeof ApiPublicPasswordResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mobile/test-sms-alert': {
+      id: '/api/mobile/test-sms-alert'
+      path: '/api/mobile/test-sms-alert'
+      fullPath: '/api/mobile/test-sms-alert'
+      preLoaderRoute: typeof ApiMobileTestSmsAlertRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mobile/test-push': {
       id: '/api/mobile/test-push'
       path: '/api/mobile/test-push'
       fullPath: '/api/mobile/test-push'
       preLoaderRoute: typeof ApiMobileTestPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mobile/setup-scan': {
+      id: '/api/mobile/setup-scan'
+      path: '/api/mobile/setup-scan'
+      fullPath: '/api/mobile/setup-scan'
+      preLoaderRoute: typeof ApiMobileSetupScanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/mobile/send-sms': {
@@ -690,7 +750,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMobilePushTokenRoute: ApiMobilePushTokenRoute,
   ApiMobileRecordingUrlRoute: ApiMobileRecordingUrlRoute,
   ApiMobileSendSmsRoute: ApiMobileSendSmsRoute,
+  ApiMobileSetupScanRoute: ApiMobileSetupScanRoute,
   ApiMobileTestPushRoute: ApiMobileTestPushRoute,
+  ApiMobileTestSmsAlertRoute: ApiMobileTestSmsAlertRoute,
+  ApiPublicPasswordResetRoute: ApiPublicPasswordResetRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
   ApiPublicTwilioSmsInboundRoute: ApiPublicTwilioSmsInboundRoute,
   ApiPublicVapiWebhookRoute: ApiPublicVapiWebhookRoute,

@@ -24,6 +24,47 @@ function ResetPassword() {
     async function prepareRecoverySession() {
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
+      const tokenHash = url.searchParams.get("token_hash");
+      const type = url.searchParams.get("type");
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const hashError = hash.get("error_description") || hash.get("error");
+      const accessToken = hash.get("access_token");
+      const refreshToken = hash.get("refresh_token");
+
+      if (hashError) {
+        if (mounted) setLinkError(hashError);
+        return;
+      }
+
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (!mounted) return;
+        if (error) {
+          setLinkError(error.message);
+          return;
+        }
+        window.history.replaceState({}, document.title, "/reset-password");
+        setReady(true);
+        return;
+      }
+
+      if (tokenHash && type === "recovery") {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (!mounted) return;
+        if (error) {
+          setLinkError(error.message);
+          return;
+        }
+        window.history.replaceState({}, document.title, "/reset-password");
+        setReady(true);
+        return;
+      }
 
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);

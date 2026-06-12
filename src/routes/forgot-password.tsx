@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,13 +17,15 @@ function ForgotPassword() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const res = await fetch("/api/public/password-reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (!res.ok) return toast.error("We could not send a reset link right now. Please try again.");
     setSent(true);
-    toast.success("Check your email for the reset link.");
+    toast.success("If an account exists, a reset link has been sent.");
   }
 
   return (
@@ -43,7 +44,7 @@ function ForgotPassword() {
           </p>
           {sent ? (
             <div className="mt-6 rounded-md border border-border bg-muted/40 p-4 text-sm">
-              If an account exists for <span className="font-medium">{email}</span>, a reset link is on its way. The link expires in 1 hour.
+              If an account exists, a reset link from CallRecover AI is on its way. The link opens on callrecover.net and expires soon.
             </div>
           ) : (
             <form onSubmit={onSubmit} className="mt-6 space-y-4">

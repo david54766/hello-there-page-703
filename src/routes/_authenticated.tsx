@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { PhoneCall, LayoutDashboard, Settings as SettingsIcon, LogOut, TrendingUp, Users, Phone, FileText, CalendarDays } from "lucide-react";
@@ -10,12 +10,40 @@ export const Route = createFileRoute("/_authenticated")({ component: Layout });
 function Layout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [checkingSetup, setCheckingSetup] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
   }, [loading, user, navigate]);
 
-  if (loading || !user) {
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      setCheckingSetup(false);
+      return;
+    }
+    let cancelled = false;
+    async function checkOnboarding() {
+      const { data } = await supabase
+        .from("businesses")
+        .select("onboarding_complete")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setCheckingSetup(false);
+      if (data && !data.onboarding_complete && window.location.pathname !== "/onboarding") {
+        navigate({ to: "/onboarding" });
+      }
+    }
+    checkOnboarding().catch(() => {
+      if (!cancelled) setCheckingSetup(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, user, navigate]);
+
+  if (loading || !user || checkingSetup) {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading…</div>;
   }
 

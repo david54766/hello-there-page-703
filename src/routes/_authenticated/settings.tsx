@@ -13,8 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { SmsComplianceCard, CampaignRegistrationCard } from "@/components/sms-compliance";
 import { US_HOLIDAY_PRESETS } from "@/lib/holidays";
 import { listMyFactors, enrollFactor, verifyEnrollment, disableFactor } from "@/lib/mfa.functions";
+import { scanSetupWebsite } from "@/lib/setup-scan.functions";
+import { CONTRACTOR_TYPES, type ContractorType } from "@/lib/contractor-data";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, ShieldCheck, Mail, Smartphone } from "lucide-react";
+import { Trash2, ShieldCheck, Mail, Smartphone, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/settings")({ component: Se
 type Biz = {
   id: string;
   business_name: string;
+  contractor_type: ContractorType | null;
   owner_phone: string | null;
   business_phone: string | null;
   avg_job_value: number;
@@ -51,13 +54,15 @@ type Biz = {
 
 function Settings() {
   const { user } = useAuth();
+  const scanWebsite = useServerFn(scanSetupWebsite);
   const [biz, setBiz] = useState<Biz | null>(null);
   const [saving, setSaving] = useState(false);
+  const [scanningWebsite, setScanningWebsite] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     supabase.from("businesses")
-      .select("id, business_name, owner_phone, business_phone, avg_job_value, notify_sms, notify_email, notify_dashboard, notify_email_address, auto_send_ai_replies, scheduling_provider, hcp_api_key, jobber_refresh_token, agent_voice_id, agent_prompt_override, address, website, website_blurb, booking_url, callback_form_url, sms_consent_text, default_hello_script, cal_url, calendly_url, scheduling_enabled, observed_holidays")
+      .select("id, business_name, contractor_type, owner_phone, business_phone, avg_job_value, notify_sms, notify_email, notify_dashboard, notify_email_address, auto_send_ai_replies, scheduling_provider, hcp_api_key, jobber_refresh_token, agent_voice_id, agent_prompt_override, address, website, website_blurb, booking_url, callback_form_url, sms_consent_text, default_hello_script, cal_url, calendly_url, scheduling_enabled, observed_holidays")
       .eq("owner_id", user.id).maybeSingle().then(({ data }) => {
         if (!data) return;
         const d = data as unknown as Biz;
@@ -70,6 +75,7 @@ function Settings() {
     setSaving(true);
     const { error } = await supabase.from("businesses").update({
       business_name: biz.business_name,
+      contractor_type: biz.contractor_type,
       owner_phone: biz.owner_phone,
       business_phone: biz.business_phone,
       avg_job_value: biz.avg_job_value,
@@ -127,6 +133,31 @@ function Settings() {
     toast.success("Saved");
   }
 
+  async function autoFillFromWebsite() {
+    if (!biz?.website) return toast.error("Add the business website first.");
+    setScanningWebsite(true);
+    try {
+      const result = await scanWebsite({ data: { url: biz.website } });
+      setBiz({
+        ...biz,
+        business_name: result.businessName || biz.business_name,
+        contractor_type: (result.contractorType as ContractorType | null) || biz.contractor_type,
+        business_phone: result.businessPhone || biz.business_phone,
+        address: result.address || biz.address,
+        website: result.website || biz.website,
+        website_blurb: result.websiteBlurb || biz.website_blurb,
+        booking_url: result.bookingUrl || biz.booking_url,
+        callback_form_url: result.callbackFormUrl || biz.callback_form_url,
+        default_hello_script: result.defaultGreeting || biz.default_hello_script,
+      });
+      toast.success("Website scan applied. Review the fields, then save changes.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not scan the website.");
+    } finally {
+      setScanningWebsite(false);
+    }
+  }
+
   if (!biz) return <div className="p-10 text-muted-foreground">Loading…</div>;
 
   return (
@@ -153,6 +184,17 @@ function Settings() {
           <Input value={biz.business_name} onChange={(e) => setBiz({ ...biz, business_name: e.target.value })} />
         </div>
         <div className="space-y-1.5">
+          <Label>Business type</Label>
+          <Select value={biz.contractor_type ?? ""} onValueChange={(v) => setBiz({ ...biz, contractor_type: v as ContractorType })}>
+            <SelectTrigger><SelectValue placeholder="Select a trade" /></SelectTrigger>
+            <SelectContent>
+              {CONTRACTOR_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
           <Label>Business phone</Label>
           <Input value={biz.business_phone ?? ""} onChange={(e) => setBiz({ ...biz, business_phone: e.target.value })} />
         </div>
@@ -176,6 +218,10 @@ function Settings() {
           <Label>Website</Label>
           <Input value={biz.website ?? ""} onChange={(e) => setBiz({ ...biz, website: e.target.value })} placeholder="https://" />
         </div>
+        <Button type="button" variant="secondary" onClick={autoFillFromWebsite} disabled={scanningWebsite || !biz.website}>
+          <Sparkles className="h-4 w-4" />
+          {scanningWebsite ? "Scanning website..." : "Scan website with AI"}
+        </Button>
         <div className="space-y-1.5">
           <Label>Website blurb ({"{website_info}"})</Label>
           <Textarea rows={3} value={biz.website_blurb ?? ""} onChange={(e) => setBiz({ ...biz, website_blurb: e.target.value })} placeholder="Short description the agent reads if asked about your site." />
