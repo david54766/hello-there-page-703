@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { jsonResponse, optionsResponse, requireMobileSupabase } from "@/lib/mobile-auth.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendSmsForCall } from "@/lib/sms-send.server";
 
 const Body = z.object({
@@ -16,7 +17,15 @@ export const Route = createFileRoute("/api/mobile/send-sms")({
         try {
           const { supabase } = await requireMobileSupabase(request);
           const body = Body.parse(await request.json());
-          const result = await sendSmsForCall(supabase, body);
+
+          const { error } = await supabase
+            .from("calls")
+            .select("id")
+            .eq("id", body.callId)
+            .single();
+          if (error) throw new Error("Call not found");
+
+          const result = await sendSmsForCall(supabaseAdmin, body);
           return jsonResponse({ ok: true, sid: result.sid });
         } catch (error) {
           return jsonResponse({ error: error instanceof Error ? error.message : "Invalid request" }, 400);
