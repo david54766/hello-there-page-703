@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { upsertTeamMember, deleteTeamMember } from "@/lib/dispatch.functions";
-import { Plus, Trash2, Edit3, Shield, Headphones, DollarSign } from "lucide-react";
+import { Plus, Trash2, Edit3, Shield, Headphones, DollarSign, Users, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/team")({ component: Team });
@@ -21,12 +21,18 @@ type Member = {
   name: string;
   phone: string | null;
   email: string | null;
-  role: "emergency" | "office" | "sales";
+  role: "all" | "emergency" | "office" | "sales" | "service";
   active: boolean;
 };
 
-const roleIcons = { emergency: Shield, office: Headphones, sales: DollarSign };
-const roleLabel = { emergency: "Emergency dispatch", office: "Office staff", sales: "Sales" };
+const roleIcons = { all: Users, emergency: Shield, office: Headphones, sales: DollarSign, service: Wrench };
+const roleLabel = {
+  all: "All queues",
+  emergency: "Emergency dispatch",
+  office: "Office staff",
+  sales: "Sales",
+  service: "Service",
+};
 
 function Team() {
   const { user } = useAuth();
@@ -98,9 +104,11 @@ function Team() {
                 <Select value={editing?.role ?? "office"} onValueChange={(v) => setEditing({ ...editing!, role: v as Member["role"] })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All queues</SelectItem>
                     <SelectItem value="emergency">Emergency dispatch</SelectItem>
                     <SelectItem value="office">Office staff</SelectItem>
                     <SelectItem value="sales">Sales</SelectItem>
+                    <SelectItem value="service">Service</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

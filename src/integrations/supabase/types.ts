@@ -930,7 +930,7 @@ export type Database = {
         | "handyman"
         | "solar"
         | "fencing"
-      dispatch_role: "emergency" | "office" | "sales"
+      dispatch_role: "all" | "emergency" | "office" | "sales" | "service"
       lead_priority: "normal" | "high"
       lead_status: "open" | "contacted" | "scheduled" | "closed"
       notification_kind: "sms" | "email" | "dashboard" | "emergency"
@@ -1098,7 +1098,7 @@ export const Constants = {
         "solar",
         "fencing",
       ],
-      dispatch_role: ["emergency", "office", "sales"],
+      dispatch_role: ["all", "emergency", "office", "sales", "service"],
       lead_priority: ["normal", "high"],
       lead_status: ["open", "contacted", "scheduled", "closed"],
       notification_kind: ["sms", "email", "dashboard", "emergency"],

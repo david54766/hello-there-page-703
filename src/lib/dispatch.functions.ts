@@ -3,17 +3,22 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sendMobilePushForNotification } from "./mobile-push.server";
 
-type Role = "emergency" | "office" | "sales";
+type Role = "all" | "emergency" | "office" | "sales" | "service";
 
 async function pickMember(supabase: any, businessId: string, role: Role) {
+  const roles = role === "all" ? ["all"] : [role, "all"];
   const { data } = await supabase
     .from("team_members")
-    .select("id, name, phone, email, last_assigned_at")
+    .select("id, name, phone, email, role, last_assigned_at")
     .eq("business_id", businessId)
-    .eq("role", role)
+    .in("role", roles)
     .eq("active", true)
     .order("last_assigned_at", { ascending: true, nullsFirst: true })
-    .limit(1);
+    .limit(10);
+  if (role !== "all") {
+    const exact = data?.find((member: any) => member.role === role);
+    if (exact) return exact;
+  }
   return data?.[0] ?? null;
 }
 
@@ -24,15 +29,19 @@ export const assignLead = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: call } = await supabase
       .from("calls")
-      .select("id, business_id, priority, qualification, caller_number")
+      .select("id, business_id, priority, urgency, qualification, caller_number, service_needed")
       .eq("id", data.callId)
       .single();
     if (!call) throw new Error("Call not found");
 
     const qual = (call.qualification ?? {}) as Record<string, string>;
+    const serviceText = [qual.service_needed, (call as any).service_needed]
+      .filter(Boolean)
+      .join(" ");
     let role: Role = "office";
-    if (call.priority === "high") role = "emergency";
-    else if (qual.insurance_claim === "yes" || /quote|estimate/i.test(qual.service_needed ?? "")) role = "sales";
+    if (call.priority === "high" || call.urgency === "emergency") role = "emergency";
+    else if (qual.insurance_claim === "yes" || /quote|estimate|bid|pricing|price/i.test(serviceText)) role = "sales";
+    else if (/repair|leak|service|maintenance|install|replacement|damage|fix/i.test(serviceText)) role = "service";
 
     let member = await pickMember(supabase, call.business_id, role);
     if (!member && role !== "office") member = await pickMember(supabase, call.business_id, "office");
@@ -96,7 +105,7 @@ export const upsertTeamMember = createServerFn({ method: "POST" })
       name: z.string().min(1).max(120),
       phone: z.string().max(40).optional().nullable(),
       email: z.string().email().max(200).optional().nullable(),
-      role: z.enum(["emergency", "office", "sales"]),
+      role: z.enum(["all", "emergency", "office", "sales", "service"]),
       active: z.boolean(),
     }).parse(input),
   )
