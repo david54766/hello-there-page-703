@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { applyTags, mergeTagDefaults, type TagValues } from "@/lib/tags";
 import { DEFAULT_VOICE_ID } from "@/lib/voices";
-import { AI_VERBAL_SMS_OPT_IN_PROMPT, DOUBLE_OPT_IN_CONFIRMATION_SMS } from "@/lib/sms-consent-copy";
+import { getStandardScript } from "@/lib/contractor-data";
 
 const BASE = "https://api.vapi.ai";
 const VAPI_SERVER_MESSAGES = ["end-of-call-report"];
@@ -41,6 +41,54 @@ function vapiServerConfig() {
     ...(credentialId ? { credentialId } : {}),
     ...(!credentialId && webhookSecret ? { headers: { "X-Vapi-Secret": webhookSecret } } : {}),
   };
+}
+
+function bookingUrlForBusiness(business: Record<string, unknown> | null | undefined) {
+  const value =
+    (business as any)?.booking_url ||
+    (business as any)?.cal_url ||
+    (business as any)?.calendly_url ||
+    null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function buildDefaultScript(
+  business: Record<string, unknown> | null | undefined,
+  contractorType?: string | null,
+) {
+  const businessName =
+    typeof (business as any)?.business_name === "string" ? (business as any).business_name : "";
+  return getStandardScript(
+    contractorType || ((business as any)?.contractor_type as string | null | undefined),
+    businessName,
+    {
+      schedulingEnabled: Boolean((business as any)?.scheduling_enabled),
+      bookingUrl: bookingUrlForBusiness(business),
+    },
+  );
+}
+
+function vapiRuntimePatch() {
+  return {
+    server: vapiServerConfig(),
+    serverMessages: VAPI_SERVER_MESSAGES,
+    backgroundSound: "off",
+    // Let the assistant finish its sentence; don't yield on filler words.
+    startSpeakingPlan: { waitSeconds: 0.6, smartEndpointingEnabled: true },
+    stopSpeakingPlan: { numWords: 3, voiceSeconds: 0.4, backoffSeconds: 1.2 },
+  };
+}
+
+function promptNeedsRefresh(prompt: string | null | undefined) {
+  if (!prompt) return true;
+  return [
+    "{book_consult}",
+    "If they want to book, offer",
+    "one confirmation SMS",
+    "further SMS messages",
+    "If they decline SMS",
+    "SMS consent is required",
+  ].some((needle) => prompt.includes(needle));
 }
 
 async function loadBusinessForUser(supabase: any) {
@@ -167,14 +215,82 @@ function defaultAssistantPayload(
     },
     voice: { provider: "11labs", voiceId },
     transcriber: { provider: "deepgram", model: "nova-2", language: "en" },
-    server: vapiServerConfig(),
-    serverMessages: VAPI_SERVER_MESSAGES,
-    // Let the assistant finish its sentence; don't yield on filler words.
-    startSpeakingPlan: { waitSeconds: 0.6, smartEndpointingEnabled: true },
-    stopSpeakingPlan: { numWords: 3, voiceSeconds: 0.4, backoffSeconds: 1.2 },
+    ...vapiRuntimePatch(),
     silenceTimeoutSeconds: 25,
     maxDurationSeconds: 300,
   };
+}
+
+export async function syncVapiAssistantsForBusiness(
+  supabase: any,
+  businessId: string,
+  options: { linkPhoneNumbers?: boolean } = {},
+) {
+  const { data: business, error: businessError } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("id", businessId)
+    .single();
+  if (businessError || !business) throw new Error(businessError?.message ?? "Business not found");
+
+  const { data: rows, error: rowsError } = await supabase
+    .from("vapi_number_assistants")
+    .select("*")
+    .eq("business_id", businessId);
+  if (rowsError) throw new Error(rowsError.message);
+
+  const results: Array<{ id: string; assistantId: string | null; promptRefreshed: boolean; linked: boolean }> = [];
+  for (const row of rows ?? []) {
+    if (!(row as any).assistant_id) continue;
+    const script = buildDefaultScript(business, (row as any).contractor_type_preset);
+    const refreshPrompt = promptNeedsRefresh((row as any).custom_prompt);
+    const nextPrompt = refreshPrompt ? script.systemPrompt : (row as any).custom_prompt;
+    const patch: Record<string, unknown> = {
+      ...vapiRuntimePatch(),
+      ...(refreshPrompt
+        ? {
+            model: {
+              provider: "openai",
+              model: "gpt-4o-mini",
+              messages: [{ role: "system", content: nextPrompt }],
+            },
+          }
+        : {}),
+    };
+
+    await vapi(`/assistant/${(row as any).assistant_id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+
+    let linked = false;
+    if (options.linkPhoneNumbers && (row as any).phone_number_id) {
+      await vapi(`/phone-number/${(row as any).phone_number_id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ assistantId: (row as any).assistant_id }),
+      });
+      linked = true;
+    }
+
+    if (refreshPrompt) {
+      await supabase
+        .from("vapi_number_assistants")
+        .update({
+          custom_prompt: nextPrompt,
+          custom_first_message: (row as any).custom_first_message || script.firstMessage,
+        })
+        .eq("id", (row as any).id);
+    }
+
+    results.push({
+      id: (row as any).id,
+      assistantId: (row as any).assistant_id,
+      promptRefreshed: refreshPrompt,
+      linked,
+    });
+  }
+
+  return { ok: true, count: results.length, results };
 }
 
 export const ensureAssistantForNumber = createServerFn({ method: "POST" })
@@ -205,23 +321,14 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
     }
 
     const tags = mergeTagDefaults(business);
-    const name = `${tags.business ?? "Business"} – ${data.phoneNumber ?? "agent"}`.slice(0, 80);
+    const defaultScript = buildDefaultScript(business, data.contractorType);
+    const name = `${tags.business ?? "Business"} - ${data.phoneNumber ?? "agent"}`.slice(0, 80);
     const first = applyTags(
-      data.firstMessage ?? "Hi, thanks for calling {business}. How can I help today?",
+      data.firstMessage ?? defaultScript.firstMessage,
       tags,
     );
     const prompt = applyTags(
-      data.systemPrompt ??
-        [
-          "You are a friendly receptionist for {business}.",
-          "Confirm the caller's name and reason for calling.",
-          "If they want to book, offer: {book_consult}.",
-          `Before ending, ask exactly: "${AI_VERBAL_SMS_OPT_IN_PROMPT}"`,
-          `If they say yes and called from a mobile number, CallRecover sends one confirmation SMS: "${DOUBLE_OPT_IN_CONFIRMATION_SMS}"`,
-          "Only after they reply YES do further SMS messages send.",
-          "Consent to receive SMS is not required to receive a callback, schedule service, or complete any transaction.",
-          "Stay concise - keep replies to one or two short sentences.",
-        ].join(" "),
+      data.systemPrompt ?? defaultScript.systemPrompt,
       tags,
     );
     const voiceId = data.voiceId || (business as any)?.agent_voice_id || DEFAULT_VOICE_ID;
@@ -283,25 +390,22 @@ export const updateAssistantForNumber = createServerFn({ method: "POST" })
       .single();
     if (!existing?.assistant_id) throw new Error("Assistant not provisioned yet for this number");
     const tags = mergeTagDefaults(business);
+    const defaultScript = buildDefaultScript(business, data.contractorType ?? existing.contractor_type_preset);
+    const refreshPrompt = data.systemPrompt === undefined && promptNeedsRefresh(existing.custom_prompt);
     const patch: Record<string, unknown> = {};
     if (data.assistantName) patch.name = data.assistantName;
     if (data.firstMessage !== undefined) patch.firstMessage = applyTags(data.firstMessage, tags);
-    if (data.systemPrompt !== undefined) {
+    if (data.systemPrompt !== undefined || refreshPrompt) {
       patch.model = {
         provider: "openai",
         model: "gpt-4o-mini",
-        messages: [{ role: "system", content: applyTags(data.systemPrompt, tags) }],
+        messages: [{ role: "system", content: applyTags(data.systemPrompt ?? defaultScript.systemPrompt, tags) }],
       };
     }
     if (data.voiceId) {
       patch.voice = { provider: "11labs", voiceId: data.voiceId };
     }
-    // Always re-apply the "don't interrupt" speaking plan on update so
-    // older assistants get the new behavior the first time they're saved.
-    patch.server = vapiServerConfig();
-    patch.serverMessages = VAPI_SERVER_MESSAGES;
-    patch.startSpeakingPlan = { waitSeconds: 0.6, smartEndpointingEnabled: true };
-    patch.stopSpeakingPlan = { numWords: 3, voiceSeconds: 0.4, backoffSeconds: 1.2 };
+    Object.assign(patch, vapiRuntimePatch());
     if (Object.keys(patch).length) {
       await vapi(`/assistant/${existing.assistant_id}`, {
         method: "PATCH",
@@ -318,8 +422,8 @@ export const updateAssistantForNumber = createServerFn({ method: "POST" })
       .from("vapi_number_assistants")
       .update({
         assistant_name: data.assistantName ?? existing.assistant_name,
-        custom_prompt: data.systemPrompt ?? existing.custom_prompt,
-        custom_first_message: data.firstMessage ?? existing.custom_first_message,
+        custom_prompt: data.systemPrompt ?? (refreshPrompt ? defaultScript.systemPrompt : existing.custom_prompt),
+        custom_first_message: data.firstMessage ?? existing.custom_first_message ?? defaultScript.firstMessage,
         contractor_type_preset: data.contractorType ?? existing.contractor_type_preset,
       })
       .eq("id", existing.id)

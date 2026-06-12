@@ -183,11 +183,24 @@ async function resolveBusiness(message: any, call: any) {
     message?.toNumber,
   );
 
+  if (assistantId) {
+    const { data } = await supabaseAdmin
+      .from("vapi_number_assistants")
+      .select("business_id")
+      .eq("assistant_id", assistantId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if ((data as any)?.business_id) return { businessId: (data as any).business_id as string, toNumber };
+  }
+
   if (phoneNumberId) {
     const { data } = await supabaseAdmin
       .from("vapi_number_assistants")
       .select("business_id")
       .eq("phone_number_id", phoneNumberId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if ((data as any)?.business_id) return { businessId: (data as any).business_id as string, toNumber };
   }
@@ -197,6 +210,8 @@ async function resolveBusiness(message: any, call: any) {
       .from("vapi_number_assistants")
       .select("business_id")
       .eq("phone_number", toNumber)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if ((byVapiNumber as any)?.business_id) return { businessId: (byVapiNumber as any).business_id as string, toNumber };
 
@@ -206,15 +221,6 @@ async function resolveBusiness(message: any, call: any) {
       .eq("twilio_number", toNumber)
       .maybeSingle();
     if ((byTwilioNumber as any)?.id) return { businessId: (byTwilioNumber as any).id as string, toNumber };
-  }
-
-  if (assistantId) {
-    const { data } = await supabaseAdmin
-      .from("vapi_number_assistants")
-      .select("business_id")
-      .eq("assistant_id", assistantId)
-      .maybeSingle();
-    if ((data as any)?.business_id) return { businessId: (data as any).business_id as string, toNumber };
   }
 
   return { businessId: "", toNumber };

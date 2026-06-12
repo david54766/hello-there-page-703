@@ -193,7 +193,7 @@ export function getStandardScript(
 
   const firstMessage =
     `Thanks for calling ${businessName || "{business}"}. ` +
-    `All of our ${team} are on another line right now — ` +
+    `All of our ${team} are on another line right now - ` +
     `but I can take your details and pass them along immediately so they get back to you as fast as possible.`;
 
   const bookingLine =
@@ -202,13 +202,13 @@ export function getStandardScript(
       : `After you have their name, number, and the reason for the call, close with: "I'll have someone call you back shortly."`;
 
   const smsConsentLine =
-    `After taking the message, ask exactly: "${AI_VERBAL_SMS_OPT_IN_PROMPT}" If the caller says yes and called from a mobile number, CallRecover sends one confirmation SMS: "${DOUBLE_OPT_IN_CONFIRMATION_SMS}" Only after the caller replies YES do further SMS messages send. If the caller declines SMS, continue normally and confirm the business will call back. Never imply SMS consent is required for callback, scheduling, service, or any transaction.`;
+    `After taking the message, ask exactly: "${AI_VERBAL_SMS_OPT_IN_PROMPT}" If the caller says yes and called from a mobile number, CallRecover sends one confirmation text message: "${DOUBLE_OPT_IN_CONFIRMATION_SMS}" Only after the caller replies YES do further text messages send. If the caller declines text messages, continue normally and confirm the business will call back. Never imply text message consent is required for callback, scheduling, service, or any transaction.`;
 
   const systemPrompt = [
     `You are the phone receptionist for ${businessName || "{business}"}.`,
     `Keep every reply to one or two short sentences. Be warm, calm, and direct.`,
     `Step 1: confirm the caller's name and best callback number.`,
-    `Step 2: ask one qualifying question — ${qualifier}`,
+    `Step 2: ask one qualifying question - ${qualifier}`,
     `Step 3: ${smsConsentLine}`,
     `Step 4: ${bookingLine}`,
     `Never argue. Never repeat yourself. If the caller is frustrated or asks for a person, say someone will call them right back and end the call politely.`,

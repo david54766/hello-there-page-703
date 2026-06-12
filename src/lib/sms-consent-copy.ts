@@ -1,5 +1,5 @@
 export const AI_VERBAL_SMS_OPT_IN_PROMPT =
-  "Would you also like a text confirmation? This is optional — we'll call you back either way.";
+  "Would you also like a text message confirmation? This is optional - we'll call you back either way.";
 
 export const DOUBLE_OPT_IN_CONFIRMATION_SMS =
   'Classroom Panda LLC dba CallRecover: Reply YES to confirm SMS updates about your request. Msg & data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of service.';

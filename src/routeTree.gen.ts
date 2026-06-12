@@ -38,6 +38,7 @@ import { Route as ApiPublicEmailDiagnosticsRouteImport } from './routes/api/publ
 import { Route as ApiMobileTestSmsAlertRouteImport } from './routes/api/mobile/test-sms-alert'
 import { Route as ApiMobileTestPushRouteImport } from './routes/api/mobile/test-push'
 import { Route as ApiMobileTestEmailAlertRouteImport } from './routes/api/mobile/test-email-alert'
+import { Route as ApiMobileSyncVapiAgentRouteImport } from './routes/api/mobile/sync-vapi-agent'
 import { Route as ApiMobileSetupScanRouteImport } from './routes/api/mobile/setup-scan'
 import { Route as ApiMobileSendSmsRouteImport } from './routes/api/mobile/send-sms'
 import { Route as ApiMobileRecordingUrlRouteImport } from './routes/api/mobile/recording-url'
@@ -191,6 +192,11 @@ const ApiMobileTestEmailAlertRoute = ApiMobileTestEmailAlertRouteImport.update({
   path: '/api/mobile/test-email-alert',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMobileSyncVapiAgentRoute = ApiMobileSyncVapiAgentRouteImport.update({
+  id: '/api/mobile/sync-vapi-agent',
+  path: '/api/mobile/sync-vapi-agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMobileSetupScanRoute = ApiMobileSetupScanRouteImport.update({
   id: '/api/mobile/setup-scan',
   path: '/api/mobile/setup-scan',
@@ -257,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
   '/api/mobile/setup-scan': typeof ApiMobileSetupScanRoute
+  '/api/mobile/sync-vapi-agent': typeof ApiMobileSyncVapiAgentRoute
   '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
@@ -294,6 +301,7 @@ export interface FileRoutesByTo {
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
   '/api/mobile/setup-scan': typeof ApiMobileSetupScanRoute
+  '/api/mobile/sync-vapi-agent': typeof ApiMobileSyncVapiAgentRoute
   '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
@@ -333,6 +341,7 @@ export interface FileRoutesById {
   '/api/mobile/recording-url': typeof ApiMobileRecordingUrlRoute
   '/api/mobile/send-sms': typeof ApiMobileSendSmsRoute
   '/api/mobile/setup-scan': typeof ApiMobileSetupScanRoute
+  '/api/mobile/sync-vapi-agent': typeof ApiMobileSyncVapiAgentRoute
   '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
@@ -372,6 +381,7 @@ export interface FileRouteTypes {
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
     | '/api/mobile/setup-scan'
+    | '/api/mobile/sync-vapi-agent'
     | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
     | '/api/mobile/setup-scan'
+    | '/api/mobile/sync-vapi-agent'
     | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
@@ -447,6 +458,7 @@ export interface FileRouteTypes {
     | '/api/mobile/recording-url'
     | '/api/mobile/send-sms'
     | '/api/mobile/setup-scan'
+    | '/api/mobile/sync-vapi-agent'
     | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
@@ -479,6 +491,7 @@ export interface RootRouteChildren {
   ApiMobileRecordingUrlRoute: typeof ApiMobileRecordingUrlRoute
   ApiMobileSendSmsRoute: typeof ApiMobileSendSmsRoute
   ApiMobileSetupScanRoute: typeof ApiMobileSetupScanRoute
+  ApiMobileSyncVapiAgentRoute: typeof ApiMobileSyncVapiAgentRoute
   ApiMobileTestEmailAlertRoute: typeof ApiMobileTestEmailAlertRoute
   ApiMobileTestPushRoute: typeof ApiMobileTestPushRoute
   ApiMobileTestSmsAlertRoute: typeof ApiMobileTestSmsAlertRoute
@@ -694,6 +707,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMobileTestEmailAlertRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mobile/sync-vapi-agent': {
+      id: '/api/mobile/sync-vapi-agent'
+      path: '/api/mobile/sync-vapi-agent'
+      fullPath: '/api/mobile/sync-vapi-agent'
+      preLoaderRoute: typeof ApiMobileSyncVapiAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mobile/setup-scan': {
       id: '/api/mobile/setup-scan'
       path: '/api/mobile/setup-scan'
@@ -792,6 +812,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMobileRecordingUrlRoute: ApiMobileRecordingUrlRoute,
   ApiMobileSendSmsRoute: ApiMobileSendSmsRoute,
   ApiMobileSetupScanRoute: ApiMobileSetupScanRoute,
+  ApiMobileSyncVapiAgentRoute: ApiMobileSyncVapiAgentRoute,
   ApiMobileTestEmailAlertRoute: ApiMobileTestEmailAlertRoute,
   ApiMobileTestPushRoute: ApiMobileTestPushRoute,
   ApiMobileTestSmsAlertRoute: ApiMobileTestSmsAlertRoute,
