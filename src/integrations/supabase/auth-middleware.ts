@@ -10,16 +10,20 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
   async ({ next }) => {
     
     const SUPABASE_URL =
-      import.meta.env.VITE_SUPABASE_URL || process.env.CALLRECOVER_SUPABASE_URL || process.env.SUPABASE_URL;
+      import.meta.env.VITE_SUPABASE_URL ||
+      process.env.CALLRECOVER_URL ||
+      process.env.CALLRECOVER_SUPABASE_URL ||
+      process.env.SUPABASE_URL;
     const SUPABASE_PUBLISHABLE_KEY =
       import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.CALLRECOVER_PUBLISHABLE_KEY ||
       process.env.CALLRECOVER_SUPABASE_PUBLISHABLE_KEY ||
       process.env.SUPABASE_PUBLISHABLE_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       const missing = [
-        ...(!SUPABASE_URL ? ['CALLRECOVER_SUPABASE_URL'] : []),
-        ...(!SUPABASE_PUBLISHABLE_KEY ? ['CALLRECOVER_SUPABASE_PUBLISHABLE_KEY'] : []),
+        ...(!SUPABASE_URL ? ['CALLRECOVER_URL'] : []),
+        ...(!SUPABASE_PUBLISHABLE_KEY ? ['CALLRECOVER_PUBLISHABLE_KEY'] : []),
       ];
       const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Add them in Lovable Secrets.`;
       console.error(`[Supabase] ${message}`);

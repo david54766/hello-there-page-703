@@ -103,9 +103,15 @@ async function generateRecoveryLink(email: string) {
 }
 
 async function sendSupabaseRecoveryEmail(email: string) {
-  const supabaseUrl = getFirstServerEnv(["VITE_SUPABASE_URL", "CALLRECOVER_SUPABASE_URL", "SUPABASE_URL"]);
+  const supabaseUrl = getFirstServerEnv([
+    "VITE_SUPABASE_URL",
+    "CALLRECOVER_URL",
+    "CALLRECOVER_SUPABASE_URL",
+    "SUPABASE_URL",
+  ]);
   const supabaseKey = getFirstServerEnv([
     "VITE_SUPABASE_PUBLISHABLE_KEY",
+    "CALLRECOVER_PUBLISHABLE_KEY",
     "CALLRECOVER_SUPABASE_PUBLISHABLE_KEY",
     "SUPABASE_PUBLISHABLE_KEY",
   ]);

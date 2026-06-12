@@ -182,11 +182,13 @@ export const startChallenge = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const SUPABASE_URL = (
       import.meta.env.VITE_SUPABASE_URL ||
+      process.env.CALLRECOVER_URL ||
       process.env.CALLRECOVER_SUPABASE_URL ||
       process.env.SUPABASE_URL
     )!;
     const KEY = (
       import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.CALLRECOVER_PUBLISHABLE_KEY ||
       process.env.CALLRECOVER_SUPABASE_PUBLISHABLE_KEY ||
       process.env.SUPABASE_PUBLISHABLE_KEY
     )!;

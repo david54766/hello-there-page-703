@@ -7,16 +7,22 @@ import type { Database } from './types';
 import { getFirstServerEnv } from '@/lib/env.server';
 
 function createSupabaseAdminClient() {
-  const SUPABASE_URL = getFirstServerEnv(['VITE_SUPABASE_URL', 'CALLRECOVER_SUPABASE_URL', 'SUPABASE_URL']);
+  const SUPABASE_URL = getFirstServerEnv([
+    'VITE_SUPABASE_URL',
+    'CALLRECOVER_URL',
+    'CALLRECOVER_SUPABASE_URL',
+    'SUPABASE_URL',
+  ]);
   const SUPABASE_SERVICE_ROLE_KEY = getFirstServerEnv([
+    'CALLRECOVER_SERVICE_ROLE_KEY',
     'CALLRECOVER_SUPABASE_SERVICE_ROLE_KEY',
     'SUPABASE_SERVICE_ROLE_KEY',
   ]);
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
-      ...(!SUPABASE_URL ? ['CALLRECOVER_SUPABASE_URL'] : []),
-      ...(!SUPABASE_SERVICE_ROLE_KEY ? ['CALLRECOVER_SUPABASE_SERVICE_ROLE_KEY'] : []),
+      ...(!SUPABASE_URL ? ['CALLRECOVER_URL'] : []),
+      ...(!SUPABASE_SERVICE_ROLE_KEY ? ['CALLRECOVER_SERVICE_ROLE_KEY'] : []),
     ];
     const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Add them in Lovable Secrets.`;
     console.error(`[Supabase] ${message}`);
