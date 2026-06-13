@@ -2,6 +2,8 @@
 // Server-side substitution lives in vapi.functions.ts; client uses TAG_DEFS
 // to render the "Insert tag" dropdown.
 
+import { WEB_FORM_SMS_CONSENT_TEXT } from "@/lib/sms-consent-copy";
+
 export type TagKey =
   | "name"
   | "business"
@@ -48,8 +50,11 @@ export function mergeTagDefaults(
     website_info: get("website_blurb") ?? get("website"),
     book_consult: get("booking_url") ?? get("cal_url") ?? get("calendly_url"),
     callback_form: get("callback_form_url"),
-    sms_consent: get("sms_consent_text"),
+    sms_consent: WEB_FORM_SMS_CONSENT_TEXT,
     hello_script: get("default_hello_script"),
   };
-  return { ...defaults, ...Object.fromEntries(Object.entries(overrides).filter(([, v]) => v && v.length > 0)) };
+  const safeOverrides = Object.fromEntries(
+    Object.entries(overrides).filter(([key, v]) => key !== "sms_consent" && v && v.length > 0),
+  );
+  return { ...defaults, ...safeOverrides };
 }

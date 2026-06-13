@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Trash2, ShieldCheck, Mail, Smartphone, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { WEB_FORM_SMS_CONSENT_TEXT } from "@/lib/sms-consent-copy";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: Settings });
 
@@ -112,7 +113,6 @@ function Settings() {
       website_blurb: biz.website_blurb,
       booking_url: biz.booking_url,
       callback_form_url: biz.callback_form_url,
-      sms_consent_text: biz.sms_consent_text,
       default_hello_script: biz.default_hello_script,
       cal_url: biz.cal_url,
       calendly_url: biz.calendly_url,
@@ -260,8 +260,11 @@ function Settings() {
           <Input value={biz.callback_form_url ?? ""} onChange={(e) => setBiz({ ...biz, callback_form_url: e.target.value })} placeholder="https://" />
         </div>
         <div className="space-y-1.5">
-          <Label>SMS consent text ({"{sms_consent}"})</Label>
-          <Textarea rows={2} value={biz.sms_consent_text ?? ""} onChange={(e) => setBiz({ ...biz, sms_consent_text: e.target.value })} placeholder="By replying YES you agree to receive texts…" />
+          <Label>Locked SMS consent text ({"{sms_consent}"})</Label>
+          <Textarea rows={4} value={WEB_FORM_SMS_CONSENT_TEXT} readOnly className="resize-none bg-muted/40 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">
+            This compliance wording is managed by CallRecover and cannot be edited per client.
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label>Default greeting ({"{hello_script}"})</Label>
