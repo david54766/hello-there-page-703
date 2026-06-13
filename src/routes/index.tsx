@@ -214,60 +214,102 @@ function Landing() {
       {/* Product Screens */}
       <section className="border-t border-border/60 bg-background">
         <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
-          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-                <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                Live mobile workflow
-              </div>
-              <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                See every missed-call recovery step.
-              </h2>
-              <p className="mt-4 text-muted-foreground">
-                CallRecover keeps forwarding setup, AI transcript review, lead status,
-                booking, and estimated revenue in one focused workflow.
-              </p>
-              <div className="mt-6 grid gap-3">
-                {[
-                  "Show the exact missed-call forwarding code for the selected carrier.",
-                  "Review the AI transcript, recording, SMS thread, and lead status.",
-                  "Book follow-up appointments and keep recovered revenue visible.",
-                ].map((item) => (
-                  <div key={item} className="flex gap-3 rounded-2xl border border-border bg-card/80 p-4 shadow-[var(--shadow-card)]">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    <span className="text-sm text-muted-foreground">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+              <BarChart3 className="h-3.5 w-3.5 text-primary" />
+              Built for field teams
+            </div>
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              The whole missed-call workflow, without the clutter.
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              Forward the call, review what the AI captured, and turn the lead into
+              a callback or appointment from one focused dashboard.
+            </p>
+          </div>
 
+          <div className="mt-12 grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="relative"
+              transition={{ duration: 0.5, delay: 0.05 }}
+              className="relative mx-auto w-full max-w-3xl"
             >
               <div
                 aria-hidden
-                className="absolute inset-6 -z-10 rounded-[2rem] blur-3xl"
-                style={{ background: "var(--gradient-primary)", opacity: 0.12 }}
+                className="absolute inset-x-8 top-10 h-72 rounded-full blur-3xl"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.22), hsl(var(--accent) / 0.18))" }}
               />
-              <img
-                src="/homepage/app-revenue.jpg"
-                alt="CallRecover mobile recovered revenue dashboard"
-                className="mx-auto w-full max-w-[340px] rounded-[2rem] border border-border bg-card object-cover shadow-[var(--shadow-elevated)]"
-                loading="lazy"
-              />
+              <div className="relative mx-auto flex min-h-[520px] max-w-[720px] items-center justify-center overflow-hidden rounded-[2rem] border border-border bg-card/80 p-6 shadow-[var(--shadow-elevated)] backdrop-blur">
+                <div className="absolute left-8 top-16 hidden w-[31%] -rotate-6 overflow-hidden rounded-[1.6rem] border border-border bg-background shadow-[var(--shadow-card)] md:block">
+                  <img
+                    src="/homepage/app-forwarding.jpg"
+                    alt="CallRecover forwarding setup preview"
+                    className="aspect-[9/16] h-full w-full object-cover object-top"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="absolute right-8 top-14 hidden w-[31%] rotate-6 overflow-hidden rounded-[1.6rem] border border-border bg-background shadow-[var(--shadow-card)] md:block">
+                  <img
+                    src="/homepage/app-transcript.jpg"
+                    alt="CallRecover transcript review preview"
+                    className="aspect-[9/16] h-full w-full object-cover object-top"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="absolute bottom-8 right-20 hidden w-[24%] rotate-3 overflow-hidden rounded-[1.25rem] border border-border bg-background shadow-[var(--shadow-card)] lg:block">
+                  <img
+                    src="/homepage/app-booking.jpg"
+                    alt="CallRecover booking preview"
+                    className="aspect-[9/16] h-full w-full object-cover object-top"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="relative w-full max-w-[320px] overflow-hidden rounded-[1.9rem] border border-border bg-background p-2 shadow-[var(--shadow-elevated)]">
+                  <img
+                    src="/homepage/app-revenue.jpg"
+                    alt="CallRecover recovered revenue dashboard"
+                    className="aspect-[9/16] w-full rounded-[1.45rem] object-cover object-top"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-7">
+                <h3 className="text-2xl font-semibold tracking-tight">From missed call to booked job.</h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  Contractors see the important actions first: turn on forwarding,
+                  review the AI-captured details, call the customer back, and keep
+                  booking or revenue status moving.
+                </p>
+                <div className="mt-6 space-y-4">
+                  {[
+                    ["Carrier-aware setup", "The exact forwarding extension and carrier fee notice are easy to find."],
+                    ["Readable call review", "Transcript, recording, lead status, and SMS history stay together."],
+                    ["Revenue follow-through", "Recovered calls and estimated revenue stay visible after the job is worked."],
+                  ].map(([title, body]) => (
+                    <div key={title} className="flex gap-3">
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                      <div>
+                        <div className="text-sm font-semibold">{title}</div>
+                        <div className="mt-1 text-sm leading-relaxed text-muted-foreground">{body}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </motion.div>
           </div>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {productScreens.map((screen, i) => (
               <motion.article
                 key={screen.src}
@@ -275,19 +317,16 @@ function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: i * 0.06 }}
-                className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)]"
+                className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]"
               >
-                <div className="aspect-[9/16] overflow-hidden border-b border-border bg-muted">
-                  <img
-                    src={screen.src}
-                    alt={`CallRecover mobile app screen: ${screen.title}`}
-                    className="h-full w-full object-cover object-top"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold">{screen.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{screen.body}</p>
+                <div className="flex items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <h3 className="font-semibold">{screen.title}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{screen.body}</p>
+                  </div>
                 </div>
               </motion.article>
             ))}
