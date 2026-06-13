@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  listVapiAssistants,
   listVapiPhoneNumbers,
   createVapiCall,
   listVapiCalls,
@@ -36,8 +35,8 @@ function validateE164(raw: string): string | null {
   if (!v.startsWith("+")) return "Must start with + and country code, e.g. +1 for US.";
   if (/[^\d+\s\-().]/.test(v)) return "Only digits, spaces, dashes, parens allowed after the +.";
   const compact = "+" + v.slice(1).replace(/\D/g, "");
-  if (compact.length < 8) return "Too short — include country code + full number.";
-  if (compact.length > 16) return "Too long — max 15 digits after the +.";
+  if (compact.length < 8) return "Too short - include country code + full number.";
+  if (compact.length > 16) return "Too long - max 15 digits after the +.";
   if (!E164.test(compact)) return "Invalid E.164 format. Example: +15551234567";
   return null;
 }
@@ -62,7 +61,6 @@ type CallRow = {
 };
 
 function VapiPage() {
-  const fetchAssistants = useServerFn(listVapiAssistants);
   const fetchNumbers = useServerFn(listVapiPhoneNumbers);
   const startCall = useServerFn(createVapiCall);
   const fetchCalls = useServerFn(listVapiCalls);
@@ -73,10 +71,7 @@ function VapiPage() {
   const fetchTemplates = useServerFn(listScriptTemplates);
   const fetchBusiness = useServerFn(getBusinessForTags);
 
-  const [assistants, setAssistants] = useState<{ id: string; name: string }[]>([]);
   const [numbers, setNumbers] = useState<{ id: string; number: string; name: string }[]>([]);
-  const [assistantId, setAssistantId] = useState("");
-  const [phoneNumberId, setPhoneNumberId] = useState("");
   const [customer, setCustomer] = useState("");
   const [customerTouched, setCustomerTouched] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -100,17 +95,17 @@ function VapiPage() {
   );
   const promptPreview = useMemo(() => applyTags(systemPrompt, tags), [systemPrompt, tags]);
   const firstPreview = useMemo(() => applyTags(firstMessage, tags), [firstMessage, tags]);
+  const accountNumber = numbers[0] ?? null;
+  const accountAssistant = numberRows[0] ?? null;
 
   useEffect(() => {
     Promise.all([
-      fetchAssistants(),
       fetchNumbers(),
       fetchNumberAssistants(),
       fetchTemplates({ data: {} }),
       fetchBusiness(),
     ])
-      .then(([a, n, rows, t, biz]) => {
-        setAssistants(a.assistants);
+      .then(([n, rows, t, biz]) => {
         setNumbers(n.numbers);
         setNumberRows(rows.rows);
         setTemplates(t.templates);
@@ -143,15 +138,13 @@ function VapiPage() {
 
   const placeCall = async () => {
     setCustomerTouched(true);
-    if (!assistantId || !phoneNumberId) { toast.error("Pick an assistant and a from number."); return; }
+    if (!accountAssistant?.assistant_id) { toast.error("Provision the account assistant first."); return; }
     const err = validateE164(customer);
     if (err) { toast.error(err); return; }
     setCalling(true);
     try {
       await startCall({
         data: {
-          assistantId,
-          phoneNumberId,
           customerNumber: normalizeE164(customer),
           systemPrompt: systemPrompt || undefined,
           firstMessage: firstMessage || undefined,
@@ -202,39 +195,37 @@ function VapiPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Vapi · Outbound Test Call</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Trigger a real phone call, manage one assistant per Vapi number, and review transcripts. Use <code className="rounded bg-muted px-1 text-xs">{"{tags}"}</code> in scripts — they're filled from your business profile at call time.</p>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Vapi Outbound Test Call</h1>
+      <p className="mb-6 text-sm text-muted-foreground">Trigger a real phone call, manage the one assistant assigned to this account's Vapi number, and review transcripts. Use <code className="rounded bg-muted px-1 text-xs">{"{tags}"}</code> in scripts - they're filled from your business profile at call time.</p>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading Vapi resources…</p>
+        <p className="text-sm text-muted-foreground">Loading Vapi resources...</p>
       ) : (
         <Tabs defaultValue="call">
           <TabsList className="mb-4">
             <TabsTrigger value="call">Place Call</TabsTrigger>
-            <TabsTrigger value="numbers">Numbers & Assistants</TabsTrigger>
+            <TabsTrigger value="numbers">Account Assistant</TabsTrigger>
             <TabsTrigger value="recent">Recent Calls</TabsTrigger>
           </TabsList>
 
           <TabsContent value="call">
         <Card className="space-y-4 p-5">
-          <div>
-            <Label>Assistant</Label>
-            <Select value={assistantId} onValueChange={setAssistantId}>
-              <SelectTrigger><SelectValue placeholder={assistants.length ? "Pick an assistant" : "No assistants found"} /></SelectTrigger>
-              <SelectContent>
-                {assistants.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>From (your Vapi number)</Label>
-            <Select value={phoneNumberId} onValueChange={setPhoneNumberId}>
-              <SelectTrigger><SelectValue placeholder={numbers.length ? "Pick a number" : "No numbers configured in Vapi"} /></SelectTrigger>
-              <SelectContent>
-                {numbers.map((n) => <SelectItem key={n.id} value={n.id}>{n.number} {n.name && `· ${n.name}`}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <Label>Account assistant</Label>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold">{accountNumber?.number ?? accountAssistant?.phone_number ?? "No Vapi number assigned"}</div>
+                <div className="text-xs text-muted-foreground">
+                  {accountAssistant?.assistant_name ?? "One assistant answers for this account"}
+                </div>
+              </div>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${accountAssistant?.assistant_id ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+                {accountAssistant?.assistant_id ? "Connected" : "Pending"}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              CallRecover uses this assigned assistant automatically; users cannot switch to another assistant for this account.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -279,7 +270,7 @@ function VapiPage() {
                     <SelectTrigger className="h-7 w-40 text-xs"><SelectValue placeholder="Load template" /></SelectTrigger>
                     <SelectContent>
                       {filteredTemplates("first_message").map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.label} · {contractorLabel(t.contractor_type)}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}>{t.label} - {contractorLabel(t.contractor_type)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -292,7 +283,7 @@ function VapiPage() {
               ref={firstRef as any}
               value={firstMessage}
               onChange={(e) => setFirstMessage(e.target.value)}
-              placeholder="Hi {name}, this is calling from {business} — do you have a moment?"
+              placeholder="Hi {name}, this is calling from {business} - do you have a moment?"
               maxLength={2000}
             />
             {firstMessage && firstPreview !== firstMessage && (
@@ -309,7 +300,7 @@ function VapiPage() {
                     <SelectTrigger className="h-7 w-40 text-xs"><SelectValue placeholder="Load template" /></SelectTrigger>
                     <SelectContent>
                       {filteredTemplates("system").map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.label} · {contractorLabel(t.contractor_type)}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}>{t.label} - {contractorLabel(t.contractor_type)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -326,7 +317,7 @@ function VapiPage() {
               rows={6}
               maxLength={8000}
             />
-            <p className="mt-1 text-xs text-muted-foreground">Overrides the assistant's default instructions for this call only. Use <code>{"{business}"}</code>, <code>{"{website}"}</code>, etc. — manage values in Settings.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Overrides the assistant's default instructions for this call only. Use <code>{"{business}"}</code>, <code>{"{website}"}</code>, etc. - manage values in Settings.</p>
           </div>
 
           <details className="rounded-md border border-border bg-muted/20 p-3 text-xs">
@@ -335,7 +326,7 @@ function VapiPage() {
               {TAG_DEFS.map((t) => (
                 <div key={t.key} className="flex justify-between gap-2">
                   <dt className="font-mono text-muted-foreground">{t.label}</dt>
-                  <dd className="truncate text-right">{tags[t.key] ?? <span className="text-muted-foreground">—</span>}</dd>
+                  <dd className="truncate text-right">{tags[t.key] ?? <span className="text-muted-foreground">-</span>}</dd>
                 </div>
               ))}
             </dl>
@@ -387,9 +378,9 @@ function VapiPage() {
                     <div className="truncate text-sm font-medium">{c.customerNumber ?? "(unknown)"}</div>
                     <div className="text-xs text-muted-foreground">
                       {c.createdAt ? new Date(c.createdAt).toLocaleString() : ""}
-                      {c.status && <> · {c.status}</>}
-                      {c.endedReason && <> · {c.endedReason}</>}
-                      {c.durationSeconds != null && <> · {c.durationSeconds}s</>}
+                      {c.status && <> - {c.status}</>}
+                      {c.endedReason && <> - {c.endedReason}</>}
+                      {c.durationSeconds != null && <> - {c.durationSeconds}s</>}
                     </div>
                   </div>
                   {ex ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
@@ -397,7 +388,7 @@ function VapiPage() {
                 {ex && (
                   <div className="mt-3 rounded-md bg-muted/40 p-3 text-xs">
                     {ex.loading ? (
-                      <span className="text-muted-foreground">Loading transcript…</span>
+                      <span className="text-muted-foreground">Loading transcript...</span>
                     ) : ex.transcript ? (
                       <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed">{ex.transcript}</pre>
                     ) : (
@@ -473,7 +464,7 @@ function NumberRow({ number, row, onSave }: { number: { id: string; number: stri
         <div>
           <div className="text-sm font-semibold">{number.number}</div>
           <div className="text-xs text-muted-foreground">
-            {row?.assistant_id ? `Assistant: ${row.assistant_id.slice(0, 8)}…` : "Provisioning…"}
+            {row?.assistant_id ? `Assistant: ${row.assistant_id.slice(0, 8)}...` : "Provisioning..."}
           </div>
         </div>
         <Select value={type} onValueChange={setType}>

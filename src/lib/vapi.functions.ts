@@ -159,26 +159,58 @@ async function loadBusinessForUser(supabase: any) {
   return { business, businessId };
 }
 
-export const listVapiAssistants = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const data = await vapi("/assistant");
-    return { assistants: (data as any[]).map((a) => ({ id: a.id, name: a.name ?? "(unnamed)" })) };
-  });
+type VapiNumber = { id: string; number: string; name: string };
+
+function mapVapiPhoneNumbers(data: any[]): VapiNumber[] {
+  return data.map((n) => ({
+    id: n.id,
+    number: n.number ?? n.twilioPhoneNumber ?? "(no number)",
+    name: n.name ?? "",
+  }));
+}
+
+async function listAssignableVapiNumbers() {
+  const data = await vapi("/phone-number");
+  return mapVapiPhoneNumbers(data as any[]);
+}
+
+async function loadAccountAssistantRow(supabase: any, businessId: string) {
+  const { data, error } = await supabase
+    .from("vapi_number_assistants")
+    .select("*")
+    .eq("business_id", businessId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
 
 export const listVapiPhoneNumbers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const data = await vapi("/phone-number");
-    return { numbers: (data as any[]).map((n) => ({ id: n.id, number: n.number ?? n.twilioPhoneNumber ?? "(no number)", name: n.name ?? "" })) };
+  .handler(async ({ context }) => {
+    const { businessId } = await loadBusinessForUser(context.supabase);
+    if (businessId) {
+      const existing = await loadAccountAssistantRow(context.supabase, businessId);
+      if (existing?.phone_number_id) {
+        return {
+          numbers: [{
+            id: existing.phone_number_id,
+            number: existing.phone_number ?? "(no number)",
+            name: existing.assistant_name ?? "Account assistant",
+          }],
+        };
+      }
+    }
+
+    const numbers = await listAssignableVapiNumbers();
+    return { numbers: numbers.slice(0, 1) };
   });
 
 export const createVapiCall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z.object({
-      assistantId: z.string().min(1),
-      phoneNumberId: z.string().min(1),
       customerNumber: z.string().min(5).max(20).regex(/^\+[1-9]\d{4,14}$/, "Use E.164 format e.g. +15551234567"),
       systemPrompt: z.string().max(8000).optional(),
       firstMessage: z.string().max(2000).optional(),
@@ -186,7 +218,13 @@ export const createVapiCall = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { business } = await loadBusinessForUser(context.supabase);
+    const { business, businessId } = await loadBusinessForUser(context.supabase);
+    if (!businessId) throw new Error("No business found for user");
+    const accountAssistant = await loadAccountAssistantRow(context.supabase, businessId);
+    if (!accountAssistant?.assistant_id || !accountAssistant?.phone_number_id) {
+      throw new Error("No account assistant is provisioned yet");
+    }
+
     const tags: TagValues = mergeTagDefaults(business, (data.tagOverrides ?? {}) as TagValues);
     const assistantOverrides: Record<string, unknown> = {};
     const resolvedPrompt = data.systemPrompt && data.systemPrompt.trim()
@@ -208,8 +246,8 @@ export const createVapiCall = createServerFn({ method: "POST" })
     const call = await vapi("/call", {
       method: "POST",
       body: JSON.stringify({
-        assistantId: data.assistantId,
-        phoneNumberId: data.phoneNumberId,
+        assistantId: accountAssistant.assistant_id,
+        phoneNumberId: accountAssistant.phone_number_id,
         customer: { number: data.customerNumber, ...(tags.name ? { name: tags.name } : {}) },
         ...(Object.keys(assistantOverrides).length ? { assistantOverrides } : {}),
       }),
@@ -289,7 +327,9 @@ export async function syncVapiAssistantsForBusiness(
   const { data: rows, error: rowsError } = await supabase
     .from("vapi_number_assistants")
     .select("*")
-    .eq("business_id", businessId);
+    .eq("business_id", businessId)
+    .order("updated_at", { ascending: false })
+    .limit(1);
   if (rowsError) throw new Error(rowsError.message);
 
   const results: Array<{ id: string; assistantId: string | null; promptRefreshed: boolean; linked: boolean }> = [];
@@ -371,12 +411,7 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
     const { business, businessId } = await loadBusinessForUser(context.supabase);
     if (!businessId) throw new Error("No business found for user");
 
-    const { data: existing } = await context.supabase
-      .from("vapi_number_assistants")
-      .select("*")
-      .eq("business_id", businessId)
-      .eq("phone_number_id", data.phoneNumberId)
-      .maybeSingle();
+    const existing = await loadAccountAssistantRow(context.supabase, businessId);
 
     if (existing?.assistant_id) {
       return { row: existing, created: false };
@@ -423,7 +458,7 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
     };
     const { data: saved, error } = await context.supabase
       .from("vapi_number_assistants")
-      .upsert(row, { onConflict: "business_id,phone_number_id" })
+      .upsert(row, { onConflict: "business_id" })
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -445,13 +480,11 @@ export const updateAssistantForNumber = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { business, businessId } = await loadBusinessForUser(context.supabase);
     if (!businessId) throw new Error("No business found");
-    const { data: existing } = await context.supabase
-      .from("vapi_number_assistants")
-      .select("*")
-      .eq("business_id", businessId)
-      .eq("phone_number_id", data.phoneNumberId)
-      .single();
+    const existing = await loadAccountAssistantRow(context.supabase, businessId);
     if (!existing?.assistant_id) throw new Error("Assistant not provisioned yet for this number");
+    if (existing.phone_number_id !== data.phoneNumberId) {
+      throw new Error("This account already has one Vapi number assigned");
+    }
     const tags = mergeTagDefaults(business);
     const agentName = data.assistantName?.trim() || existing.assistant_name || DEFAULT_AGENT_NAME;
     const nameChanged = data.assistantName !== undefined && agentName !== existing.assistant_name;
@@ -521,6 +554,8 @@ export const listNumberAssistants = createServerFn({ method: "GET" })
     const { data } = await context.supabase
       .from("vapi_number_assistants")
       .select("*")
-      .eq("business_id", businessId);
+      .eq("business_id", businessId)
+      .order("updated_at", { ascending: false })
+      .limit(1);
     return { rows: data ?? [] };
   });
