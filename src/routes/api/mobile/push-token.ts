@@ -9,7 +9,7 @@ import {
 
 const RegisterBody = z.object({
   token: z.string().min(20).max(4096),
-  platform: z.literal("android"),
+  platform: z.enum(["android", "ios"]),
   deviceId: z.string().max(200).optional(),
 });
 
