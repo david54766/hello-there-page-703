@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AppIcon } from "@/components/app-icon";
-import { LayoutDashboard, Settings as SettingsIcon, LogOut, TrendingUp, Users, Phone, FileText, CalendarDays, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Settings as SettingsIcon, LogOut, TrendingUp, Users, Phone, FileText, CalendarDays, ShieldCheck, CreditCard } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({ component: Layout });
 
@@ -73,6 +73,9 @@ function Layout() {
           <Link to="/revenue" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
             <TrendingUp className="h-4 w-4" /> Revenue
           </Link>
+          <Link to="/billing" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
+            <CreditCard className="h-4 w-4" /> Billing
+          </Link>
           <Link to="/team" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
             <Users className="h-4 w-4" /> Team
           </Link>
@@ -108,6 +111,7 @@ function Layout() {
         {[
           { to: "/dashboard", icon: LayoutDashboard, label: "Leads" },
           { to: "/revenue", icon: TrendingUp, label: "Revenue" },
+          { to: "/billing", icon: CreditCard, label: "Billing" },
           { to: "/team", icon: Users, label: "Team" },
           { to: "/vapi", icon: Phone, label: "AI agent" },
           { to: "/scripts", icon: FileText, label: "Scripts" },

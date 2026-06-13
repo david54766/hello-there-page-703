@@ -32,6 +32,7 @@ import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSchedulingRouteImport } from './routes/_authenticated/scheduling'
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
 import { Route as ApiPublicPasswordResetRouteImport } from './routes/api/public/password-reset'
@@ -48,6 +49,7 @@ import { Route as ApiMobilePushTokenRouteImport } from './routes/api/mobile/push
 import { Route as ApiMobileForwardingStatusRouteImport } from './routes/api/mobile/forwarding-status'
 import { Route as ApiPublicVapiWebhookRouteImport } from './routes/api/public/vapi/webhook'
 import { Route as ApiPublicTwilioSmsInboundRouteImport } from './routes/api/public/twilio/sms-inbound'
+import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
 
 const TosRoute = TosRouteImport.update({
   id: '/tos',
@@ -163,6 +165,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -246,6 +253,11 @@ const ApiPublicTwilioSmsInboundRoute =
     path: '/api/public/twilio/sms-inbound',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
+  id: '/api/public/stripe/webhook',
+  path: '/api/public/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -264,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/terms-of-service': typeof TermsOfServiceRoute
   '/tos': typeof TosRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
   '/scheduling': typeof AuthenticatedSchedulingRoute
@@ -284,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/api/public/email-diagnostics': typeof ApiPublicEmailDiagnosticsRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
   '/api/public/vapi/webhook': typeof ApiPublicVapiWebhookRoute
 }
@@ -304,6 +318,7 @@ export interface FileRoutesByTo {
   '/terms-of-service': typeof TermsOfServiceRoute
   '/tos': typeof TosRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
   '/scheduling': typeof AuthenticatedSchedulingRoute
@@ -324,6 +339,7 @@ export interface FileRoutesByTo {
   '/api/public/email-diagnostics': typeof ApiPublicEmailDiagnosticsRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
   '/api/public/vapi/webhook': typeof ApiPublicVapiWebhookRoute
 }
@@ -346,6 +362,7 @@ export interface FileRoutesById {
   '/terms-of-service': typeof TermsOfServiceRoute
   '/tos': typeof TosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/scheduling': typeof AuthenticatedSchedulingRoute
@@ -366,6 +383,7 @@ export interface FileRoutesById {
   '/api/public/email-diagnostics': typeof ApiPublicEmailDiagnosticsRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/twilio/sms-inbound': typeof ApiPublicTwilioSmsInboundRoute
   '/api/public/vapi/webhook': typeof ApiPublicVapiWebhookRoute
 }
@@ -388,6 +406,7 @@ export interface FileRouteTypes {
     | '/terms-of-service'
     | '/tos'
     | '/admin'
+    | '/billing'
     | '/dashboard'
     | '/revenue'
     | '/scheduling'
@@ -408,6 +427,7 @@ export interface FileRouteTypes {
     | '/api/public/email-diagnostics'
     | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
+    | '/api/public/stripe/webhook'
     | '/api/public/twilio/sms-inbound'
     | '/api/public/vapi/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -428,6 +448,7 @@ export interface FileRouteTypes {
     | '/terms-of-service'
     | '/tos'
     | '/admin'
+    | '/billing'
     | '/dashboard'
     | '/revenue'
     | '/scheduling'
@@ -448,6 +469,7 @@ export interface FileRouteTypes {
     | '/api/public/email-diagnostics'
     | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
+    | '/api/public/stripe/webhook'
     | '/api/public/twilio/sms-inbound'
     | '/api/public/vapi/webhook'
   id:
@@ -469,6 +491,7 @@ export interface FileRouteTypes {
     | '/terms-of-service'
     | '/tos'
     | '/_authenticated/admin'
+    | '/_authenticated/billing'
     | '/_authenticated/dashboard'
     | '/_authenticated/revenue'
     | '/_authenticated/scheduling'
@@ -489,6 +512,7 @@ export interface FileRouteTypes {
     | '/api/public/email-diagnostics'
     | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
+    | '/api/public/stripe/webhook'
     | '/api/public/twilio/sms-inbound'
     | '/api/public/vapi/webhook'
   fileRoutesById: FileRoutesById
@@ -523,6 +547,7 @@ export interface RootRouteChildren {
   ApiPublicEmailDiagnosticsRoute: typeof ApiPublicEmailDiagnosticsRoute
   ApiPublicPasswordResetRoute: typeof ApiPublicPasswordResetRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
+  ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiPublicTwilioSmsInboundRoute: typeof ApiPublicTwilioSmsInboundRoute
   ApiPublicVapiWebhookRoute: typeof ApiPublicVapiWebhookRoute
 }
@@ -690,6 +715,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/billing': {
+      id: '/_authenticated/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthenticatedBillingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -802,11 +834,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicTwilioSmsInboundRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/stripe/webhook': {
+      id: '/api/public/stripe/webhook'
+      path: '/api/public/stripe/webhook'
+      fullPath: '/api/public/stripe/webhook'
+      preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
   AuthenticatedSchedulingRoute: typeof AuthenticatedSchedulingRoute
@@ -818,6 +858,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
   AuthenticatedSchedulingRoute: AuthenticatedSchedulingRoute,
@@ -861,6 +902,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEmailDiagnosticsRoute: ApiPublicEmailDiagnosticsRoute,
   ApiPublicPasswordResetRoute: ApiPublicPasswordResetRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
+  ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiPublicTwilioSmsInboundRoute: ApiPublicTwilioSmsInboundRoute,
   ApiPublicVapiWebhookRoute: ApiPublicVapiWebhookRoute,
 }
