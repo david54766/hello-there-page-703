@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,26 +14,79 @@ export function NotificationsBell({ businessId }: { businessId: string | null })
   const [items, setItems] = useState<Notif[]>([]);
   const mark = useServerFn(markNotificationRead);
 
-  useEffect(() => {
-    if (!businessId) return;
-    supabase
+  const loadNotifications = useCallback(async () => {
+    if (!businessId) {
+      setItems([]);
+      return;
+    }
+    const { data, error } = await supabase
       .from("notifications")
       .select("id,title,body,read,created_at")
       .eq("business_id", businessId)
       .order("created_at", { ascending: false })
-      .limit(20)
-      .then(({ data }) => setItems((data ?? []) as Notif[]));
+      .limit(20);
+    if (error) {
+      console.warn("Notification refresh failed", error);
+      return;
+    }
+    setItems((data ?? []) as Notif[]);
+  }, [businessId]);
+
+  useEffect(() => {
+    if (!businessId) {
+      setItems([]);
+      return;
+    }
+    void loadNotifications();
+    const refresh = () => void loadNotifications();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
 
     const ch = supabase
       .channel(`notif:${businessId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `business_id=eq.${businessId}` }, (p) => {
-        const n = p.new as Notif;
-        setItems((prev) => [n, ...prev]);
-        toast(n.title, { description: n.body ?? undefined });
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `business_id=eq.${businessId}` }, (p) => {
+        if (p.eventType === "DELETE") {
+          const id = (p.old as Partial<Notif> | null)?.id;
+          if (!id) {
+            refresh();
+            return;
+          }
+          setItems((prev) => prev.filter((n) => n.id !== id));
+          return;
+        }
+
+        const n = p.new as Notif | null;
+        if (!n?.id) {
+          refresh();
+          return;
+        }
+        setItems((prev) => {
+          const index = prev.findIndex((x) => x.id === n.id);
+          if (index === -1) return [n, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 20);
+          const next = [...prev];
+          next[index] = n;
+          return next.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 20);
+        });
+        if (p.eventType === "INSERT") toast(n.title, { description: n.body ?? undefined });
       })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [businessId]);
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          window.setTimeout(refresh, 750);
+        }
+      });
+
+    const timer = window.setInterval(refresh, 45000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", refresh);
+      void supabase.removeChannel(ch);
+    };
+  }, [businessId, loadNotifications]);
 
   const unread = items.filter((n) => !n.read).length;
 

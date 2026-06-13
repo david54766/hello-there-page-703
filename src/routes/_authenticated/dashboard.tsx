@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
@@ -52,6 +52,10 @@ function Chip({ children }: { children: React.ReactNode }) {
   return <span className="rounded-md border bg-muted/40 px-2 py-0.5 text-xs">{children}</span>;
 }
 
+function byNewest(a: Call, b: Call) {
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+}
+
 function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -60,37 +64,108 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Call | null>(null);
 
-  useEffect(() => {
+  const loadDashboard = useCallback(async (showSpinner = false) => {
     if (!user) return;
-    (async () => {
-      const { data: biz } = await supabase
-        .from("businesses")
-        .select("id, business_name, avg_job_value, onboarding_complete")
-        .eq("owner_id", user.id)
-        .maybeSingle();
-      if (!biz) { setLoading(false); return; }
-      setBusiness(biz);
-      if (!biz.onboarding_complete) { navigate({ to: "/onboarding" }); return; }
-      const { data: c } = await supabase
-        .from("calls")
-        .select("id, business_id, caller_number, caller_name, transcript, ai_summary, ai_summary_short, urgency, status, lead_status, priority, qualification, callback_requested, archived_at, archived_by, created_at")
-        .eq("business_id", biz.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      setCalls((c ?? []) as Call[]);
+    if (showSpinner) setLoading(true);
+    const { data: biz, error: bizError } = await supabase
+      .from("businesses")
+      .select("id, business_name, avg_job_value, onboarding_complete")
+      .eq("owner_id", user.id)
+      .maybeSingle();
+    if (bizError) {
+      console.warn("Dashboard business refresh failed", bizError);
       setLoading(false);
+      return;
+    }
+    if (!biz) {
+      setBusiness(null);
+      setCalls([]);
+      setLoading(false);
+      return;
+    }
 
-      const channel = supabase
-        .channel(`calls:${biz.id}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "calls", filter: `business_id=eq.${biz.id}` }, (p) => {
-          const row = p.new as any;
-          if (p.eventType === "INSERT") setCalls((prev) => [row as Call, ...prev]);
-          if (p.eventType === "UPDATE") setCalls((prev) => prev.map((x) => x.id === row.id ? (row as Call) : x));
-        })
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    })();
+    setBusiness(biz);
+    if (!biz.onboarding_complete) {
+      navigate({ to: "/onboarding" });
+      return;
+    }
+
+    const { data: c, error: callsError } = await supabase
+      .from("calls")
+      .select("id, business_id, caller_number, caller_name, transcript, ai_summary, ai_summary_short, urgency, status, lead_status, priority, qualification, callback_requested, archived_at, archived_by, created_at")
+      .eq("business_id", biz.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (callsError) {
+      console.warn("Dashboard calls refresh failed", callsError);
+      setLoading(false);
+      return;
+    }
+    setCalls(((c ?? []) as Call[]).sort(byNewest));
+    setLoading(false);
   }, [user, navigate]);
+
+  const upsertCall = useCallback((row: Call) => {
+    setCalls((prev) => {
+      const index = prev.findIndex((x) => x.id === row.id);
+      if (index === -1) return [row, ...prev].sort(byNewest);
+      const next = [...prev];
+      next[index] = row;
+      return next.sort(byNewest);
+    });
+    setSelected((current) => (current?.id === row.id ? row : current));
+  }, []);
+
+  useEffect(() => {
+    void loadDashboard(true);
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    if (!business?.id) return;
+    const businessId = business.id;
+    const refresh = () => void loadDashboard(false);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+
+    const channel = supabase
+      .channel(`calls:${businessId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "calls", filter: `business_id=eq.${businessId}` }, (payload) => {
+        if (payload.eventType === "DELETE") {
+          const id = (payload.old as Partial<Call> | null)?.id;
+          if (!id) {
+            refresh();
+            return;
+          }
+          setCalls((prev) => prev.filter((x) => x.id !== id));
+          setSelected((current) => (current?.id === id ? null : current));
+          return;
+        }
+
+        const row = payload.new as Call | null;
+        if (!row?.id) {
+          refresh();
+          return;
+        }
+        upsertCall(row);
+      })
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          window.setTimeout(refresh, 750);
+        }
+      });
+
+    const timer = window.setInterval(refresh, 30000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", refresh);
+      void supabase.removeChannel(channel);
+    };
+  }, [business?.id, loadDashboard, upsertCall]);
 
   async function markResolved(id: string) {
     const { error } = await supabase

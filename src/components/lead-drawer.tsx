@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,8 +32,13 @@ type Call = {
 
 type Msg = { id: string; direction: string; body: string; created_at: string };
 
+function sortMessages(items: Msg[]) {
+  return [...items].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+}
+
 export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [suggested, setSuggested] = useState<string[]>([]);
   const [loadingSugg, setLoadingSugg] = useState(false);
@@ -49,19 +54,108 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
   const sendSmsFn = useServerFn(sendSms);
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    if (!call) return;
-    setMessages([]); setSuggested([]); setDraft("");
-    supabase.from("sms_threads")
+  const loadMessages = useCallback(async () => {
+    if (!call || !open) return;
+    const { data: t, error: threadError } = await supabase.from("sms_threads")
       .select("id")
       .eq("business_id", call.business_id)
       .eq("caller_number", call.caller_number)
-      .maybeSingle()
-      .then(({ data: t }) => {
-        if (!t) return;
-        supabase.from("sms_messages").select("id,direction,body,created_at").eq("thread_id", t.id).order("created_at").then(({ data }) => setMessages((data ?? []) as Msg[]));
+      .maybeSingle();
+    if (threadError) {
+      console.warn("SMS thread refresh failed", threadError);
+      return;
+    }
+    if (!t) {
+      setThreadId(null);
+      setMessages([]);
+      return;
+    }
+    setThreadId(t.id);
+
+    const { data, error } = await supabase
+      .from("sms_messages")
+      .select("id,direction,body,created_at")
+      .eq("thread_id", t.id)
+      .order("created_at");
+    if (error) {
+      console.warn("SMS message refresh failed", error);
+      return;
+    }
+    setMessages(sortMessages((data ?? []) as Msg[]));
+  }, [call?.business_id, call?.caller_number, open]);
+
+  useEffect(() => {
+    if (!call || !open) {
+      setThreadId(null);
+      setMessages([]);
+      return;
+    }
+    setMessages([]);
+    setSuggested([]);
+    setDraft("");
+    void loadMessages();
+  }, [call?.id, open, loadMessages]);
+
+  useEffect(() => {
+    if (!call || !open) return;
+    const refresh = () => void loadMessages();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+
+    const timer = window.setInterval(refresh, 12000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [call?.id, open, loadMessages]);
+
+  useEffect(() => {
+    if (!threadId || !open) return;
+    const refresh = () => void loadMessages();
+    const channel = supabase
+      .channel(`sms:${threadId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "sms_messages", filter: `thread_id=eq.${threadId}` }, (payload) => {
+        if (payload.eventType === "DELETE") {
+          const id = (payload.old as Partial<Msg> | null)?.id;
+          if (!id) {
+            refresh();
+            return;
+          }
+          setMessages((prev) => prev.filter((m) => m.id !== id));
+          return;
+        }
+
+        const row = payload.new as Msg | null;
+        if (!row?.id) {
+          refresh();
+          return;
+        }
+        setMessages((prev) => {
+          const withoutMatchingTemp = prev.filter(
+            (m) => !(m.id.startsWith("tmp-") && m.direction === row.direction && m.body === row.body),
+          );
+          const index = withoutMatchingTemp.findIndex((m) => m.id === row.id);
+          if (index === -1) return sortMessages([...withoutMatchingTemp, row]);
+          const next = [...withoutMatchingTemp];
+          next[index] = row;
+          return sortMessages(next);
+        });
+      })
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          window.setTimeout(refresh, 750);
+        }
       });
-  }, [call]);
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [threadId, open, loadMessages]);
 
   if (!call) return null;
   const q = call.qualification ?? {};
