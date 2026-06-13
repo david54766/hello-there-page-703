@@ -55,7 +55,7 @@ function Landing() {
           <nav className="flex items-center gap-3 text-sm">
             <a href="#pricing" className="hidden text-muted-foreground hover:text-foreground sm:inline">Pricing</a>
             <Link to="/login" className="text-muted-foreground hover:text-foreground">Sign In</Link>
-            <Link to="/signup">
+            <Link to="/register">
               <Button size="sm">Get Started</Button>
             </Link>
           </nav>
@@ -122,7 +122,7 @@ function Landing() {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="mt-8 flex flex-wrap items-center justify-center gap-3"
           >
-            <Link to="/signup">
+            <Link to="/register">
               <Button size="lg" className="h-12 px-6 text-base shadow-[var(--shadow-elevated)]">
                 Start Recovering Calls
               </Button>
@@ -316,7 +316,7 @@ function Landing() {
               the monthly subscription and leaves room for profit. Every additional job is upside.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link to="/signup">
+              <Link to="/register">
                 <Button className="gap-2">
                   Start recovering calls
                   <ArrowRight className="h-4 w-4" />
@@ -450,7 +450,7 @@ function Landing() {
                     </div>
                   ))}
                 </div>
-                <Link to="/signup" className="mt-auto pt-6">
+              <Link to="/register" className="mt-auto pt-6">
                   <Button className="w-full" variant={plan.highlighted ? "default" : "outline"}>
                     Get started
                   </Button>
@@ -612,7 +612,7 @@ function Landing() {
           <p className="mt-3 text-muted-foreground">
             Set up in minutes. Works with any carrier. Cancel anytime.
           </p>
-          <Link to="/signup" className="mt-6 inline-block">
+          <Link to="/register" className="mt-6 inline-block">
             <Button size="lg" className="h-12 px-8 text-base">Get Started Free</Button>
           </Link>
         </div>

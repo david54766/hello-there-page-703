@@ -122,7 +122,7 @@ function Login() {
           )}
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/signup" className="font-medium text-primary hover:underline">Sign up</Link>
+            <Link to="/register" className="font-medium text-primary hover:underline">Sign up</Link>
           </p>
         </Card>
       </div>

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { listVapiPhoneNumbers, listNumberAssistants, ensureAssistantForNumber, updateAssistantForNumber } from "@/lib/vapi.functions";
+import { scanSetupWebsite } from "@/lib/setup-scan.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,17 +16,35 @@ import { CONTRACTOR_TYPES, CARRIERS, getForwardingInstructions, getStandardScrip
 import { VOICE_OPTIONS, DEFAULT_VOICE_ID } from "@/lib/voices";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2, Mic2, CalendarCheck } from "lucide-react";
+import { Check, Copy, PhoneCall, ShieldCheck, Sparkles, Loader2, Mic2, CalendarCheck, Globe2 } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
 
 type State = {
   business_name: string;
+  website: string;
   contractor_type: ContractorType | "";
   business_phone: string;
   owner_phone: string;
   carrier: Carrier | "";
 };
+
+type ScanStatus = "idle" | "scanning" | "applied" | "failed" | "skipped";
+
+function firstIncompleteStep(state: State) {
+  if (!state.business_name.trim() || !state.website.trim()) return 0;
+  if (!state.contractor_type) return 1;
+  if (!state.business_phone.trim()) return 2;
+  if (!state.owner_phone.trim()) return 3;
+  if (!state.carrier) return 4;
+  return 5;
+}
+
+function normalizeWebsite(input: string) {
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
 
 function Onboarding() {
   const { user, loading: authLoading } = useAuth();
@@ -35,12 +54,15 @@ function Onboarding() {
   const [twilioNumber, setTwilioNumber] = useState<string>("+15555550123");
   const [testDone, setTestDone] = useState(false);
   const [state, setState] = useState<State>({
-    business_name: "", contractor_type: "", business_phone: "", owner_phone: "", carrier: "",
+    business_name: "", website: "", contractor_type: "", business_phone: "", owner_phone: "", carrier: "",
   });
   const fetchNumbers = useServerFn(listVapiPhoneNumbers);
   const fetchNumberAssistants = useServerFn(listNumberAssistants);
   const ensureAssistant = useServerFn(ensureAssistantForNumber);
   const updateAssistant = useServerFn(updateAssistantForNumber);
+  const scanWebsite = useServerFn(scanSetupWebsite);
+  const [scanStatus, setScanStatus] = useState<ScanStatus>("idle");
+  const [scanMessage, setScanMessage] = useState("");
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentRows, setAgentRows] = useState<{ number: string; assistantId: string | null; phoneNumberId: string }[]>([]);
   const [agentRan, setAgentRan] = useState(false);
@@ -64,6 +86,7 @@ function Onboarding() {
       setTwilioNumber(data.twilio_number ?? "+15555550123");
       setState({
         business_name: data.business_name ?? "",
+        website: (data as any).website ?? "",
         contractor_type: (data.contractor_type ?? "") as ContractorType | "",
         business_phone: data.business_phone ?? "",
         owner_phone: data.owner_phone ?? "",
@@ -81,6 +104,59 @@ function Onboarding() {
     });
   }, [user, authLoading, navigate]);
 
+  useEffect(() => {
+    if (!bizId || scanStatus !== "idle") return;
+    const website = state.website.trim();
+    if (!website) {
+      setScanStatus("skipped");
+      setStep(firstIncompleteStep(state));
+      return;
+    }
+
+    setScanStatus("scanning");
+    (async () => {
+      try {
+        const result = await scanWebsite({ data: { url: website } });
+        const scannedType = CONTRACTOR_TYPES.some((t) => t.value === result.contractorType)
+          ? (result.contractorType as ContractorType)
+          : state.contractor_type;
+        const nextState: State = {
+          ...state,
+          business_name: result.businessName || state.business_name,
+          website: result.website || state.website,
+          contractor_type: scannedType,
+          business_phone: result.businessPhone || state.business_phone,
+        };
+        const patch: TablesUpdate<"businesses"> = {
+          business_name: nextState.business_name,
+          website: nextState.website,
+          contractor_type: nextState.contractor_type || null,
+          business_phone: nextState.business_phone,
+        };
+        if (result.address) patch.address = result.address;
+        if (result.websiteBlurb) patch.website_blurb = result.websiteBlurb;
+        if (result.bookingUrl) patch.booking_url = result.bookingUrl;
+        if (result.callbackFormUrl) patch.callback_form_url = result.callbackFormUrl;
+        if (result.defaultGreeting) patch.default_hello_script = result.defaultGreeting;
+
+        const { error } = await supabase.from("businesses").update(patch).eq("id", bizId);
+        if (error) throw error;
+
+        setState(nextState);
+        if (result.bookingUrl) setBookingUrl(result.bookingUrl);
+        setScanStatus("applied");
+        setScanMessage("Website scan applied. Review the remaining setup questions.");
+        setStep(firstIncompleteStep(nextState));
+      } catch (e: any) {
+        console.warn("Website setup scan failed", e);
+        setScanStatus("failed");
+        setScanMessage("Website scan could not complete. We'll ask the setup questions manually.");
+        setStep(firstIncompleteStep(state));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bizId, scanStatus, state.website]);
+
   const steps = ["Business", "Type", "Business phone", "Your cell", "Carrier", "AI agent", "Voice", "Script", "Forwarding", "Test"];
   const totalSteps = steps.length;
 
@@ -88,7 +164,17 @@ function Onboarding() {
     if (!bizId) return;
     // Persist progress on each step
     const patch: TablesUpdate<"businesses"> = {};
-    if (step === 0) patch.business_name = state.business_name;
+    if (step === 0) {
+      const normalizedWebsite = normalizeWebsite(state.website);
+      patch.business_name = state.business_name;
+      patch.website = normalizedWebsite;
+      if (normalizedWebsite !== state.website) {
+        setState((current) => ({ ...current, website: normalizedWebsite }));
+      }
+      if (normalizedWebsite && scanStatus === "skipped") {
+        setScanStatus("idle");
+      }
+    }
     if (step === 1) patch.contractor_type = state.contractor_type || null;
     if (step === 2) patch.business_phone = state.business_phone;
     if (step === 3) patch.owner_phone = state.owner_phone;
@@ -218,12 +304,51 @@ function Onboarding() {
           />
         </div>
 
+        {scanStatus === "scanning" && (
+          <div className="mb-4 flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span>Scanning your website to build the profile...</span>
+          </div>
+        )}
+        {(scanStatus === "applied" || scanStatus === "failed") && scanMessage && (
+          <div className={`mb-4 flex items-center gap-3 rounded-2xl border p-4 text-sm ${
+            scanStatus === "applied" ? "border-success/20 bg-success/5" : "border-border bg-muted/40"
+          }`}>
+            {scanStatus === "applied" ? <Sparkles className="h-4 w-4 text-success" /> : <Globe2 className="h-4 w-4 text-muted-foreground" />}
+            <span>{scanMessage}</span>
+          </div>
+        )}
+
         <Card className="p-8 shadow-[var(--shadow-card)]">
           <AnimatePresence mode="wait">
             <motion.div key={step} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}>
               {step === 0 && (
-                <Field label="What's your business called?" desc="This is how callers will see you in texts.">
-                  <Input autoFocus value={state.business_name} onChange={(e) => setState({ ...state, business_name: e.target.value })} placeholder="Apex Roofing" />
+                <Field label="Confirm your business profile" desc="We use your website to prefill the AI setup, then ask only what is still missing.">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="business-name" className="text-sm">Business name</Label>
+                      <Input
+                        id="business-name"
+                        autoFocus
+                        value={state.business_name}
+                        onChange={(e) => setState({ ...state, business_name: e.target.value })}
+                        placeholder="Apex Roofing"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="business-website" className="text-sm">Website URL</Label>
+                      <div className="relative">
+                        <Globe2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="business-website"
+                          value={state.website}
+                          onChange={(e) => setState({ ...state, website: e.target.value })}
+                          placeholder="https://yourcompany.com"
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </Field>
               )}
               {step === 1 && (
@@ -322,7 +447,7 @@ function Onboarding() {
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>Back</Button>
               <Button onClick={next} disabled={
-                (step === 0 && !state.business_name.trim()) ||
+                (step === 0 && (!state.business_name.trim() || !state.website.trim())) ||
                 (step === 1 && !state.contractor_type) ||
                 (step === 2 && !state.business_phone.trim()) ||
                 (step === 3 && !state.owner_phone.trim()) ||
