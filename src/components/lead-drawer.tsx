@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { qualifyLead, suggestReplies, updateLeadStatus, scheduleCallback } from "@/lib/leads.functions";
+import { archiveLead, qualifyLead, restoreLead, suggestReplies, updateLeadStatus, scheduleCallback } from "@/lib/leads.functions";
 import { assignLead } from "@/lib/dispatch.functions";
 import { sendSms } from "@/lib/sms.functions";
 import { toast } from "sonner";
@@ -25,6 +25,8 @@ type Call = {
   lead_status: "open" | "contacted" | "scheduled" | "closed";
   qualification: Record<string, string> | null;
   callback_requested: boolean;
+  archived_at: string | null;
+  archived_by: string | null;
   created_at: string;
 };
 
@@ -40,6 +42,8 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
   const qualifyFn = useServerFn(qualifyLead);
   const suggestFn = useServerFn(suggestReplies);
   const statusFn = useServerFn(updateLeadStatus);
+  const archiveFn = useServerFn(archiveLead);
+  const restoreFn = useServerFn(restoreLead);
   const callbackFn = useServerFn(scheduleCallback);
   const assignFn = useServerFn(assignLead);
   const sendSmsFn = useServerFn(sendSms);
@@ -106,6 +110,18 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
     catch (e: any) { toast.error(e.message); }
   }
 
+  async function archiveCurrent() {
+    if (!call) return;
+    try { await archiveFn({ data: { callId: call.id } }); toast.success("Resolved and archived"); }
+    catch (e: any) { toast.error(e.message); }
+  }
+
+  async function restoreCurrent() {
+    if (!call) return;
+    try { await restoreFn({ data: { callId: call.id } }); toast.success("Lead restored"); }
+    catch (e: any) { toast.error(e.message); }
+  }
+
   async function autoAssign() {
     if (!call) return;
     try {
@@ -160,6 +176,7 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
         <div className="mt-5">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-medium uppercase text-muted-foreground">Lead status</span>
+            {call.archived_at && <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Archived</span>}
           </div>
           <Select value={call.lead_status} onValueChange={(v) => setStatus(v as Call["lead_status"])}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -170,6 +187,13 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
               <SelectItem value="closed">Closed</SelectItem>
             </SelectContent>
           </Select>
+          <div className="mt-2">
+            {call.archived_at ? (
+              <Button variant="outline" size="sm" onClick={restoreCurrent}>Restore lead</Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={archiveCurrent}>Mark resolved and archive</Button>
+            )}
+          </div>
         </div>
 
         <div className="mt-5">

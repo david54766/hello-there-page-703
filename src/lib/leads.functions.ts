@@ -122,6 +122,35 @@ export const updateLeadStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const archiveLead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ callId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("calls")
+      .update({
+        lead_status: "closed",
+        status: "resolved",
+        archived_at: new Date().toISOString(),
+        archived_by: context.userId,
+      } as any)
+      .eq("id", data.callId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const restoreLead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ callId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("calls")
+      .update({ archived_at: null, archived_by: null } as any)
+      .eq("id", data.callId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const scheduleCallback = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>

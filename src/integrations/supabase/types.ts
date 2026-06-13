@@ -312,6 +312,8 @@ export type Database = {
         Row: {
           ai_summary: string | null
           ai_summary_short: string | null
+          archived_at: string | null
+          archived_by: string | null
           business_id: string
           callback_requested: boolean
           caller_name: string | null
@@ -335,6 +337,8 @@ export type Database = {
         Insert: {
           ai_summary?: string | null
           ai_summary_short?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           business_id: string
           callback_requested?: boolean
           caller_name?: string | null
@@ -358,6 +362,8 @@ export type Database = {
         Update: {
           ai_summary?: string | null
           ai_summary_short?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           business_id?: string
           callback_requested?: boolean
           caller_name?: string | null

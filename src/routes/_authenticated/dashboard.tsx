@@ -27,6 +27,8 @@ type Call = {
   priority: "normal" | "high";
   qualification: Record<string, string> | null;
   callback_requested: boolean;
+  archived_at: string | null;
+  archived_by: string | null;
   created_at: string;
 };
 
@@ -71,7 +73,7 @@ function Dashboard() {
       if (!biz.onboarding_complete) { navigate({ to: "/onboarding" }); return; }
       const { data: c } = await supabase
         .from("calls")
-        .select("id, business_id, caller_number, caller_name, transcript, ai_summary, ai_summary_short, urgency, status, lead_status, priority, qualification, callback_requested, created_at")
+        .select("id, business_id, caller_number, caller_name, transcript, ai_summary, ai_summary_short, urgency, status, lead_status, priority, qualification, callback_requested, archived_at, archived_by, created_at")
         .eq("business_id", biz.id)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -91,20 +93,37 @@ function Dashboard() {
   }, [user, navigate]);
 
   async function markResolved(id: string) {
-    const { error } = await supabase.from("calls").update({ status: "resolved", lead_status: "closed" }).eq("id", id);
+    const { error } = await supabase
+      .from("calls")
+      .update({
+        status: "resolved",
+        lead_status: "closed",
+        archived_at: new Date().toISOString(),
+        archived_by: user?.id ?? null,
+      })
+      .eq("id", id);
     if (error) toast.error(error.message);
-    else toast.success("Marked resolved");
+    else toast.success("Resolved and archived");
   }
 
+  async function restoreArchived(id: string) {
+    const { error } = await supabase.from("calls").update({ archived_at: null, archived_by: null }).eq("id", id);
+    if (error) toast.error(error.message);
+    else toast.success("Lead restored");
+  }
+
+  const activeCalls = calls.filter((c) => !c.archived_at);
+  const archivedCalls = calls.filter((c) => !!c.archived_at);
   const recovered = calls.filter((c) => c.lead_status !== "open").length;
-  const openLeads = calls.filter((c) => c.lead_status === "open").length;
+  const openLeads = activeCalls.filter((c) => c.lead_status === "open").length;
   const revenue = recovered * (business?.avg_job_value ?? 500);
   const responseRate = calls.length ? Math.round((recovered / calls.length) * 100) : 0;
 
-  const sorted = [...calls].sort((a, b) => {
+  const sorted = [...activeCalls].sort((a, b) => {
     if (a.priority !== b.priority) return a.priority === "high" ? -1 : 1;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
+  const archivedSorted = [...archivedCalls].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   if (loading) return <div className="p-10 text-muted-foreground">Loading…</div>;
 
@@ -139,7 +158,7 @@ function Dashboard() {
 
       <div className="mt-10">
         <h2 className="mb-4 text-lg font-semibold">Live activity</h2>
-        {calls.length === 0 ? (
+        {activeCalls.length === 0 ? (
           <Card className="p-10 text-center">
             <PhoneCall className="mx-auto h-10 w-10 text-muted-foreground" />
             <h3 className="mt-3 font-medium">No missed calls yet</h3>
@@ -190,7 +209,7 @@ function Dashboard() {
                       </Button>
                       {c.lead_status !== "closed" && (
                         <Button variant="ghost" size="sm" onClick={() => markResolved(c.id)}>
-                          <Check className="h-3.5 w-3.5" /> Resolve
+                          <Check className="h-3.5 w-3.5" /> Resolved
                         </Button>
                       )}
                     </div>
@@ -201,6 +220,33 @@ function Dashboard() {
           </div>
         )}
       </div>
+
+      {archivedSorted.length > 0 && (
+        <div className="mt-10">
+          <h2 className="mb-4 text-lg font-semibold">Archived calls</h2>
+          <div className="grid gap-3">
+            {archivedSorted.map((c) => (
+              <Card key={c.id} onClick={() => setSelected(c)} className="cursor-pointer p-5 shadow-[var(--shadow-card)] transition hover:border-primary/50">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{c.caller_name ?? "Unknown caller"}</span>
+                      <span className="text-sm text-muted-foreground">{c.caller_number}</span>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">archived</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[c.lead_status]}`}>{c.lead_status}</span>
+                    </div>
+                    <p className="mt-2 text-sm text-foreground/80">{c.ai_summary_short ?? c.ai_summary ?? "Archived lead."}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); restoreArchived(c.id); }}>
+                    Restore
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       <LeadDrawer call={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
     </div>
