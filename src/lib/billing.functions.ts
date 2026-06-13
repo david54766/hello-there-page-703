@@ -124,12 +124,25 @@ async function getBusinessForUser(supabase: any) {
 
   const { data, error } = await supabase
     .from("businesses")
-    .select("id, business_name, owner_id, subscription_plan_code, subscription_status, stripe_customer_id, stripe_subscription_id, subscription_current_period_end")
+    .select("id, business_name, owner_id, subscription_plan_code, subscription_status, stripe_customer_id, stripe_subscription_id, subscription_current_period_end, trial_call_seconds_limit")
     .eq("id", businessId)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  return data;
+  if (!data) return null;
+
+  const { data: usedSeconds, error: usageError } = await supabase.rpc("business_trial_call_seconds", {
+    _business_id: businessId,
+  });
+  if (usageError) throw new Error(usageError.message);
+
+  const limit = Number((data as any).trial_call_seconds_limit ?? 900);
+  const used = Number(usedSeconds ?? 0);
+  return {
+    ...data,
+    trial_call_seconds_used: used,
+    trial_call_seconds_remaining: Math.max(0, limit - used),
+  };
 }
 
 function stripeSecretKey() {
@@ -259,6 +272,9 @@ export const listBillingPlans = createServerFn({ method: "GET" })
             subscriptionPlanCode: businessResult.subscription_plan_code,
             subscriptionStatus: businessResult.subscription_status,
             subscriptionCurrentPeriodEnd: businessResult.subscription_current_period_end,
+            trialCallSecondsLimit: (businessResult as any).trial_call_seconds_limit ?? 900,
+            trialCallSecondsUsed: (businessResult as any).trial_call_seconds_used ?? 0,
+            trialCallSecondsRemaining: (businessResult as any).trial_call_seconds_remaining ?? 900,
           }
         : null,
       plans: ((plansResult.data ?? []) as PlanRow[]).map(normalizePlan),

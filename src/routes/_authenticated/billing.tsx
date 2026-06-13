@@ -26,6 +26,11 @@ function cents(value: number) {
   return currency.format(value / 100);
 }
 
+function formatMinutes(seconds: number) {
+  const minutes = Math.ceil(Math.max(0, seconds) / 60);
+  return `${minutes} min`;
+}
+
 function marginTone(margin: number) {
   if (margin >= 60) return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100";
   if (margin >= 45) return "bg-amber-100 text-amber-900 hover:bg-amber-100";
@@ -193,6 +198,41 @@ function Billing() {
                 {data.business.subscriptionStatus?.replace(/_/g, " ") ?? "Not started"}
               </Badge>
               {currentCode && <Badge className="capitalize">{currentCode}</Badge>}
+            </div>
+          </div>
+          <div className="mt-5 rounded-2xl border bg-muted/40 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-semibold">Trial call time</div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {formatMinutes(data.business.trialCallSecondsRemaining)} remaining of{" "}
+                  {formatMinutes(data.business.trialCallSecondsLimit)} included.
+                </div>
+              </div>
+              <Badge
+                className={
+                  data.business.subscriptionStatus === "trial_exhausted"
+                    ? "bg-red-100 text-red-800 hover:bg-red-100"
+                    : "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+                }
+              >
+                {data.business.subscriptionStatus === "trial_exhausted" ? "Trial exhausted" : "15-minute trial"}
+              </Badge>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-background">
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.round(
+                      (data.business.trialCallSecondsUsed /
+                        Math.max(1, data.business.trialCallSecondsLimit)) *
+                        100,
+                    ),
+                  )}%`,
+                }}
+              />
             </div>
           </div>
         </Card>

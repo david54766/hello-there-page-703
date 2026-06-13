@@ -31,6 +31,17 @@ function firstPhone(...values: unknown[]) {
   return values.map(normalizePhone).find(Boolean) ?? "";
 }
 
+function firstNumber(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return null;
+}
+
 function getMessage(payload: any) {
   return payload?.message ?? payload ?? {};
 }
@@ -52,6 +63,36 @@ function getRecordingUrl(artifact: any, call: any, message: any) {
     call?.recordingUrl,
     message?.recordingUrl,
   );
+}
+
+function getDurationSeconds(message: any, call: any) {
+  const explicitSeconds = firstNumber(
+    message?.durationSeconds,
+    message?.duration_seconds,
+    call?.durationSeconds,
+    call?.duration_seconds,
+    call?.duration,
+  );
+  if (explicitSeconds !== null) {
+    return Math.max(0, Math.round(explicitSeconds));
+  }
+
+  const explicitMs = firstNumber(message?.durationMs, message?.duration_ms, call?.durationMs, call?.duration_ms);
+  if (explicitMs !== null) {
+    return Math.max(0, Math.round(explicitMs / 1000));
+  }
+
+  const startedAt = firstText(message?.startedAt, call?.startedAt, call?.started_at);
+  const endedAt = firstText(message?.endedAt, call?.endedAt, call?.ended_at);
+  if (startedAt && endedAt) {
+    const started = new Date(startedAt).getTime();
+    const ended = new Date(endedAt).getTime();
+    if (Number.isFinite(started) && Number.isFinite(ended) && ended > started) {
+      return Math.round((ended - started) / 1000);
+    }
+  }
+
+  return 0;
 }
 
 function getStructuredData(message: any, call: any) {
@@ -241,6 +282,7 @@ async function upsertCallRecord(data: {
   priority: Priority;
   callbackRequested: boolean;
   qualification: Record<string, unknown>;
+  durationSeconds?: number;
 }) {
   const payload = {
     business_id: data.businessId,
@@ -257,6 +299,7 @@ async function upsertCallRecord(data: {
     priority: data.priority,
     callback_requested: data.callbackRequested,
     qualification: data.qualification,
+    duration_seconds: Math.max(0, Math.round(data.durationSeconds ?? 0)),
   };
 
   if (data.vapiCallId) {
@@ -285,6 +328,30 @@ async function upsertCallRecord(data: {
     .single();
   if (error) throw new Error(error.message);
   return inserted.id as string;
+}
+
+async function updateTrialStatusIfNeeded(businessId: string) {
+  const { data: business } = await supabaseAdmin
+    .from("businesses")
+    .select("id, subscription_status, trial_call_seconds_limit")
+    .eq("id", businessId)
+    .maybeSingle();
+
+  if ((business as any)?.subscription_status !== "trialing") return;
+
+  const { data: usedSeconds, error } = await supabaseAdmin.rpc("business_trial_call_seconds", {
+    _business_id: businessId,
+  });
+  if (error) throw new Error(error.message);
+
+  const limit = Number((business as any)?.trial_call_seconds_limit ?? 900);
+  if (Number(usedSeconds ?? 0) >= limit) {
+    await supabaseAdmin
+      .from("businesses")
+      .update({ subscription_status: "trial_exhausted" })
+      .eq("id", businessId)
+      .eq("subscription_status", "trialing");
+  }
 }
 
 async function notifyBusiness(callId: string, businessId: string, callerNumber: string, priority: Priority, summary: string) {
@@ -342,6 +409,7 @@ export async function handleVapiWebhookPayload(payload: any) {
   if (!businessId) throw new Error("Vapi webhook could not resolve business");
 
   const structured = getStructuredData(message, call);
+  const durationSeconds = getDurationSeconds(message, call);
   const transcript = firstText(artifact?.transcript, message?.transcript, call?.transcript);
   const summary = firstText(message?.summary, message?.analysis?.summary, call?.analysis?.summary, call?.summary);
   const summaryShort = firstText(
@@ -371,6 +439,7 @@ export async function handleVapiWebhookPayload(payload: any) {
     urgency,
     priority,
     callbackRequested: detectCallbackRequested(structured, transcript),
+    durationSeconds,
     qualification: {
       ...structured,
       vapi_call_id: vapiCallId || null,
@@ -380,6 +449,7 @@ export async function handleVapiWebhookPayload(payload: any) {
     },
   });
 
+  await updateTrialStatusIfNeeded(businessId);
   await notifyBusiness(callId, businessId, callerNumber, priority, summaryShort);
 
   let smsConfirmation: unknown = { skipped: "no_verbal_sms_consent" };

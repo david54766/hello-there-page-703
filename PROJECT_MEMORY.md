@@ -42,3 +42,14 @@ If password reset falls back to Supabase or does not show in Resend, check:
 - The protected `/api/public/password-reset` debug response should show `channel: "resend"` when custom reset email is working.
 
 Do not commit secret values to the repo.
+
+## Billing Trial Model
+
+CallRecover uses a usage-based trial, not a date-only trial. Each business gets
+900 seconds / 15 minutes of AI call time by default. Vapi webhook processing
+stores call duration on `calls.duration_seconds`; when a trialing business
+reaches its limit, `businesses.subscription_status` becomes `trial_exhausted`.
+
+Recommended checkout flow: do not require a card before the trial starts. Require
+card/payment selection after the 15-minute call-time trial is exhausted or when a
+user voluntarily chooses a paid plan.
