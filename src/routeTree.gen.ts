@@ -35,6 +35,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
 import { Route as ApiPublicPasswordResetRouteImport } from './routes/api/public/password-reset'
 import { Route as ApiPublicEmailDiagnosticsRouteImport } from './routes/api/public/email-diagnostics'
+import { Route as ApiMobileVoicePreviewRouteImport } from './routes/api/mobile/voice-preview'
 import { Route as ApiMobileTestSmsAlertRouteImport } from './routes/api/mobile/test-sms-alert'
 import { Route as ApiMobileTestPushRouteImport } from './routes/api/mobile/test-push'
 import { Route as ApiMobileTestEmailAlertRouteImport } from './routes/api/mobile/test-email-alert'
@@ -177,6 +178,11 @@ const ApiPublicEmailDiagnosticsRoute =
     path: '/api/public/email-diagnostics',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiMobileVoicePreviewRoute = ApiMobileVoicePreviewRouteImport.update({
+  id: '/api/mobile/voice-preview',
+  path: '/api/mobile/voice-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMobileTestSmsAlertRoute = ApiMobileTestSmsAlertRouteImport.update({
   id: '/api/mobile/test-sms-alert',
   path: '/api/mobile/test-sms-alert',
@@ -267,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
+  '/api/mobile/voice-preview': typeof ApiMobileVoicePreviewRoute
   '/api/public/email-diagnostics': typeof ApiPublicEmailDiagnosticsRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
@@ -305,6 +312,7 @@ export interface FileRoutesByTo {
   '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
+  '/api/mobile/voice-preview': typeof ApiMobileVoicePreviewRoute
   '/api/public/email-diagnostics': typeof ApiPublicEmailDiagnosticsRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
@@ -345,6 +353,7 @@ export interface FileRoutesById {
   '/api/mobile/test-email-alert': typeof ApiMobileTestEmailAlertRoute
   '/api/mobile/test-push': typeof ApiMobileTestPushRoute
   '/api/mobile/test-sms-alert': typeof ApiMobileTestSmsAlertRoute
+  '/api/mobile/voice-preview': typeof ApiMobileVoicePreviewRoute
   '/api/public/email-diagnostics': typeof ApiPublicEmailDiagnosticsRoute
   '/api/public/password-reset': typeof ApiPublicPasswordResetRoute
   '/api/public/sms-opt-in': typeof ApiPublicSmsOptInRoute
@@ -385,6 +394,7 @@ export interface FileRouteTypes {
     | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
+    | '/api/mobile/voice-preview'
     | '/api/public/email-diagnostics'
     | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
@@ -423,6 +433,7 @@ export interface FileRouteTypes {
     | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
+    | '/api/mobile/voice-preview'
     | '/api/public/email-diagnostics'
     | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
@@ -462,6 +473,7 @@ export interface FileRouteTypes {
     | '/api/mobile/test-email-alert'
     | '/api/mobile/test-push'
     | '/api/mobile/test-sms-alert'
+    | '/api/mobile/voice-preview'
     | '/api/public/email-diagnostics'
     | '/api/public/password-reset'
     | '/api/public/sms-opt-in'
@@ -495,6 +507,7 @@ export interface RootRouteChildren {
   ApiMobileTestEmailAlertRoute: typeof ApiMobileTestEmailAlertRoute
   ApiMobileTestPushRoute: typeof ApiMobileTestPushRoute
   ApiMobileTestSmsAlertRoute: typeof ApiMobileTestSmsAlertRoute
+  ApiMobileVoicePreviewRoute: typeof ApiMobileVoicePreviewRoute
   ApiPublicEmailDiagnosticsRoute: typeof ApiPublicEmailDiagnosticsRoute
   ApiPublicPasswordResetRoute: typeof ApiPublicPasswordResetRoute
   ApiPublicSmsOptInRoute: typeof ApiPublicSmsOptInRoute
@@ -686,6 +699,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEmailDiagnosticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mobile/voice-preview': {
+      id: '/api/mobile/voice-preview'
+      path: '/api/mobile/voice-preview'
+      fullPath: '/api/mobile/voice-preview'
+      preLoaderRoute: typeof ApiMobileVoicePreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mobile/test-sms-alert': {
       id: '/api/mobile/test-sms-alert'
       path: '/api/mobile/test-sms-alert'
@@ -816,6 +836,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMobileTestEmailAlertRoute: ApiMobileTestEmailAlertRoute,
   ApiMobileTestPushRoute: ApiMobileTestPushRoute,
   ApiMobileTestSmsAlertRoute: ApiMobileTestSmsAlertRoute,
+  ApiMobileVoicePreviewRoute: ApiMobileVoicePreviewRoute,
   ApiPublicEmailDiagnosticsRoute: ApiPublicEmailDiagnosticsRoute,
   ApiPublicPasswordResetRoute: ApiPublicPasswordResetRoute,
   ApiPublicSmsOptInRoute: ApiPublicSmsOptInRoute,
