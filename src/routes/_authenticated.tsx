@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AppIcon } from "@/components/app-icon";
-import { LayoutDashboard, Settings as SettingsIcon, LogOut, TrendingUp, Users, Phone, FileText, CalendarDays } from "lucide-react";
+import { LayoutDashboard, Settings as SettingsIcon, LogOut, TrendingUp, Users, Phone, FileText, CalendarDays, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({ component: Layout });
 
@@ -12,6 +12,7 @@ function Layout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [checkingSetup, setCheckingSetup] = useState(true);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -21,18 +22,28 @@ function Layout() {
     if (loading) return;
     if (!user) {
       setCheckingSetup(false);
+      setIsPlatformAdmin(false);
       return;
     }
     let cancelled = false;
     async function checkOnboarding() {
-      const { data } = await supabase
-        .from("businesses")
-        .select("onboarding_complete")
-        .eq("owner_id", user.id)
-        .maybeSingle();
+      const [{ data }, { data: adminRow }] = await Promise.all([
+        supabase
+          .from("businesses")
+          .select("onboarding_complete")
+          .eq("owner_id", user.id)
+          .maybeSingle(),
+        (supabase as any)
+          .from("platform_admins")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
       if (cancelled) return;
+      const adminAccess = Boolean(adminRow?.user_id);
+      setIsPlatformAdmin(adminAccess);
       setCheckingSetup(false);
-      if (data && !data.onboarding_complete && window.location.pathname !== "/onboarding") {
+      if (data && !data.onboarding_complete && !adminAccess && window.location.pathname !== "/onboarding") {
         navigate({ to: "/onboarding" });
       }
     }
@@ -74,6 +85,11 @@ function Layout() {
           <Link to="/scheduling" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
             <CalendarDays className="h-4 w-4" /> Scheduling
           </Link>
+          {isPlatformAdmin && (
+            <Link to="/admin" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
+              <ShieldCheck className="h-4 w-4" /> Admin
+            </Link>
+          )}
           <Link to="/settings" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground" activeProps={{ className: "active" }}>
             <SettingsIcon className="h-4 w-4" /> Settings
           </Link>
@@ -96,6 +112,7 @@ function Layout() {
           { to: "/vapi", icon: Phone, label: "AI agent" },
           { to: "/scripts", icon: FileText, label: "Scripts" },
           { to: "/scheduling", icon: CalendarDays, label: "Sched" },
+          ...(isPlatformAdmin ? [{ to: "/admin", icon: ShieldCheck, label: "Admin" }] : []),
           { to: "/settings", icon: SettingsIcon, label: "Settings" },
         ].map((t) => (
           <Link

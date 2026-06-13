@@ -32,6 +32,7 @@ import { Route as AuthenticatedScriptsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSchedulingRouteImport } from './routes/_authenticated/scheduling'
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicSmsOptInRouteImport } from './routes/api/public/sms-opt-in'
 import { Route as ApiPublicPasswordResetRouteImport } from './routes/api/public/password-reset'
 import { Route as ApiPublicEmailDiagnosticsRouteImport } from './routes/api/public/email-diagnostics'
@@ -162,6 +163,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const ApiPublicSmsOptInRoute = ApiPublicSmsOptInRouteImport.update({
   id: '/api/public/sms-opt-in',
   path: '/api/public/sms-opt-in',
@@ -257,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/tos': typeof TosRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
   '/scheduling': typeof AuthenticatedSchedulingRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/tos': typeof TosRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/revenue': typeof AuthenticatedRevenueRoute
   '/scheduling': typeof AuthenticatedSchedulingRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/terms-and-conditions': typeof TermsAndConditionsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/tos': typeof TosRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/scheduling': typeof AuthenticatedSchedulingRoute
@@ -378,6 +387,7 @@ export interface FileRouteTypes {
     | '/terms-and-conditions'
     | '/terms-of-service'
     | '/tos'
+    | '/admin'
     | '/dashboard'
     | '/revenue'
     | '/scheduling'
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/terms-and-conditions'
     | '/terms-of-service'
     | '/tos'
+    | '/admin'
     | '/dashboard'
     | '/revenue'
     | '/scheduling'
@@ -457,6 +468,7 @@ export interface FileRouteTypes {
     | '/terms-and-conditions'
     | '/terms-of-service'
     | '/tos'
+    | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/_authenticated/revenue'
     | '/_authenticated/scheduling'
@@ -678,6 +690,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/api/public/sms-opt-in': {
       id: '/api/public/sms-opt-in'
       path: '/api/public/sms-opt-in'
@@ -787,6 +806,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
   AuthenticatedSchedulingRoute: typeof AuthenticatedSchedulingRoute
@@ -797,6 +817,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
   AuthenticatedSchedulingRoute: AuthenticatedSchedulingRoute,
