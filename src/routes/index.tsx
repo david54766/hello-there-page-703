@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { AppIcon } from "@/components/app-icon";
 import {
   MessageSquareText, Sparkles, Shield, Clock, TrendingUp, CheckCircle2,
-  PhoneMissed, Bot, ClipboardList, Send, BellRing, Wrench, Zap, BarChart3, Headset, Settings2
+  PhoneMissed, Bot, ClipboardList, Send, BellRing, Wrench, Zap, BarChart3, Headset,
+  DollarSign, Calculator, CreditCard, ArrowRight
 } from "lucide-react";
 import { AI_VERBAL_SMS_OPT_IN_PROMPT, DOUBLE_OPT_IN_CONFIRMATION_SMS } from "@/lib/sms-consent-copy";
 
@@ -29,6 +30,7 @@ function Landing() {
             <span className="tracking-tight">CallRecover AI</span>
           </Link>
           <nav className="flex items-center gap-3 text-sm">
+            <a href="#pricing" className="hidden text-muted-foreground hover:text-foreground sm:inline">Pricing</a>
             <Link to="/login" className="text-muted-foreground hover:text-foreground">Sign In</Link>
             <Link to="/signup">
               <Button size="sm">Get Started</Button>
@@ -52,7 +54,7 @@ function Landing() {
             className="mx-auto inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground shadow-sm"
           >
             <Sparkles className="h-3 w-3 text-primary" />
-            Built for contractors. Powered by AI.
+            AI missed-call recovery for contractors
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
@@ -60,11 +62,10 @@ function Landing() {
             transition={{ duration: 0.6, delay: 0.05 }}
             className="mx-auto mt-6 max-w-3xl text-balance text-5xl font-semibold tracking-tight sm:text-6xl"
           >
-            Every missed call is a{" "}
+            Stop losing jobs when you{" "}
             <span className="bg-[image:var(--gradient-primary)] bg-clip-text text-transparent">
-              lost job.
+              miss the phone.
             </span>{" "}
-            Until now.
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -75,6 +76,23 @@ function Landing() {
             CallRecover instantly engages every caller you miss — transcribing voicemails,
             qualifying leads, and texting them back before they hire your competitor.
           </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.12 }}
+            className="mx-auto mt-6 grid max-w-3xl gap-3 text-left sm:grid-cols-3"
+          >
+            {[
+              ["One recovered job", "can cover the subscription"],
+              ["AI answers fast", "when your crew is busy"],
+              ["Lead details captured", "with transcript and priority"],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl border border-border bg-card/80 p-4 shadow-[var(--shadow-card)]">
+                <div className="text-sm font-semibold">{label}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{value}</div>
+              </div>
+            ))}
+          </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -93,7 +111,7 @@ function Landing() {
               </Button>
             </Link>
           </motion.div>
-          <p className="mt-4 text-xs text-muted-foreground">No credit card. 5-minute setup.</p>
+          <p className="mt-4 text-xs text-muted-foreground">5-minute setup. Works with your existing phone number. Cancel anytime.</p>
         </div>
       </section>
 
@@ -166,6 +184,176 @@ function Landing() {
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.body}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ROI */}
+      <section className="border-t border-border/60 bg-background">
+        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-20 sm:py-24 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+              <Calculator className="h-3.5 w-3.5 text-primary" />
+              Contractor math
+            </div>
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              One recovered call can pay for CallRecover.
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              If one missed call turns into a normal $500 job, that single recovery covers
+              the monthly subscription and leaves room for profit. Every additional job is upside.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link to="/signup">
+                <Button className="gap-2">
+                  Start recovering calls
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <a href="#pricing">
+                <Button variant="outline">View plans</Button>
+              </a>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-elevated)]"
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-border pb-5">
+              <div>
+                <div className="text-sm text-muted-foreground">Example recovered job value</div>
+                <div className="mt-1 text-4xl font-semibold tracking-tight">$500</div>
+              </div>
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <DollarSign className="h-6 w-6" />
+              </span>
+            </div>
+            <div className="mt-5 grid gap-3">
+              {[
+                ["Starter", "$79/mo", "6.3x monthly subscription"],
+                ["Pro", "$149/mo", "3.4x monthly subscription"],
+                ["Scale", "$299/mo", "1.7x monthly subscription"],
+              ].map(([name, price, coverage]) => (
+                <div key={name} className="flex items-center justify-between gap-4 rounded-2xl bg-muted/50 p-4">
+                  <div>
+                    <div className="font-semibold">{name}</div>
+                    <div className="text-sm text-muted-foreground">{price}</div>
+                  </div>
+                  <div className="text-right text-sm font-medium">{coverage}</div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-xs text-muted-foreground">
+              Example assumes a $500 average job. Your actual value may be higher or lower based on trade and ticket size.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="border-t border-border/60 bg-card/40">
+        <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
+          >
+            <div className="mx-auto mb-3 inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
+              <CreditCard className="h-3.5 w-3.5 text-primary" />
+              Simple monthly plans
+            </div>
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Pricing built around recovered jobs</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
+              Plans include AI call minutes and SMS segments. Estimated call counts are based on a normal 3-minute contractor intake call.
+            </p>
+          </motion.div>
+
+          <div className="mt-12 grid gap-5 lg:grid-cols-3">
+            {[
+              {
+                name: "Starter",
+                price: "$79",
+                calls: "Up to 50 recovered calls/mo",
+                minutes: "150 AI minutes",
+                sms: "400 SMS segments",
+                fit: "For a single busy contractor line.",
+                features: ["AI missed-call answering", "Lead inbox and transcripts", "SMS double opt-in", "One Vapi phone number"],
+              },
+              {
+                name: "Pro",
+                price: "$149",
+                calls: "Up to 125 recovered calls/mo",
+                minutes: "400 AI minutes",
+                sms: "1,000 SMS segments",
+                fit: "For growing teams that need routing and booking.",
+                features: ["Everything in Starter", "Team routing", "Booking tools", "Priority lead alerts", "Website setup scan"],
+                highlighted: true,
+              },
+              {
+                name: "Scale",
+                price: "$299",
+                calls: "Up to 275 recovered calls/mo",
+                minutes: "900 AI minutes",
+                sms: "2,500 SMS segments",
+                fit: "For high-volume teams with more automation headroom.",
+                features: ["Everything in Pro", "Advanced reporting", "Higher usage allowance", "Multi-user operations", "Priority support"],
+              },
+            ].map((plan, i) => (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+                className={`flex flex-col rounded-3xl border p-6 shadow-[var(--shadow-card)] ${
+                  plan.highlighted ? "border-primary bg-background ring-2 ring-primary/10" : "border-border bg-background"
+                }`}
+              >
+                {plan.highlighted && (
+                  <div className="mb-4 inline-flex w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    Most contractors start here
+                  </div>
+                )}
+                <h3 className="text-xl font-semibold">{plan.name}</h3>
+                <p className="mt-2 min-h-10 text-sm text-muted-foreground">{plan.fit}</p>
+                <div className="mt-5 flex items-end gap-1">
+                  <span className="text-4xl font-semibold tracking-tight">{plan.price}</span>
+                  <span className="pb-1 text-sm text-muted-foreground">/mo</span>
+                </div>
+                <div className="mt-5 rounded-2xl bg-muted/50 p-4">
+                  <div className="font-semibold">{plan.calls}</div>
+                  <div className="mt-1 text-sm text-muted-foreground">{plan.minutes} - {plan.sms}</div>
+                </div>
+                <div className="mt-5 space-y-3 text-sm">
+                  {plan.features.map((feature) => (
+                    <div key={feature} className="flex items-start gap-2">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>{feature}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link to="/signup" className="mt-auto pt-6">
+                  <Button className="w-full" variant={plan.highlighted ? "default" : "outline"}>
+                    Get started
+                  </Button>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mx-auto mt-8 max-w-3xl rounded-2xl border border-border bg-background p-5 text-center text-sm text-muted-foreground">
+            A single $500 recovered job covers Starter by more than 6x, Pro by more than 3x, and Scale by more than 1.5x.
           </div>
         </div>
       </section>
