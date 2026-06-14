@@ -1,11 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { sendSmsForCall } from "./sms-send.server";
 
 /**
- * Send an SMS via Twilio REST API and persist it to sms_threads / sms_messages.
- * Appends a one-time STOP/HELP disclosure on the first outbound message in a thread.
+ * Manual staff SMS is intentionally disabled for compliance.
+ * Automated transactional text messages still use sms-send.server.ts directly.
  */
 export const sendSms = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -15,7 +14,8 @@ export const sendSms = createServerFn({ method: "POST" })
       body: z.string().min(1).max(1500),
     }).parse(input),
   )
-  .handler(async ({ data, context }) => {
-    const result = await sendSmsForCall(context.supabase, data);
-    return { ok: true, sid: result.sid };
+  .handler(async () => {
+    throw new Error(
+      "Manual staff SMS from the CallRecover system number is disabled. Use the caller's native SMS app so the assigned team member replies from their own number.",
+    );
   });

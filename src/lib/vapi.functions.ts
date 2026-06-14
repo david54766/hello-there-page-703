@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { applyTags, mergeTagDefaults, type TagValues } from "@/lib/tags";
 import { DEFAULT_VOICE_ID } from "@/lib/voices";
 import { DEFAULT_AGENT_NAME, getStandardScript } from "@/lib/contractor-data";
@@ -169,9 +170,38 @@ function mapVapiPhoneNumbers(data: any[]): VapiNumber[] {
   }));
 }
 
-async function listAssignableVapiNumbers() {
+async function loadAssignedVapiPhoneIds(currentBusinessId?: string | null) {
+  const { data, error } = await supabaseAdmin
+    .from("vapi_number_assistants")
+    .select("business_id,phone_number_id")
+    .not("phone_number_id", "is", null);
+  if (error) throw new Error(error.message);
+
+  return new Set(
+    (data ?? [])
+      .filter((row: any) => row.business_id !== currentBusinessId)
+      .map((row: any) => row.phone_number_id)
+      .filter(Boolean),
+  );
+}
+
+async function assertVapiPhoneNumberAvailable(phoneNumberId: string, businessId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("vapi_number_assistants")
+    .select("business_id")
+    .eq("phone_number_id", phoneNumberId)
+    .neq("business_id", businessId)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (data) {
+    throw new Error("That Vapi number is already assigned to another account.");
+  }
+}
+
+async function listAssignableVapiNumbers(excludeIds = new Set<string>()) {
   const data = await vapi("/phone-number");
-  return mapVapiPhoneNumbers(data as any[]);
+  return mapVapiPhoneNumbers(data as any[]).filter((number) => !excludeIds.has(number.id));
 }
 
 async function loadAccountAssistantRow(supabase: any, businessId: string) {
@@ -203,7 +233,8 @@ export const listVapiPhoneNumbers = createServerFn({ method: "GET" })
       }
     }
 
-    const numbers = await listAssignableVapiNumbers();
+    const assignedIds = await loadAssignedVapiPhoneIds(businessId);
+    const numbers = await listAssignableVapiNumbers(assignedIds);
     return { numbers: numbers.slice(0, 1) };
   });
 
@@ -416,6 +447,8 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
     if (existing?.assistant_id) {
       return { row: existing, created: false };
     }
+
+    await assertVapiPhoneNumberAvailable(data.phoneNumberId, businessId);
 
     const tags = mergeTagDefaults(business);
     const agentName = data.assistantName?.trim() || DEFAULT_AGENT_NAME;
