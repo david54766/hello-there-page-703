@@ -157,8 +157,18 @@ function Landing() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {[
-                { platform: "Android", note: "Play Store release in progress" },
-                { platform: "iOS", note: "App Store release in progress" },
+                {
+                  platform: "Android",
+                  note: "Play Store release in progress",
+                  icon: "/homepage/google-play-icon.png",
+                  iconAlt: "Google Play icon",
+                },
+                {
+                  platform: "iOS",
+                  note: "App Store release in progress",
+                  icon: "/homepage/app-store-icon.png",
+                  iconAlt: "App Store icon",
+                },
               ].map((app) => (
                 <div
                   key={app.platform}
@@ -169,8 +179,13 @@ function Landing() {
                     className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary/10 blur-2xl"
                   />
                   <div className="relative flex items-start justify-between gap-4">
-                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--shadow-elevated)]">
-                      <Smartphone className="h-5 w-5" />
+                    <div className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-border bg-white shadow-[var(--shadow-elevated)]">
+                      <img
+                        src={app.icon}
+                        alt={app.iconAlt}
+                        className="h-9 w-9 object-contain"
+                        loading="lazy"
+                      />
                     </div>
                     <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
                       Coming soon
