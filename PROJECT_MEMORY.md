@@ -1,5 +1,16 @@
 # Project Memory
 
+## Repo Identity
+
+This repository is CallRecover only.
+
+- GitHub remote: `david54766/hello-there-page-703`
+- Production domain: `https://callrecover.net`
+- Product: CallRecover AI, owned by Classroom Panda LLC dba CallRecover
+
+Do not use this repo for Prima Donna AI / Preschool Prima Donna work. The
+Prima Donna project lives in the separate `hello2-greeting-page` repo.
+
 ## Lovable Secrets
 
 Lovable currently uses these CallRecover-specific Supabase secret names:

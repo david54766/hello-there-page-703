@@ -24,6 +24,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as AccountDeletionRouteImport } from './routes/account-deletion'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVapiRouteImport } from './routes/_authenticated/vapi'
@@ -125,6 +126,11 @@ const CookiesRoute = CookiesRouteImport.update({
 const ComplianceRoute = ComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountDeletionRoute = AccountDeletionRouteImport.update({
+  id: '/account-deletion',
+  path: '/account-deletion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -267,6 +273,7 @@ const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account-deletion': typeof AccountDeletionRoute
   '/compliance': typeof ComplianceRoute
   '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -310,6 +317,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account-deletion': typeof AccountDeletionRoute
   '/compliance': typeof ComplianceRoute
   '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -355,6 +363,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/account-deletion': typeof AccountDeletionRoute
   '/compliance': typeof ComplianceRoute
   '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -400,6 +409,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account-deletion'
     | '/compliance'
     | '/cookies'
     | '/forgot-password'
@@ -443,6 +453,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account-deletion'
     | '/compliance'
     | '/cookies'
     | '/forgot-password'
@@ -487,6 +498,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/account-deletion'
     | '/compliance'
     | '/cookies'
     | '/forgot-password'
@@ -532,6 +544,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AccountDeletionRoute: typeof AccountDeletionRoute
   ComplianceRoute: typeof ComplianceRoute
   CookiesRoute: typeof CookiesRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
@@ -670,6 +683,13 @@ declare module '@tanstack/react-router' {
       path: '/compliance'
       fullPath: '/compliance'
       preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account-deletion': {
+      id: '/account-deletion'
+      path: '/account-deletion'
+      fullPath: '/account-deletion'
+      preLoaderRoute: typeof AccountDeletionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -895,6 +915,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AccountDeletionRoute: AccountDeletionRoute,
   ComplianceRoute: ComplianceRoute,
   CookiesRoute: CookiesRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,

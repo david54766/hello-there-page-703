@@ -5,7 +5,7 @@ import { AppIcon } from "@/components/app-icon";
 import {
   MessageSquareText, Sparkles, Shield, Clock, TrendingUp, CheckCircle2,
   PhoneMissed, Bot, ClipboardList, Send, BellRing, Wrench, Zap, BarChart3, Headset,
-  DollarSign, Calculator, CreditCard, ArrowRight
+  DollarSign, Calculator, CreditCard, ArrowRight, Smartphone
 } from "lucide-react";
 import { AI_VERBAL_SMS_OPT_IN_PROMPT, DOUBLE_OPT_IN_CONFIRMATION_SMS } from "@/lib/sms-consent-copy";
 
@@ -135,6 +135,53 @@ function Landing() {
             </Link>
           </motion.div>
           <p className="mt-4 text-xs text-muted-foreground">5-minute setup. Works with your existing phone number. Cancel anytime.</p>
+        </div>
+      </section>
+
+      {/* Mobile Apps */}
+      <section className="border-t border-border/60 bg-card/40">
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <div className="grid gap-5 md:grid-cols-[0.9fr_1.1fr] md:items-center">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Smartphone className="h-3.5 w-3.5" />
+                Mobile access
+              </p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight">
+                Native apps are coming soon.
+              </h2>
+              <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
+                Manage recovered calls, transcripts, forwarding, bookings, and alerts
+                from the field. Android and iOS releases are being prepared for launch.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                { platform: "Android", note: "Play Store release in progress" },
+                { platform: "iOS", note: "App Store release in progress" },
+              ].map((app) => (
+                <div
+                  key={app.platform}
+                  className="relative overflow-hidden rounded-2xl border border-border bg-background p-5 shadow-[var(--shadow-card)]"
+                >
+                  <div
+                    aria-hidden
+                    className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary/10 blur-2xl"
+                  />
+                  <div className="relative flex items-start justify-between gap-4">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--shadow-elevated)]">
+                      <Smartphone className="h-5 w-5" />
+                    </div>
+                    <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                      Coming soon
+                    </span>
+                  </div>
+                  <h3 className="relative mt-5 text-xl font-semibold">{app.platform}</h3>
+                  <p className="relative mt-1 text-sm text-muted-foreground">{app.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -664,6 +711,7 @@ function Landing() {
             <Link to="/privacy-policy" className="hover:text-foreground">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-foreground">Terms & Conditions</Link>
             <Link to="/cookies" className="hover:text-foreground">Cookie Policy</Link>
+            <Link to="/account-deletion" className="hover:text-foreground">Account Deletion</Link>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             <Link to="/compliance" className="hover:text-foreground">SMS &amp; Voice Compliance</Link>
