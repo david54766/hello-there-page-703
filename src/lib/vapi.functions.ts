@@ -8,6 +8,12 @@ import { DEFAULT_AGENT_NAME, getStandardScript } from "@/lib/contractor-data";
 
 const BASE = "https://api.vapi.ai";
 const VAPI_SERVER_MESSAGES = ["end-of-call-report"];
+const BLOCKING_NUMBER_STATUSES = ["active", "reclaim_pending", "quarantined"];
+
+function envNumber(name: string, fallback: number) {
+  const parsed = Number(process.env[name] ?? fallback);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
 
 async function vapi(path: string, init: RequestInit = {}) {
   const key = process.env.VAPI_API_KEY;
@@ -208,11 +214,214 @@ async function createVapiPhoneNumberForBusiness(business: Record<string, unknown
   return mapVapiPhoneNumbers([created])[0];
 }
 
+async function deleteVapiPhoneNumber(phoneNumberId: string) {
+  await vapi(`/phone-number/${phoneNumberId}`, { method: "DELETE" });
+}
+
+function hoursAgo(hours: number) {
+  return Date.now() - Math.max(0, hours) * 60 * 60 * 1000;
+}
+
+function daysAgo(days: number) {
+  return Date.now() - Math.max(0, days) * 24 * 60 * 60 * 1000;
+}
+
+function addDays(days: number) {
+  return new Date(Date.now() + Math.max(0, days) * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function hasCurrentPaidAccess(business: any) {
+  const status = String(business?.subscription_status ?? "").toLowerCase();
+  const periodEnd = business?.subscription_current_period_end
+    ? new Date(business.subscription_current_period_end).getTime()
+    : null;
+  if (["active", "checkout_completed", "past_due"].includes(status)) return true;
+  if (status === "canceled" && periodEnd && periodEnd > Date.now()) return true;
+  return false;
+}
+
+function reclaimReasonForBusiness(business: any) {
+  if (!business) return null;
+  if (hasCurrentPaidAccess(business)) return null;
+
+  const status = String(business.subscription_status ?? "trialing").toLowerCase();
+  const createdAt = new Date(business.created_at ?? 0).getTime();
+  const updatedAt = new Date(business.updated_at ?? business.created_at ?? 0).getTime();
+
+  if (status === "trialing" && !business.onboarding_complete && createdAt <= hoursAgo(envNumber("CALLRECOVER_INCOMPLETE_ONBOARDING_RECLAIM_HOURS", 24))) {
+    return "abandoned_onboarding";
+  }
+
+  if (["trial_exhausted", "canceled", "unpaid", "incomplete_expired"].includes(status) && updatedAt <= daysAgo(envNumber("CALLRECOVER_ENDED_TRIAL_RECLAIM_DAYS", 3))) {
+    return status === "trial_exhausted" ? "trial_exhausted_no_subscription" : `subscription_${status}`;
+  }
+
+  return null;
+}
+
+async function loadBusinessCallActivity(businessId: string) {
+  const { count, error: countError } = await supabaseAdmin
+    .from("calls")
+    .select("id", { count: "exact", head: true })
+    .eq("business_id", businessId);
+  if (countError) throw new Error(countError.message);
+
+  const { data: usedSeconds, error: secondsError } = await supabaseAdmin.rpc("business_trial_call_seconds", {
+    _business_id: businessId,
+  });
+  if (secondsError) throw new Error(secondsError.message);
+
+  return {
+    callCount: count ?? 0,
+    usedSeconds: Number(usedSeconds ?? 0),
+    hasRealCallActivity: (count ?? 0) > 0 || Number(usedSeconds ?? 0) > 0,
+  };
+}
+
+async function markVapiNumberReclaimPending(rowId: string, reason: string, callCount: number, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  await supabaseAdmin
+    .from("vapi_number_assistants")
+    .update({
+      number_status: "reclaim_pending",
+      reclaim_after: new Date().toISOString(),
+      release_reason: `${reason}: ${message.slice(0, 240)}`,
+      call_count_at_reclaim: callCount,
+      last_reclaim_checked_at: new Date().toISOString(),
+    } as any)
+    .eq("id", rowId);
+}
+
+export async function reclaimVapiNumberForBusiness(input: {
+  businessId: string;
+  reason?: string;
+  requestedBy?: string | null;
+  force?: boolean;
+}) {
+  const { data: business, error: businessError } = await supabaseAdmin
+    .from("businesses")
+    .select("id, onboarding_complete, subscription_status, subscription_current_period_end, created_at, updated_at")
+    .eq("id", input.businessId)
+    .maybeSingle();
+  if (businessError) throw new Error(businessError.message);
+  if (!business) return { businessId: input.businessId, status: "skipped", reason: "business_not_found" };
+
+  const reason = input.reason ?? reclaimReasonForBusiness(business);
+  if (!input.force && !reason) {
+    return { businessId: input.businessId, status: "skipped", reason: "not_eligible" };
+  }
+
+  const { data: row, error: rowError } = await supabaseAdmin
+    .from("vapi_number_assistants")
+    .select("*")
+    .eq("business_id", input.businessId)
+    .in("number_status", BLOCKING_NUMBER_STATUSES)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (rowError) throw new Error(rowError.message);
+  if (!row?.phone_number_id) return { businessId: input.businessId, status: "skipped", reason: "no_active_vapi_number" };
+
+  const activity = await loadBusinessCallActivity(input.businessId);
+  try {
+    await deleteVapiPhoneNumber(row.phone_number_id);
+  } catch (error) {
+    await markVapiNumberReclaimPending(row.id, reason ?? "manual_reclaim", activity.callCount, error);
+    return {
+      businessId: input.businessId,
+      status: "pending",
+      reason: "vapi_delete_failed",
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  const nextStatus = activity.hasRealCallActivity ? "quarantined" : "released";
+  const { error: updateError } = await supabaseAdmin
+    .from("vapi_number_assistants")
+    .update({
+      number_status: nextStatus,
+      released_at: new Date().toISOString(),
+      released_by: input.requestedBy ?? null,
+      release_reason: reason ?? "manual_reclaim",
+      call_count_at_reclaim: activity.callCount,
+      quarantine_until: activity.hasRealCallActivity ? addDays(envNumber("CALLRECOVER_ACTIVE_CALL_QUARANTINE_DAYS", 90)) : null,
+      last_reclaim_checked_at: new Date().toISOString(),
+    } as any)
+    .eq("id", row.id);
+  if (updateError) throw new Error(updateError.message);
+
+  return {
+    businessId: input.businessId,
+    status: nextStatus,
+    reason: reason ?? "manual_reclaim",
+    callCount: activity.callCount,
+    usedSeconds: activity.usedSeconds,
+  };
+}
+
+export async function scanReclaimableVapiNumbers(input: {
+  requestedBy?: string | null;
+  limit?: number;
+  dryRun?: boolean;
+} = {}) {
+  const limit = Math.max(1, Math.min(200, input.limit ?? 100));
+  const { data: rows, error: rowError } = await supabaseAdmin
+    .from("vapi_number_assistants")
+    .select("business_id")
+    .in("number_status", BLOCKING_NUMBER_STATUSES)
+    .order("updated_at", { ascending: true })
+    .limit(limit);
+  if (rowError) throw new Error(rowError.message);
+
+  const businessIds = Array.from(new Set((rows ?? []).map((row: any) => row.business_id).filter(Boolean)));
+  if (!businessIds.length) return { checked: 0, reclaimed: [], skipped: [] };
+
+  const { data: businesses, error: businessError } = await supabaseAdmin
+    .from("businesses")
+    .select("id, onboarding_complete, subscription_status, subscription_current_period_end, created_at, updated_at")
+    .in("id", businessIds);
+  if (businessError) throw new Error(businessError.message);
+
+  const byId = new Map((businesses ?? []).map((business: any) => [business.id, business]));
+  const reclaimed: any[] = [];
+  const skipped: any[] = [];
+
+  for (const businessId of businessIds) {
+    const business = byId.get(businessId);
+    const reason = reclaimReasonForBusiness(business);
+    if (!reason) {
+      skipped.push({ businessId, reason: "not_eligible" });
+      continue;
+    }
+
+    if (input.dryRun) {
+      const activity = await loadBusinessCallActivity(businessId);
+      reclaimed.push({
+        businessId,
+        status: activity.hasRealCallActivity ? "quarantined" : "released",
+        reason,
+        callCount: activity.callCount,
+        usedSeconds: activity.usedSeconds,
+      });
+      continue;
+    }
+
+    reclaimed.push(await reclaimVapiNumberForBusiness({
+      businessId,
+      reason,
+      requestedBy: input.requestedBy ?? null,
+    }));
+  }
+
+  return { checked: businessIds.length, reclaimed, skipped };
+}
+
 async function loadAssignedVapiPhoneIds(currentBusinessId?: string | null) {
   const { data, error } = await supabaseAdmin
     .from("vapi_number_assistants")
-    .select("business_id,phone_number_id")
-    .not("phone_number_id", "is", null);
+    .select("business_id,phone_number_id,number_status")
+    .not("phone_number_id", "is", null)
+    .in("number_status", BLOCKING_NUMBER_STATUSES);
   if (error) throw new Error(error.message);
 
   return new Set(
@@ -228,6 +437,7 @@ async function assertVapiPhoneNumberAvailable(phoneNumberId: string, businessId:
     .from("vapi_number_assistants")
     .select("business_id")
     .eq("phone_number_id", phoneNumberId)
+    .in("number_status", BLOCKING_NUMBER_STATUSES)
     .neq("business_id", businessId)
     .limit(1)
     .maybeSingle();
@@ -247,6 +457,7 @@ async function loadAccountAssistantRow(supabase: any, businessId: string) {
     .from("vapi_number_assistants")
     .select("*")
     .eq("business_id", businessId)
+    .in("number_status", BLOCKING_NUMBER_STATUSES)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -524,6 +735,15 @@ export const ensureAssistantForNumber = createServerFn({ method: "POST" })
       business_id: businessId,
       phone_number_id: data.phoneNumberId,
       phone_number: data.phoneNumber ?? null,
+      number_provider: "vapi",
+      number_status: "active",
+      provisioned_at: new Date().toISOString(),
+      reclaim_after: null,
+      quarantine_until: null,
+      released_at: null,
+      release_reason: null,
+      released_by: null,
+      call_count_at_reclaim: 0,
       assistant_id: assistant.id,
       assistant_name: agentName,
       contractor_type_preset: data.contractorType ?? business?.contractor_type ?? null,

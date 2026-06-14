@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { scanReclaimableVapiNumbers } from "@/lib/vapi.functions";
 
 type TenantSummary = {
   id: string;
@@ -13,6 +14,8 @@ type TenantSummary = {
   createdAt: string;
   updatedAt: string;
   vapiNumber: string | null;
+  vapiNumberStatus: string | null;
+  vapiQuarantineUntil: string | null;
   assistantConnected: boolean;
   memberCount: number;
   teamCount: number;
@@ -120,7 +123,7 @@ export const getPlatformAdminOverview = createServerFn({ method: "GET" })
       selectTenantRows("calls", "business_id, lead_status, archived_at", businessIds),
       selectTenantRows("appointments", "business_id, status", businessIds),
       selectTenantRows("sms_consents", "business_id, status", businessIds),
-      selectTenantRows("vapi_number_assistants", "business_id, phone_number, assistant_id", businessIds),
+      selectTenantRows("vapi_number_assistants", "business_id, phone_number, assistant_id, number_status, quarantine_until", businessIds),
       loadOwnerEmails(tenantRows.map((business: any) => business.owner_id).filter(Boolean)),
     ]);
 
@@ -153,7 +156,12 @@ export const getPlatformAdminOverview = createServerFn({ method: "GET" })
         createdAt: business.created_at,
         updatedAt: business.updated_at,
         vapiNumber: assistant?.phone_number ?? null,
-        assistantConnected: Boolean(assistant?.assistant_id),
+        vapiNumberStatus: assistant?.number_status ?? null,
+        vapiQuarantineUntil: assistant?.quarantine_until ?? null,
+        assistantConnected: Boolean(
+          assistant?.assistant_id &&
+          ["active", "reclaim_pending"].includes(assistant.number_status ?? "active"),
+        ),
         memberCount: memberCounts.get(business.id) ?? 0,
         teamCount: teamCounts.get(business.id) ?? 0,
         callCount: callCounts.get(business.id) ?? 0,
@@ -179,4 +187,14 @@ export const getPlatformAdminOverview = createServerFn({ method: "GET" })
     );
 
     return { isPlatformAdmin: true, totals, tenants };
+  });
+
+export const reclaimDormantVapiNumbers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertPlatformAdmin(context.userId);
+    return scanReclaimableVapiNumbers({
+      requestedBy: context.userId,
+      limit: 100,
+    });
   });

@@ -11,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getBillingAdminConfig, saveBillingCoupon, saveBillingPlan } from "@/lib/billing.functions";
-import { getPlatformAdminOverview } from "@/lib/platform-admin.functions";
-import { Building2, CheckCircle2, CreditCard, Gift, Loader2, Phone, RefreshCw, Save, ShieldCheck, TrendingUp, Users } from "lucide-react";
+import { getPlatformAdminOverview, reclaimDormantVapiNumbers } from "@/lib/platform-admin.functions";
+import { Building2, CheckCircle2, CreditCard, Gift, Loader2, Phone, PhoneOff, RefreshCw, Save, ShieldCheck, TrendingUp, Users } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({ component: PlatformAdmin });
@@ -153,6 +153,7 @@ function PlanEditor({
 
 function PlatformAdmin() {
   const overviewFn = useServerFn(getPlatformAdminOverview);
+  const reclaimNumbersFn = useServerFn(reclaimDormantVapiNumbers);
   const billingFn = useServerFn(getBillingAdminConfig);
   const savePlanFn = useServerFn(saveBillingPlan);
   const saveCouponFn = useServerFn(saveBillingCoupon);
@@ -169,6 +170,7 @@ function PlatformAdmin() {
   const [loading, setLoading] = useState(true);
   const [savingPlan, setSavingPlan] = useState<string | null>(null);
   const [savingCoupon, setSavingCoupon] = useState(false);
+  const [reclaimingNumbers, setReclaimingNumbers] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -286,6 +288,22 @@ function PlatformAdmin() {
     }
   }
 
+  async function reclaimNumbers() {
+    setReclaimingNumbers(true);
+    try {
+      const result = await reclaimNumbersFn();
+      const released = result.reclaimed.filter((item: any) => item.status === "released").length;
+      const quarantined = result.reclaimed.filter((item: any) => item.status === "quarantined").length;
+      const pending = result.reclaimed.filter((item: any) => item.status === "pending").length;
+      toast.success(`Checked ${result.checked} accounts: ${released} released, ${quarantined} quarantined, ${pending} pending.`);
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not reclaim dormant numbers.");
+    } finally {
+      setReclaimingNumbers(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -299,9 +317,15 @@ function PlatformAdmin() {
             Platform-level view of CallRecover tenants without changing each tenant's admin and staff permissions.
           </p>
         </div>
-        <Button variant="outline" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={reclaimNumbers} disabled={reclaimingNumbers}>
+            {reclaimingNumbers ? <Loader2 className="h-4 w-4 animate-spin" /> : <PhoneOff className="h-4 w-4" />}
+            Reclaim unused numbers
+          </Button>
+          <Button variant="outline" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="tenants" className="space-y-6">
@@ -372,7 +396,13 @@ function PlatformAdmin() {
                       {tenant.assistantConnected ? (
                         <div>
                           <Badge className="bg-primary/10 text-primary hover:bg-primary/10">Connected</Badge>
+                          {tenant.vapiNumberStatus && tenant.vapiNumberStatus !== "active" ? (
+                            <Badge variant="secondary" className="ml-1 capitalize">{tenant.vapiNumberStatus.replace(/_/g, " ")}</Badge>
+                          ) : null}
                           <div className="mt-1 text-xs text-muted-foreground">{formatPhone(tenant.vapiNumber)}</div>
+                          {tenant.vapiQuarantineUntil ? (
+                            <div className="text-xs text-muted-foreground">Quarantine until {formatDate(tenant.vapiQuarantineUntil)}</div>
+                          ) : null}
                         </div>
                       ) : (
                         <Badge variant="outline">Not connected</Badge>

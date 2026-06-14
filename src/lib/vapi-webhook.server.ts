@@ -5,6 +5,7 @@ import {
   sendDoubleOptInForCall,
 } from "@/lib/sms-send.server";
 import { sendMobilePushForNotification } from "@/lib/mobile-push.server";
+import { reclaimVapiNumberForBusiness } from "@/lib/vapi.functions";
 
 type Priority = "normal" | "high";
 type Urgency = "low" | "medium" | "high" | "emergency";
@@ -351,6 +352,11 @@ async function updateTrialStatusIfNeeded(businessId: string) {
       .update({ subscription_status: "trial_exhausted" })
       .eq("id", businessId)
       .eq("subscription_status", "trialing");
+    await reclaimVapiNumberForBusiness({
+      businessId,
+      reason: "trial_exhausted_no_subscription",
+      force: true,
+    });
   }
 }
 
