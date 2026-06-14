@@ -64,8 +64,10 @@ export function Signup() {
               <TimerReset className="h-5 w-5" />
             </span>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Start your 15-minute trial</h1>
-              <p className="mt-1 text-sm text-muted-foreground">No credit card. We scan your site to speed up setup.</p>
+              <h1 className="text-2xl font-semibold tracking-tight">Start recovering missed calls free</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Includes 15 minutes of AI call handling. No credit card. We scan your site to speed up setup.
+              </p>
             </div>
           </div>
 
@@ -103,7 +105,7 @@ export function Signup() {
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating trial..." : "Create trial account"}
+              {loading ? "Creating account..." : "Create free account"}
             </Button>
           </form>
 
