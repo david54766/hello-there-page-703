@@ -135,6 +135,21 @@ function Landing() {
             </Link>
           </motion.div>
           <p className="mt-4 text-xs text-muted-foreground">5-minute setup. Works with your existing phone number. Cancel anytime.</p>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.18 }}
+            className="mx-auto mt-8 max-w-3xl rounded-3xl border border-border bg-card/85 p-5 text-left shadow-[var(--shadow-card)] sm:p-6"
+          >
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+              Lightweight call management
+            </p>
+            <p className="mt-3 text-base leading-7 text-muted-foreground">
+              CallRecover manages missed-call intake, lead assignment, and bookings for
+              small teams. It separates urgent service calls from sales inquiries and
+              lower-priority requests so your crew can capture more jobs and stay organized.
+            </p>
+          </motion.div>
         </div>
       </section>
 
