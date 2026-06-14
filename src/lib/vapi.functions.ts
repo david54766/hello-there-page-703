@@ -170,6 +170,44 @@ function mapVapiPhoneNumbers(data: any[]): VapiNumber[] {
   }));
 }
 
+function areaCodeFromPhone(value: unknown) {
+  const digits = typeof value === "string" ? value.replace(/\D/g, "") : "";
+  if (digits.length >= 11 && digits.startsWith("1")) return digits.slice(1, 4);
+  if (digits.length >= 10) return digits.slice(0, 3);
+  return null;
+}
+
+function desiredVapiAreaCode(business: Record<string, unknown> | null | undefined) {
+  return (
+    areaCodeFromPhone((business as any)?.business_phone) ||
+    areaCodeFromPhone((business as any)?.owner_phone) ||
+    process.env.CALLRECOVER_DEFAULT_VAPI_AREA_CODE?.replace(/\D/g, "").slice(0, 3) ||
+    null
+  );
+}
+
+function vapiNumberName(business: Record<string, unknown> | null | undefined) {
+  const businessName =
+    typeof (business as any)?.business_name === "string" && (business as any).business_name.trim()
+      ? (business as any).business_name.trim()
+      : "CallRecover";
+  return `${businessName} AI`.slice(0, 40);
+}
+
+async function createVapiPhoneNumberForBusiness(business: Record<string, unknown> | null | undefined) {
+  const areaCode = desiredVapiAreaCode(business);
+  const created = await vapi("/phone-number", {
+    method: "POST",
+    body: JSON.stringify({
+      provider: "vapi",
+      name: vapiNumberName(business),
+      ...(areaCode?.length === 3 ? { numberDesiredAreaCode: areaCode } : {}),
+      server: vapiServerConfig(),
+    }),
+  });
+  return mapVapiPhoneNumbers([created])[0];
+}
+
 async function loadAssignedVapiPhoneIds(currentBusinessId?: string | null) {
   const { data, error } = await supabaseAdmin
     .from("vapi_number_assistants")
@@ -219,7 +257,7 @@ async function loadAccountAssistantRow(supabase: any, businessId: string) {
 export const listVapiPhoneNumbers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { businessId } = await loadBusinessForUser(context.supabase);
+    const { business, businessId } = await loadBusinessForUser(context.supabase);
     if (businessId) {
       const existing = await loadAccountAssistantRow(context.supabase, businessId);
       if (existing?.phone_number_id) {
@@ -235,7 +273,10 @@ export const listVapiPhoneNumbers = createServerFn({ method: "GET" })
 
     const assignedIds = await loadAssignedVapiPhoneIds(businessId);
     const numbers = await listAssignableVapiNumbers(assignedIds);
-    return { numbers: numbers.slice(0, 1) };
+    if (numbers.length) return { numbers: numbers.slice(0, 1) };
+
+    const created = await createVapiPhoneNumberForBusiness(business);
+    return { numbers: [created] };
   });
 
 export const createVapiCall = createServerFn({ method: "POST" })
