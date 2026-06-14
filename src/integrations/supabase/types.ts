@@ -938,7 +938,14 @@ export type Database = {
         | "fencing"
       dispatch_role: "all" | "emergency" | "office" | "sales" | "service"
       lead_priority: "normal" | "high"
-      lead_status: "open" | "contacted" | "scheduled" | "closed"
+      lead_status:
+        | "open"
+        | "contacted"
+        | "scheduled"
+        | "active"
+        | "requesting_call"
+        | "in_progress"
+        | "closed"
       notification_kind: "sms" | "email" | "dashboard" | "emergency"
       sms_consent_status: "opted_in" | "opted_out" | "pending"
     }
@@ -1106,7 +1113,15 @@ export const Constants = {
       ],
       dispatch_role: ["all", "emergency", "office", "sales", "service"],
       lead_priority: ["normal", "high"],
-      lead_status: ["open", "contacted", "scheduled", "closed"],
+      lead_status: [
+        "open",
+        "contacted",
+        "scheduled",
+        "active",
+        "requesting_call",
+        "in_progress",
+        "closed",
+      ],
       notification_kind: ["sms", "email", "dashboard", "emergency"],
       sms_consent_status: ["opted_in", "opted_out", "pending"],
     },

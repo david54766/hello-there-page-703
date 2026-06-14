@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Trash2, Plus, CalendarDays } from "lucide-react";
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, isToday, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { toast } from "sonner";
@@ -50,6 +51,8 @@ function SchedulingPage() {
 
   const [newAppt, setNewAppt] = useState({ teamMemberId: "", scheduledFor: "", customerName: "", customerPhone: "", service: "", durationMinutes: 60 });
   const [newBlack, setNewBlack] = useState({ teamMemberId: "", startAt: "", endAt: "", reason: "" });
+  const [appointmentOpen, setAppointmentOpen] = useState(false);
+  const [blackoutOpen, setBlackoutOpen] = useState(false);
 
   const reload = async (targetMonth = month) => {
     const from = startOfWeek(startOfMonth(targetMonth));
@@ -167,49 +170,64 @@ function SchedulingPage() {
             <p className="text-xs text-muted-foreground">Google Calendar 2-way sync coming in a follow-up — uses per-agent OAuth.</p>
           </Card>
 
-          <Card className="space-y-3 p-5">
-            <div className="text-sm font-semibold">New appointment</div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <Label className="text-xs">Agent</Label>
-                <Select value={newAppt.teamMemberId} onValueChange={(v) => setNewAppt({ ...newAppt, teamMemberId: v })}>
-                  <SelectTrigger><SelectValue placeholder={team.length ? "Pick agent" : "Add team members first"} /></SelectTrigger>
-                  <SelectContent>
-                    {team.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button size="sm" onClick={() => setAppointmentOpen(true)}>
+              <Plus className="h-3 w-3" /> New appointment
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setBlackoutOpen(true)}>
+              <Plus className="h-3 w-3" /> Add blackout
+            </Button>
+          </div>
+
+          <Dialog open={appointmentOpen} onOpenChange={setAppointmentOpen}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+              <DialogHeader>
+                <DialogTitle>New appointment</DialogTitle>
+                <DialogDescription>Book a recovered lead or manual follow-up without crowding the calendar.</DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-xs">Agent</Label>
+                  <Select value={newAppt.teamMemberId} onValueChange={(v) => setNewAppt({ ...newAppt, teamMemberId: v })}>
+                    <SelectTrigger><SelectValue placeholder={team.length ? "Pick agent" : "Add team members first"} /></SelectTrigger>
+                    <SelectContent>
+                      {team.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">When</Label>
+                  <Input type="datetime-local" value={newAppt.scheduledFor} onChange={(e) => setNewAppt({ ...newAppt, scheduledFor: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Customer name</Label>
+                  <Input value={newAppt.customerName} onChange={(e) => setNewAppt({ ...newAppt, customerName: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Customer phone</Label>
+                  <Input value={newAppt.customerPhone} onChange={(e) => setNewAppt({ ...newAppt, customerPhone: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Service</Label>
+                  <Input value={newAppt.service} onChange={(e) => setNewAppt({ ...newAppt, service: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Duration (min)</Label>
+                  <Input type="number" min={15} max={480} value={newAppt.durationMinutes} onChange={(e) => setNewAppt({ ...newAppt, durationMinutes: Number(e.target.value) || 60 })} />
+                </div>
               </div>
-              <div>
-                <Label className="text-xs">When</Label>
-                <Input type="datetime-local" value={newAppt.scheduledFor} onChange={(e) => setNewAppt({ ...newAppt, scheduledFor: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-xs">Customer name</Label>
-                <Input value={newAppt.customerName} onChange={(e) => setNewAppt({ ...newAppt, customerName: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-xs">Customer phone</Label>
-                <Input value={newAppt.customerPhone} onChange={(e) => setNewAppt({ ...newAppt, customerPhone: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-xs">Service</Label>
-                <Input value={newAppt.service} onChange={(e) => setNewAppt({ ...newAppt, service: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-xs">Duration (min)</Label>
-                <Input type="number" min={15} max={480} value={newAppt.durationMinutes} onChange={(e) => setNewAppt({ ...newAppt, durationMinutes: Number(e.target.value) || 60 })} />
-              </div>
-            </div>
-            <Button size="sm" onClick={async () => {
-              if (!newAppt.teamMemberId || !newAppt.scheduledFor) { toast.error("Agent and time required"); return; }
-              try {
-                await book({ data: { ...newAppt, scheduledFor: new Date(newAppt.scheduledFor).toISOString() } });
-                toast.success("Booked");
-                setNewAppt({ teamMemberId: "", scheduledFor: "", customerName: "", customerPhone: "", service: "", durationMinutes: 60 });
-                await reload(month);
-              } catch (e: any) { toast.error(e.message); }
-            }}><Plus className="h-3 w-3" /> Book</Button>
-          </Card>
+              <Button onClick={async () => {
+                if (!newAppt.teamMemberId || !newAppt.scheduledFor) { toast.error("Agent and time required"); return; }
+                try {
+                  await book({ data: { ...newAppt, scheduledFor: new Date(newAppt.scheduledFor).toISOString() } });
+                  toast.success("Booked");
+                  setNewAppt({ teamMemberId: "", scheduledFor: "", customerName: "", customerPhone: "", service: "", durationMinutes: 60 });
+                  setAppointmentOpen(false);
+                  await reload(month);
+                } catch (e: any) { toast.error(e.message); }
+              }}><Plus className="h-3 w-3" /> Book appointment</Button>
+            </DialogContent>
+          </Dialog>
 
           <Card className="p-0">
             <div className="border-b border-border p-3 text-sm font-semibold">Upcoming appointments</div>
@@ -232,31 +250,47 @@ function SchedulingPage() {
             </div>
           </Card>
 
-          <Card className="space-y-3 p-5">
-            <div className="text-sm font-semibold">Blackout dates</div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-              <div className="sm:col-span-1">
-                <Label className="text-xs">Agent (optional)</Label>
-                <Select value={newBlack.teamMemberId} onValueChange={(v) => setNewBlack({ ...newBlack, teamMemberId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Whole business" /></SelectTrigger>
-                  <SelectContent>
-                    {team.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+          <Dialog open={blackoutOpen} onOpenChange={setBlackoutOpen}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Add blackout</DialogTitle>
+                <DialogDescription>Block the whole business or one team member from being booked.</DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">Agent (optional)</Label>
+                  <Select value={newBlack.teamMemberId} onValueChange={(v) => setNewBlack({ ...newBlack, teamMemberId: v })}>
+                    <SelectTrigger><SelectValue placeholder="Whole business" /></SelectTrigger>
+                    <SelectContent>
+                      {team.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label className="text-xs">Start</Label><Input type="datetime-local" value={newBlack.startAt} onChange={(e) => setNewBlack({ ...newBlack, startAt: e.target.value })} /></div>
+                <div><Label className="text-xs">End</Label><Input type="datetime-local" value={newBlack.endAt} onChange={(e) => setNewBlack({ ...newBlack, endAt: e.target.value })} /></div>
+                <div className="sm:col-span-2"><Label className="text-xs">Reason</Label><Input value={newBlack.reason} onChange={(e) => setNewBlack({ ...newBlack, reason: e.target.value })} /></div>
               </div>
-              <div><Label className="text-xs">Start</Label><Input type="datetime-local" value={newBlack.startAt} onChange={(e) => setNewBlack({ ...newBlack, startAt: e.target.value })} /></div>
-              <div><Label className="text-xs">End</Label><Input type="datetime-local" value={newBlack.endAt} onChange={(e) => setNewBlack({ ...newBlack, endAt: e.target.value })} /></div>
-              <div><Label className="text-xs">Reason</Label><Input value={newBlack.reason} onChange={(e) => setNewBlack({ ...newBlack, reason: e.target.value })} /></div>
+              <Button onClick={async () => {
+                if (!newBlack.startAt || !newBlack.endAt) { toast.error("Start and end required"); return; }
+                try {
+                  await upBlackout({ data: { teamMemberId: newBlack.teamMemberId || null, startAt: new Date(newBlack.startAt).toISOString(), endAt: new Date(newBlack.endAt).toISOString(), reason: newBlack.reason || undefined } });
+                  setNewBlack({ teamMemberId: "", startAt: "", endAt: "", reason: "" });
+                  setBlackoutOpen(false);
+                  await reload(month); toast.success("Blackout added");
+                } catch (e: any) { toast.error(e.message); }
+              }}><Plus className="h-3 w-3" /> Add blackout</Button>
+            </DialogContent>
+          </Dialog>
+
+          <Card className="space-y-3 p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm font-semibold">Blackout dates</div>
+              <Button size="sm" variant="outline" onClick={() => setBlackoutOpen(true)}>
+                <Plus className="h-3 w-3" /> Add
+              </Button>
             </div>
-            <Button size="sm" onClick={async () => {
-              if (!newBlack.startAt || !newBlack.endAt) { toast.error("Start and end required"); return; }
-              try {
-                await upBlackout({ data: { teamMemberId: newBlack.teamMemberId || null, startAt: new Date(newBlack.startAt).toISOString(), endAt: new Date(newBlack.endAt).toISOString(), reason: newBlack.reason || undefined } });
-                setNewBlack({ teamMemberId: "", startAt: "", endAt: "", reason: "" });
-                await reload(month); toast.success("Blackout added");
-              } catch (e: any) { toast.error(e.message); }
-            }}><Plus className="h-3 w-3" /> Add blackout</Button>
             <div className="divide-y">
+              {blackouts.length === 0 && <div className="py-2 text-xs text-muted-foreground">No blackout dates.</div>}
               {blackouts.map((b) => (
                 <div key={b.id} className="flex items-center justify-between gap-2 py-2 text-xs">
                   <div>{new Date(b.start_at).toLocaleString()} → {new Date(b.end_at).toLocaleString()} {b.reason ? `· ${b.reason}` : ""}</div>

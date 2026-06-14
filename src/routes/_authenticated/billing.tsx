@@ -4,11 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { createStripeCheckoutSession, listBillingPlans } from "@/lib/billing.functions";
-import { CheckCircle2, CreditCard, Gift, Loader2, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/billing")({ component: Billing });
@@ -31,22 +30,14 @@ function formatMinutes(seconds: number) {
   return `${minutes} min`;
 }
 
-function marginTone(margin: number) {
-  if (margin >= 60) return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100";
-  if (margin >= 45) return "bg-amber-100 text-amber-900 hover:bg-amber-100";
-  return "bg-red-100 text-red-800 hover:bg-red-100";
-}
-
 function PlanCard({
   plan,
   current,
-  couponCode,
   busy,
   onSelect,
 }: {
   plan: Plan;
   current: boolean;
-  couponCode: string;
   busy: string | null;
   onSelect: (planCode: string) => void;
 }) {
@@ -93,20 +84,9 @@ function PlanCard({
         ))}
       </div>
 
-      <div className="mt-5 rounded-lg border bg-card p-3 text-sm">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-muted-foreground">Estimated cost basis</span>
-          <span className="font-semibold">{cents(plan.estimatedCostCents)}</span>
-        </div>
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <span className="text-muted-foreground">Gross margin</span>
-          <Badge className={marginTone(plan.grossMarginPercent)}>{plan.grossMarginPercent}%</Badge>
-        </div>
-      </div>
-
       <Button className="mt-6 w-full" disabled={busy !== null || current} onClick={() => onSelect(plan.code)}>
         {busy === plan.code ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-        {current ? "Current plan" : couponCode.trim() ? "Checkout with coupon" : "Start checkout"}
+        {current ? "Current plan" : "Start checkout"}
       </Button>
     </Card>
   );
@@ -118,7 +98,6 @@ function Billing() {
   const [data, setData] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [couponCode, setCouponCode] = useState("");
 
   async function load() {
     setLoading(true);
@@ -144,7 +123,7 @@ function Billing() {
       const result = await checkout({
         data: {
           planCode,
-          couponCode: couponCode.trim() ? couponCode.trim() : null,
+          couponCode: null,
         },
       });
       if (!result.url) throw new Error("Stripe did not return a checkout URL.");
@@ -172,18 +151,6 @@ function Billing() {
             Choose the plan that matches call volume. Usage estimates include Vapi AI minutes, Twilio SMS, phone number cost, and a platform buffer.
           </p>
         </div>
-        <Card className="p-4 lg:min-w-80">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Gift className="h-4 w-4 text-primary" />
-            Coupon code
-          </div>
-          <div className="mt-3 flex gap-2">
-            <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="LAUNCH20" />
-            <Button variant="outline" onClick={() => setCouponCode("")} disabled={!couponCode}>
-              Clear
-            </Button>
-          </div>
-        </Card>
       </div>
 
       {data?.business && (
@@ -244,26 +211,11 @@ function Billing() {
             key={plan.code}
             plan={plan}
             current={currentCode === plan.code}
-            couponCode={couponCode}
             busy={busy}
             onSelect={startCheckout}
           />
         ))}
       </div>
-
-      <Card className="mt-6 p-5">
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <TrendingUp className="h-5 w-5" />
-          </span>
-          <div>
-            <h2 className="font-semibold">Pricing is adjustable</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Super admins can change plan prices, allowances, cost assumptions, Stripe Price IDs, and coupon availability from the Admin billing controls.
-            </p>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

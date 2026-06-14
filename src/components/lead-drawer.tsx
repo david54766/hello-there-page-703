@@ -5,10 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { archiveLead, qualifyLead, restoreLead, suggestReplies, updateLeadStatus, scheduleCallback } from "@/lib/leads.functions";
+import {
+  archiveLead,
+  qualifyLead,
+  restoreLead,
+  sendLeadStatusText,
+  updateLeadDetails,
+  updateLeadStatus,
+  scheduleCallback,
+} from "@/lib/leads.functions";
 import { assignLead } from "@/lib/dispatch.functions";
 import { toast } from "sonner";
-import { Sparkles, MessageSquareText, PhoneCall, Clock, Loader2 } from "lucide-react";
+import { Sparkles, PhoneCall, Clock, Loader2, Save, Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type Call = {
@@ -21,7 +29,7 @@ type Call = {
   ai_summary: string | null;
   urgency: string;
   priority: string;
-  lead_status: "open" | "contacted" | "scheduled" | "closed";
+  lead_status: "open" | "contacted" | "scheduled" | "active" | "requesting_call" | "in_progress" | "closed";
   qualification: Record<string, string> | null;
   callback_requested: boolean;
   archived_at: string | null;
@@ -31,6 +39,18 @@ type Call = {
 
 type Msg = { id: string; direction: string; body: string; created_at: string };
 
+const STATUS_LABELS: Record<Call["lead_status"], string> = {
+  open: "Open",
+  contacted: "Contacted",
+  scheduled: "Scheduled",
+  active: "Active",
+  requesting_call: "Requesting Call",
+  in_progress: "In Progress",
+  closed: "Closed",
+};
+
+const TEXTABLE_STATUSES = new Set<Call["lead_status"]>(["scheduled", "requesting_call", "in_progress"]);
+
 function sortMessages(items: Msg[]) {
   return [...items].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 }
@@ -38,13 +58,16 @@ function sortMessages(items: Msg[]) {
 export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [threadId, setThreadId] = useState<string | null>(null);
-  const [suggested, setSuggested] = useState<string[]>([]);
-  const [loadingSugg, setLoadingSugg] = useState(false);
+  const [details, setDetails] = useState({ callbackTime: "", address: "", insurance: "" });
+  const [leadStatus, setLeadStatus] = useState<Call["lead_status"]>("open");
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [sendingStatusText, setSendingStatusText] = useState(false);
   const [qualifying, setQualifying] = useState(false);
 
   const qualifyFn = useServerFn(qualifyLead);
-  const suggestFn = useServerFn(suggestReplies);
   const statusFn = useServerFn(updateLeadStatus);
+  const detailFn = useServerFn(updateLeadDetails);
+  const statusTextFn = useServerFn(sendLeadStatusText);
   const archiveFn = useServerFn(archiveLead);
   const restoreFn = useServerFn(restoreLead);
   const callbackFn = useServerFn(scheduleCallback);
@@ -87,7 +110,13 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
       return;
     }
     setMessages([]);
-    setSuggested([]);
+    const q = call.qualification ?? {};
+    setLeadStatus(call.lead_status);
+    setDetails({
+      callbackTime: q.callback_time ?? "",
+      address: q.address ?? "",
+      insurance: q.insurance_claim ?? "",
+    });
     void loadMessages();
   }, [call?.id, open, loadMessages]);
 
@@ -163,28 +192,35 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
     finally { setQualifying(false); }
   }
 
-  async function getSuggestions() {
-    if (!call) return;
-    setLoadingSugg(true);
-    try {
-      const r = await suggestFn({ data: { callId: call.id } });
-      setSuggested(r.replies);
-    } catch (e: any) { toast.error(e.message); }
-    finally { setLoadingSugg(false); }
-  }
-
-  function openNativeSms(body?: string) {
-    if (!call?.caller_number) return;
-    const bodyText = body?.trim();
-    const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
-    const suffix = bodyText ? `${isIOS ? "&" : "?"}body=${encodeURIComponent(bodyText)}` : "";
-    window.location.href = `sms:${call.caller_number}${suffix}`;
-  }
-
   async function setStatus(s: Call["lead_status"]) {
     if (!call) return;
-    try { await statusFn({ data: { callId: call.id, status: s } }); toast.success(`Status: ${s}`); }
+    try {
+      await statusFn({ data: { callId: call.id, status: s } });
+      setLeadStatus(s);
+      toast.success(`Status: ${STATUS_LABELS[s]}`);
+    }
     catch (e: any) { toast.error(e.message); }
+  }
+
+  async function saveDetails() {
+    if (!call) return;
+    setSavingDetails(true);
+    try {
+      await detailFn({ data: { callId: call.id, ...details } });
+      toast.success("Lead details saved");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSavingDetails(false); }
+  }
+
+  async function sendStatusText(status: "scheduled" | "requesting_call" | "in_progress") {
+    if (!call) return;
+    setSendingStatusText(true);
+    try {
+      const r = await statusTextFn({ data: { callId: call.id, status } });
+      setLeadStatus(status);
+      toast.success(`${r.label} text sent`);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSendingStatusText(false); }
   }
 
   async function archiveCurrent() {
@@ -250,21 +286,63 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
           ))}
         </div>
 
+        <div className="mt-5 rounded-lg border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-medium uppercase text-muted-foreground">Lead details</div>
+              <p className="mt-1 text-xs text-muted-foreground">Edit the fields the AI captured from the call.</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={saveDetails} disabled={savingDetails}>
+              {savingDetails ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Save
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              value={details.callbackTime}
+              onChange={(e) => setDetails((prev) => ({ ...prev, callbackTime: e.target.value }))}
+              placeholder="Callback time"
+            />
+            <Input
+              value={details.insurance}
+              onChange={(e) => setDetails((prev) => ({ ...prev, insurance: e.target.value }))}
+              placeholder="Insurance"
+            />
+            <Input
+              className="sm:col-span-2"
+              value={details.address}
+              onChange={(e) => setDetails((prev) => ({ ...prev, address: e.target.value }))}
+              placeholder="Address"
+            />
+          </div>
+        </div>
+
         <div className="mt-5">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-medium uppercase text-muted-foreground">Lead status</span>
             {call.archived_at && <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Archived</span>}
           </div>
-          <Select value={call.lead_status} onValueChange={(v) => setStatus(v as Call["lead_status"])}>
+          <Select value={leadStatus} onValueChange={(v) => setStatus(v as Call["lead_status"])}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="contacted">Contacted</SelectItem>
-              <SelectItem value="scheduled">Scheduled</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <div className="mt-2">
+          <div className="mt-2 flex flex-wrap gap-2">
+            {Array.from(TEXTABLE_STATUSES).map((status) => (
+              <Button
+                key={status}
+                variant="outline"
+                size="sm"
+                onClick={() => sendStatusText(status)}
+                disabled={sendingStatusText}
+              >
+                {sendingStatusText ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                Send {STATUS_LABELS[status]} Text
+              </Button>
+            ))}
             {call.archived_at ? (
               <Button variant="outline" size="sm" onClick={restoreCurrent}>Restore lead</Button>
             ) : (
@@ -285,9 +363,15 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
         <div className="mt-6">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-medium uppercase text-muted-foreground">SMS thread</span>
-            <Button variant="outline" size="sm" className="h-7 gap-1.5" onClick={() => openNativeSms()}>
-              <MessageSquareText className="h-3.5 w-3.5" />
-              Text from device
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5"
+              onClick={() => sendStatusText("requesting_call")}
+              disabled={sendingStatusText}
+            >
+              {sendingStatusText ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              Request Call
             </Button>
           </div>
           <div className="max-h-60 space-y-1.5 overflow-y-auto rounded-md border bg-muted/20 p-3">
@@ -302,31 +386,8 @@ export function LeadDrawer({ call, open, onOpenChange }: { call: Call | null; op
             ))}
           </div>
           <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
-            This thread is read-only for CallRecover system notifications and consent history.
-            Use the assigned staff member's own phone to text the caller directly.
-          </p>
-        </div>
-
-        <div className="mt-4">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-medium uppercase text-muted-foreground">Native SMS prompts</span>
-            <Button variant="ghost" size="sm" className="h-7" onClick={getSuggestions} disabled={loadingSugg}>
-              {loadingSugg ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Generate
-            </Button>
-          </div>
-          <div className="space-y-1.5">
-            {suggested.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Click Generate for optional wording, then send it from the staff member's own SMS app.</p>
-            ) : suggested.map((s, i) => (
-              <button key={i} onClick={() => openNativeSms(s)} className="block w-full rounded-md border bg-card px-3 py-2 text-left text-sm hover:bg-accent">
-                <span className="block">{s}</span>
-                <span className="mt-1 block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Open native SMS</span>
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
-            CallRecover's Twilio number is reserved for opt-in and automated transactional messages.
-            Staff follow-up texts should come from the assigned team member's own phone.
+            This thread is read-only for CallRecover opt-in, status updates, and notification history.
+            Direct staff replies from the system number are disabled for compliance.
           </p>
         </div>
       </SheetContent>

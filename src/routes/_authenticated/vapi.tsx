@@ -195,11 +195,11 @@ function VapiPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Vapi Outbound Test Call</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Trigger a real phone call, manage the one assistant assigned to this account's Vapi number, and review transcripts. Use <code className="rounded bg-muted px-1 text-xs">{"{tags}"}</code> in scripts - they're filled from your business profile at call time.</p>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Outbound Test Call</h1>
+      <p className="mb-6 text-sm text-muted-foreground">Trigger a real phone call, manage the one assistant assigned to this account's number, and review transcripts. Use <code className="rounded bg-muted px-1 text-xs">{"{tags}"}</code> in scripts - they're filled from your business profile at call time.</p>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading Vapi resources...</p>
+        <p className="text-sm text-muted-foreground">Loading phone resources...</p>
       ) : (
         <Tabs defaultValue="call">
           <TabsList className="mb-4">
@@ -293,7 +293,7 @@ function VapiPage() {
 
           <div>
             <div className="mb-1 flex items-center justify-between gap-2">
-              <Label htmlFor="script">Script / system prompt (optional)</Label>
+              <Label htmlFor="script">Virtual Agent Behavior (optional)</Label>
               <div className="flex items-center gap-2">
                 {filteredTemplates("system").length > 0 && (
                   <Select onValueChange={(v) => loadTemplateInto("system", v)}>
@@ -308,16 +308,22 @@ function VapiPage() {
                 <TagPicker value={systemPrompt} onChange={setSystemPrompt} textareaRef={promptRef} />
               </div>
             </div>
-            <Textarea
-              id="script"
-              ref={promptRef}
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder={"You are a virtual assistant for {business}. Collect the caller's name, callback number, and reason for calling. Only offer scheduling when scheduling is enabled and a booking link exists."}
-              rows={6}
-              maxLength={8000}
-            />
-            <p className="mt-1 text-xs text-muted-foreground">Overrides the assistant's default instructions for this call only. Use <code>{"{business}"}</code>, <code>{"{website}"}</code>, etc. - manage values in Settings.</p>
+            <details className="rounded-md border bg-muted/20 p-3">
+              <summary className="cursor-pointer text-sm text-muted-foreground">
+                Edit internal assistant behavior
+              </summary>
+              <Textarea
+                id="script"
+                ref={promptRef}
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder={"You are a virtual assistant for {business}. Collect the caller's name, callback number, and reason for calling. Only offer scheduling when scheduling is enabled and a booking link exists."}
+                rows={6}
+                maxLength={8000}
+                className="mt-3"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">These are internal instructions for the virtual agent, not words shown to callers. Use <code>{"{business}"}</code>, <code>{"{website}"}</code>, etc. - manage values in Settings.</p>
+            </details>
           </div>
 
           <details className="rounded-md border border-border bg-muted/20 p-3 text-xs">
@@ -464,7 +470,7 @@ function NumberRow({ number, row, onSave }: { number: { id: string; number: stri
         <div>
           <div className="text-sm font-semibold">{number.number}</div>
           <div className="text-xs text-muted-foreground">
-            {row?.assistant_id ? `Assistant: ${row.assistant_id.slice(0, 8)}...` : "Provisioning..."}
+            {row?.assistant_id ? "Assistant connected" : "Provisioning..."}
           </div>
         </div>
         <Select value={type} onValueChange={setType}>
@@ -495,10 +501,13 @@ function NumberRow({ number, row, onSave }: { number: { id: string; number: stri
       </div>
       <div>
         <div className="mb-1 flex items-center justify-between">
-          <Label className="text-xs">System prompt</Label>
+          <Label className="text-xs">Virtual Agent Behavior</Label>
           <TagPicker value={prompt} onChange={setPrompt} />
         </div>
-        <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={5} maxLength={8000} />
+        <details className="rounded-md border bg-muted/20 p-3">
+          <summary className="cursor-pointer text-xs text-muted-foreground">Edit internal assistant behavior</summary>
+          <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={5} maxLength={8000} className="mt-3" />
+        </details>
       </div>
       <Button
         size="sm"

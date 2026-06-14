@@ -17,9 +17,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/scripts")({ component: ScriptsPage });
 
 const KIND_LABELS: Record<string, string> = {
-  hello: "Greeting",
+  hello: "First Message",
   first_message: "First Message",
-  system: "System Prompt",
+  system: "Virtual Agent Behavior",
 };
 
 function contractorLabel(value?: string | null) {
@@ -41,14 +41,14 @@ function ScriptsPage() {
   const [loading, setLoading] = useState(true);
   const [contractorFilter, setContractorFilter] = useState("all");
   const [kindFilter, setKindFilter] = useState("all");
-  const [draft, setDraft] = useState<{ contractor_type: string; kind: "hello" | "system" | "first_message"; label: string; body: string }>({ contractor_type: "any", kind: "system", label: "", body: "" });
+  const [draft, setDraft] = useState<{ contractor_type: string; kind: "system" | "first_message"; label: string; body: string }>({ contractor_type: "any", kind: "first_message", label: "", body: "" });
   const [saving, setSaving] = useState(false);
 
   const reload = async (filters = { contractorType: contractorFilter, kind: kindFilter }) => {
     const { templates } = await fetchTemplates({
       data: {
         contractorType: filters.contractorType === "all" ? undefined : filters.contractorType,
-        kind: filters.kind === "all" ? undefined : filters.kind as "hello" | "system" | "first_message",
+        kind: filters.kind === "all" ? undefined : filters.kind as "system" | "first_message",
       },
     });
     setTemplates(templates);
@@ -78,7 +78,7 @@ function ScriptsPage() {
     setSaving(true);
     try {
       await upsert({ data: { contractorType: draft.contractor_type === "any" ? undefined : draft.contractor_type, kind: draft.kind, label: draft.label, body: draft.body } });
-      setDraft({ contractor_type: contractorFilter === "all" ? "any" : contractorFilter, kind: "system", label: "", body: "" });
+      setDraft({ contractor_type: contractorFilter === "all" ? "any" : contractorFilter, kind: "first_message", label: "", body: "" });
       await reload();
       toast.success("Template saved");
     } catch (e: any) { toast.error(e.message); }
@@ -88,7 +88,7 @@ function ScriptsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
       <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Script library</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Reusable greetings, first messages and full system prompts. Your profile trade is selected automatically.</p>
+      <p className="mb-6 text-sm text-muted-foreground">Reusable first messages and internal virtual agent behavior. Your profile trade is selected automatically.</p>
 
       <Card className="mb-6 space-y-3 p-5">
         <div className="text-sm font-semibold">New template</div>
@@ -108,11 +108,13 @@ function ScriptsPage() {
             <Select value={draft.kind} onValueChange={(v: any) => setDraft({ ...draft, kind: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="hello">Greeting</SelectItem>
                 <SelectItem value="first_message">First Message</SelectItem>
-                <SelectItem value="system">System Prompt</SelectItem>
+                <SelectItem value="system">Virtual Agent Behavior</SelectItem>
               </SelectContent>
             </Select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              First Message is caller-facing. Virtual Agent Behavior is internal instruction text.
+            </p>
           </div>
         </div>
         <div>
@@ -121,10 +123,15 @@ function ScriptsPage() {
         </div>
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <Label className="text-xs">Script Body</Label>
+            <Label className="text-xs">{draft.kind === "system" ? "Internal Behavior Instructions" : "Caller-Facing Message"}</Label>
             <TagPicker value={draft.body} onChange={(v) => setDraft({ ...draft, body: v })} />
           </div>
           <Textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} rows={6} maxLength={8000} placeholder="Use {business}, {website}, {book_consult}…" />
+          {draft.kind === "system" && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              These instructions shape the virtual agent's behavior and are not read verbatim to callers.
+            </p>
+          )}
         </div>
         <Button onClick={save} disabled={saving} size="sm">
           {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />} Save Template
@@ -148,9 +155,8 @@ function ScriptsPage() {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Template Types</SelectItem>
-              <SelectItem value="hello">Greeting</SelectItem>
               <SelectItem value="first_message">First Message</SelectItem>
-              <SelectItem value="system">System Prompt</SelectItem>
+              <SelectItem value="system">Virtual Agent Behavior</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -173,7 +179,14 @@ function ScriptsPage() {
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
-              <pre className="whitespace-pre-wrap break-words rounded bg-muted/30 p-2 font-mono text-xs">{t.body}</pre>
+              {t.kind === "system" ? (
+                <details className="rounded bg-muted/30 p-2 text-xs">
+                  <summary className="cursor-pointer font-medium text-muted-foreground">View internal behavior instructions</summary>
+                  <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs">{t.body}</pre>
+                </details>
+              ) : (
+                <pre className="whitespace-pre-wrap break-words rounded bg-muted/30 p-2 font-mono text-xs">{t.body}</pre>
+              )}
             </Card>
           ))}
         </div>

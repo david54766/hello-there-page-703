@@ -26,7 +26,8 @@ export const listScriptTemplates = createServerFn({ method: "POST" })
       .order("contractor_type", { ascending: true })
       .order("label", { ascending: true });
     if (data.contractorType) q = q.eq("contractor_type", data.contractorType);
-    if (data.kind) q = q.eq("kind", data.kind);
+    if (data.kind === "first_message") q = q.in("kind", ["first_message", "hello"]);
+    else if (data.kind) q = q.eq("kind", data.kind);
     const { data: rows } = await q;
     return { templates: rows ?? [] };
   });

@@ -1,15 +1,17 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { PhoneCall, MessageSquare, Check, TrendingUp, Inbox, Activity, AlertTriangle } from "lucide-react";
+import { PhoneCall, Send, Check, TrendingUp, Inbox, Activity, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { LeadDrawer } from "@/components/lead-drawer";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { sendLeadStatusText } from "@/lib/leads.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({ component: Dashboard });
 
@@ -23,7 +25,7 @@ type Call = {
   ai_summary_short: string | null;
   urgency: "low" | "medium" | "high" | "emergency";
   status: "new" | "contacted" | "resolved";
-  lead_status: "open" | "contacted" | "scheduled" | "closed";
+  lead_status: "open" | "contacted" | "scheduled" | "active" | "requesting_call" | "in_progress" | "closed";
   priority: "normal" | "high";
   qualification: Record<string, string> | null;
   callback_requested: boolean;
@@ -45,7 +47,20 @@ const statusColors: Record<string, string> = {
   open: "bg-primary/10 text-primary",
   contacted: "bg-accent text-accent-foreground",
   scheduled: "bg-warning/20 text-warning-foreground",
+  active: "bg-sky-100 text-sky-800",
+  requesting_call: "bg-purple-100 text-purple-800",
+  in_progress: "bg-blue-100 text-blue-800",
   closed: "bg-muted text-muted-foreground",
+};
+
+const statusLabels: Record<string, string> = {
+  open: "Open",
+  contacted: "Contacted",
+  scheduled: "Scheduled",
+  active: "Active",
+  requesting_call: "Requesting Call",
+  in_progress: "In Progress",
+  closed: "Closed",
 };
 
 function Chip({ children }: { children: React.ReactNode }) {
@@ -63,6 +78,7 @@ function Dashboard() {
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Call | null>(null);
+  const requestStatusText = useServerFn(sendLeadStatusText);
 
   const loadDashboard = useCallback(async (showSpinner = false) => {
     if (!user) return;
@@ -187,6 +203,16 @@ function Dashboard() {
     else toast.success("Lead restored");
   }
 
+  async function requestCallText(id: string) {
+    try {
+      await requestStatusText({ data: { callId: id, status: "requesting_call" } });
+      await loadDashboard(false);
+      toast.success("Requesting call text sent");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send callback request text");
+    }
+  }
+
   const activeCalls = calls.filter((c) => !c.archived_at);
   const archivedCalls = calls.filter((c) => !!c.archived_at);
   const recovered = calls.filter((c) => c.lead_status !== "open").length;
@@ -260,7 +286,7 @@ function Dashboard() {
                         <span className="font-medium">{c.caller_name ?? "Unknown caller"}</span>
                         <span className="text-sm text-muted-foreground">{c.caller_number}</span>
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${urgencyColors[c.urgency]}`}>{c.urgency}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[c.lead_status]}`}>{c.lead_status}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[c.lead_status]}`}>{statusLabels[c.lead_status] ?? c.lead_status}</span>
                         {c.callback_requested && (
                           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Callback requested</span>
                         )}
@@ -279,8 +305,8 @@ function Dashboard() {
                       <Button asChild variant="default" size="sm">
                         <a href={`tel:${c.caller_number}`}><PhoneCall className="h-3.5 w-3.5" /> Call</a>
                       </Button>
-                      <Button asChild variant="outline" size="sm">
-                        <a href={`sms:${c.caller_number}`}><MessageSquare className="h-3.5 w-3.5" /> Text</a>
+                      <Button variant="outline" size="sm" onClick={() => requestCallText(c.id)}>
+                        <Send className="h-3.5 w-3.5" /> Request Call
                       </Button>
                       {c.lead_status !== "closed" && (
                         <Button variant="ghost" size="sm" onClick={() => markResolved(c.id)}>
@@ -308,7 +334,7 @@ function Dashboard() {
                       <span className="font-medium">{c.caller_name ?? "Unknown caller"}</span>
                       <span className="text-sm text-muted-foreground">{c.caller_number}</span>
                       <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">archived</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[c.lead_status]}`}>{c.lead_status}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[c.lead_status]}`}>{statusLabels[c.lead_status] ?? c.lead_status}</span>
                     </div>
                     <p className="mt-2 text-sm text-foreground/80">{c.ai_summary_short ?? c.ai_summary ?? "Archived lead."}</p>
                     <p className="mt-2 text-xs text-muted-foreground">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</p>
