@@ -32,6 +32,28 @@ function dayKey(date: Date) {
   return format(date, "yyyy-MM-dd");
 }
 
+const WHOLE_BUSINESS = "__whole_business__";
+
+function blackoutScopeLabel(blackout: any, teamById: Map<string, any>) {
+  if (!blackout.team_member_id) return "Whole business";
+  return teamById.get(blackout.team_member_id)?.name ?? "Agent";
+}
+
+function blackoutWindowLabel(blackout: any) {
+  const start = new Date(blackout.start_at);
+  const end = new Date(blackout.end_at);
+  const sameDay = dayKey(start) === dayKey(end);
+  if (sameDay) return `${format(start, "MMM d")} · ${format(start, "h:mm a")} - ${format(end, "h:mm a")}`;
+  return `${format(start, "MMM d, h:mm a")} - ${format(end, "MMM d, h:mm a")}`;
+}
+
+function localDayBounds(date: string) {
+  return {
+    startAt: new Date(`${date}T00:00:00`).toISOString(),
+    endAt: new Date(`${date}T23:59:59.999`).toISOString(),
+  };
+}
+
 function SchedulingPage() {
   const fetchSchedule = useServerFn(getSchedule);
   const book = useServerFn(bookAppointment);
@@ -50,7 +72,7 @@ function SchedulingPage() {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
 
   const [newAppt, setNewAppt] = useState({ teamMemberId: "", scheduledFor: "", customerName: "", customerPhone: "", service: "", durationMinutes: 60 });
-  const [newBlack, setNewBlack] = useState({ teamMemberId: "", startAt: "", endAt: "", reason: "" });
+  const [newBlack, setNewBlack] = useState({ teamMemberId: WHOLE_BUSINESS, allDay: false, date: "", startAt: "", endAt: "", reason: "" });
   const [appointmentOpen, setAppointmentOpen] = useState(false);
   const [blackoutOpen, setBlackoutOpen] = useState(false);
 
@@ -87,7 +109,7 @@ function SchedulingPage() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Scheduling</h1>
-          <p className="text-sm text-muted-foreground">Multi-agent calendar with blackout dates. Optional — enable per contractor.</p>
+          <p className="text-sm text-muted-foreground">Multi-agent calendar with appointments, agent blackouts, and business closures.</p>
         </div>
         <div className="flex items-center gap-2 rounded-md border border-border p-2">
           <Switch checked={enabled} onCheckedChange={async (v) => { await setEnabled({ data: { enabled: v } }); setEnabledState(v); toast.success(v ? "Scheduling enabled" : "Scheduling disabled"); }} />
@@ -175,7 +197,7 @@ function SchedulingPage() {
               <Plus className="h-3 w-3" /> New appointment
             </Button>
             <Button size="sm" variant="outline" onClick={() => setBlackoutOpen(true)}>
-              <Plus className="h-3 w-3" /> Add blackout
+              <Plus className="h-3 w-3" /> Agent blackout
             </Button>
           </div>
 
@@ -253,28 +275,49 @@ function SchedulingPage() {
           <Dialog open={blackoutOpen} onOpenChange={setBlackoutOpen}>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
               <DialogHeader>
-                <DialogTitle>Add blackout</DialogTitle>
-                <DialogDescription>Block the whole business or one team member from being booked.</DialogDescription>
+                <DialogTitle>Agent blackout dates</DialogTitle>
+                <DialogDescription>Block the whole business, one agent, a full day, or a partial time window.</DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <Label className="text-xs">Agent (optional)</Label>
+                  <Label className="text-xs">Scope</Label>
                   <Select value={newBlack.teamMemberId} onValueChange={(v) => setNewBlack({ ...newBlack, teamMemberId: v })}>
-                    <SelectTrigger><SelectValue placeholder="Whole business" /></SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value={WHOLE_BUSINESS}>Whole business</SelectItem>
                       {team.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-xs">Start</Label><Input type="datetime-local" value={newBlack.startAt} onChange={(e) => setNewBlack({ ...newBlack, startAt: e.target.value })} /></div>
-                <div><Label className="text-xs">End</Label><Input type="datetime-local" value={newBlack.endAt} onChange={(e) => setNewBlack({ ...newBlack, endAt: e.target.value })} /></div>
+                <div className="flex items-center justify-between rounded-md border border-border p-3 sm:col-span-2">
+                  <div>
+                    <Label className="text-sm">Full day</Label>
+                    <p className="text-xs text-muted-foreground">Turn off for a specific time block on one date.</p>
+                  </div>
+                  <Switch checked={newBlack.allDay} onCheckedChange={(allDay) => setNewBlack({ ...newBlack, allDay })} />
+                </div>
+                {newBlack.allDay ? (
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs">Date</Label>
+                    <Input type="date" value={newBlack.date} onChange={(e) => setNewBlack({ ...newBlack, date: e.target.value })} />
+                  </div>
+                ) : (
+                  <>
+                    <div><Label className="text-xs">Start</Label><Input type="datetime-local" value={newBlack.startAt} onChange={(e) => setNewBlack({ ...newBlack, startAt: e.target.value })} /></div>
+                    <div><Label className="text-xs">End</Label><Input type="datetime-local" value={newBlack.endAt} onChange={(e) => setNewBlack({ ...newBlack, endAt: e.target.value })} /></div>
+                  </>
+                )}
                 <div className="sm:col-span-2"><Label className="text-xs">Reason</Label><Input value={newBlack.reason} onChange={(e) => setNewBlack({ ...newBlack, reason: e.target.value })} /></div>
               </div>
               <Button onClick={async () => {
-                if (!newBlack.startAt || !newBlack.endAt) { toast.error("Start and end required"); return; }
+                if (newBlack.allDay && !newBlack.date) { toast.error("Date required"); return; }
+                if (!newBlack.allDay && (!newBlack.startAt || !newBlack.endAt)) { toast.error("Start and end required"); return; }
                 try {
-                  await upBlackout({ data: { teamMemberId: newBlack.teamMemberId || null, startAt: new Date(newBlack.startAt).toISOString(), endAt: new Date(newBlack.endAt).toISOString(), reason: newBlack.reason || undefined } });
-                  setNewBlack({ teamMemberId: "", startAt: "", endAt: "", reason: "" });
+                  const window = newBlack.allDay
+                    ? localDayBounds(newBlack.date)
+                    : { startAt: new Date(newBlack.startAt).toISOString(), endAt: new Date(newBlack.endAt).toISOString() };
+                  await upBlackout({ data: { teamMemberId: newBlack.teamMemberId === WHOLE_BUSINESS ? null : newBlack.teamMemberId, startAt: window.startAt, endAt: window.endAt, reason: newBlack.reason || undefined } });
+                  setNewBlack({ teamMemberId: WHOLE_BUSINESS, allDay: false, date: "", startAt: "", endAt: "", reason: "" });
                   setBlackoutOpen(false);
                   await reload(month); toast.success("Blackout added");
                 } catch (e: any) { toast.error(e.message); }
@@ -284,7 +327,10 @@ function SchedulingPage() {
 
           <Card className="space-y-3 p-5">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-sm font-semibold">Blackout dates</div>
+              <div>
+                <div className="text-sm font-semibold">Agent blackout dates</div>
+                <p className="text-xs text-muted-foreground">Whole-day closures or partial-day blocks by agent.</p>
+              </div>
               <Button size="sm" variant="outline" onClick={() => setBlackoutOpen(true)}>
                 <Plus className="h-3 w-3" /> Add
               </Button>
@@ -293,7 +339,10 @@ function SchedulingPage() {
               {blackouts.length === 0 && <div className="py-2 text-xs text-muted-foreground">No blackout dates.</div>}
               {blackouts.map((b) => (
                 <div key={b.id} className="flex items-center justify-between gap-2 py-2 text-xs">
-                  <div>{new Date(b.start_at).toLocaleString()} → {new Date(b.end_at).toLocaleString()} {b.reason ? `· ${b.reason}` : ""}</div>
+                  <div>
+                    <div className="font-medium">{blackoutScopeLabel(b, teamById)} · {blackoutWindowLabel(b)}</div>
+                    <div className="text-muted-foreground">{b.reason || "Unavailable"}</div>
+                  </div>
                   <Button variant="ghost" size="sm" onClick={async () => { await delBlackout({ data: { id: b.id } }); await reload(month); }}><Trash2 className="h-3 w-3" /></Button>
                 </div>
               ))}

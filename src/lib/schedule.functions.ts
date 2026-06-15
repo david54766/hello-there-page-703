@@ -84,7 +84,8 @@ export const getSchedule = createServerFn({ method: "POST" })
         .select("*")
         .eq("business_id", businessId)
         .gte("end_at", data.from)
-        .lte("start_at", data.to),
+        .lte("start_at", data.to)
+        .order("start_at", { ascending: true }),
       context.supabase
         .from("team_members")
         .select("id,name,role,color,availability,active")
@@ -144,12 +145,10 @@ export const bookAppointment = createServerFn({ method: "POST" })
       .from("schedule_blackouts")
       .select("*")
       .eq("business_id", businessId)
+      .lt("start_at", end.toISOString())
+      .gt("end_at", start.toISOString())
       .or(`team_member_id.eq.${data.teamMemberId},team_member_id.is.null`);
-    const blocked = (blacks ?? []).find((b: any) => {
-      const bs = new Date(b.start_at).getTime();
-      const be = new Date(b.end_at).getTime();
-      return bs < end.getTime() && be > start.getTime();
-    });
+    const blocked = (blacks ?? [])[0];
     if (blocked) throw new Error("That slot is blacked out");
 
     const provider = (business as any)?.scheduling_provider ?? "internal";
@@ -257,12 +256,29 @@ export const upsertBlackout = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const businessId = await getBusinessId(context.supabase);
     if (!businessId) throw new Error("No business found");
+    const start = new Date(data.startAt);
+    const end = new Date(data.endAt);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) {
+      throw new Error("Blackout start and end must be valid dates");
+    }
+    if (end <= start) {
+      throw new Error("Blackout end must be after the start time");
+    }
+    if (data.teamMemberId) {
+      const { data: member } = await context.supabase
+        .from("team_members")
+        .select("id")
+        .eq("id", data.teamMemberId)
+        .eq("business_id", businessId)
+        .maybeSingle();
+      if (!member) throw new Error("That team member is not available for this business");
+    }
     const row = {
       id: data.id,
       business_id: businessId,
       team_member_id: data.teamMemberId ?? null,
-      start_at: data.startAt,
-      end_at: data.endAt,
+      start_at: start.toISOString(),
+      end_at: end.toISOString(),
       reason: data.reason ?? null,
     };
     const { data: saved, error } = await context.supabase
