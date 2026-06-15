@@ -140,6 +140,7 @@ export type Database = {
             | Database["public"]["Enums"]["appointment_provider"]
             | null
           sms_consent_text: string | null
+          sms_auto_response_mode: string
           twilio_number: string | null
           updated_at: string
           website: string | null
@@ -180,6 +181,7 @@ export type Database = {
             | Database["public"]["Enums"]["appointment_provider"]
             | null
           sms_consent_text?: string | null
+          sms_auto_response_mode?: string
           twilio_number?: string | null
           updated_at?: string
           website?: string | null
@@ -220,6 +222,7 @@ export type Database = {
             | Database["public"]["Enums"]["appointment_provider"]
             | null
           sms_consent_text?: string | null
+          sms_auto_response_mode?: string
           twilio_number?: string | null
           updated_at?: string
           website?: string | null

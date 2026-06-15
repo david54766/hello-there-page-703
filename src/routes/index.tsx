@@ -318,7 +318,7 @@ function Landing() {
                 className="absolute inset-x-8 top-10 h-72 rounded-full blur-3xl"
                 style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.22), hsl(var(--accent) / 0.18))" }}
               />
-              <div className="relative mx-auto flex min-h-[520px] max-w-[720px] items-center justify-center overflow-hidden rounded-[2rem] border border-border bg-card/80 p-6 shadow-[var(--shadow-elevated)] backdrop-blur">
+              <div className="relative mx-auto flex min-h-[480px] max-w-[720px] items-center justify-center overflow-hidden p-0 md:min-h-[520px] md:rounded-[2rem] md:border md:border-border md:bg-card/80 md:p-6 md:shadow-[var(--shadow-elevated)] md:backdrop-blur">
                 <div className="absolute left-8 top-16 hidden w-[31%] -rotate-6 overflow-hidden rounded-[1.6rem] border border-border bg-background shadow-[var(--shadow-card)] md:block">
                   <img
                     src="/homepage/app-forwarding.jpg"
@@ -343,11 +343,11 @@ function Landing() {
                     loading="lazy"
                   />
                 </div>
-                <div className="relative w-full max-w-[320px] overflow-hidden rounded-[1.9rem] border border-border bg-background p-2 shadow-[var(--shadow-elevated)]">
+                <div className="relative w-full max-w-[320px] overflow-hidden rounded-[1.8rem] shadow-[var(--shadow-elevated)] md:rounded-[1.9rem] md:border md:border-border md:bg-background md:p-2">
                   <img
                     src="/homepage/app-revenue.jpg"
                     alt="CallRecover recovered revenue dashboard"
-                    className="aspect-[9/16] w-full rounded-[1.45rem] object-cover object-top"
+                    className="aspect-[9/16] w-full object-cover object-top md:rounded-[1.45rem]"
                     loading="lazy"
                   />
                 </div>

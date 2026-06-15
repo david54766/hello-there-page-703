@@ -36,6 +36,7 @@ type Biz = {
   notify_dashboard: boolean;
   notify_email_address: string | null;
   auto_send_ai_replies: boolean;
+  sms_auto_response_mode: "off" | "call" | "website" | "both";
   scheduling_provider: "hcp" | "jobber" | "internal";
   hcp_api_key: string | null;
   jobber_refresh_token: string | null;
@@ -90,11 +91,15 @@ function Settings() {
   useEffect(() => {
     if (!user) return;
     supabase.from("businesses")
-      .select("id, business_name, contractor_type, owner_phone, business_phone, avg_job_value, notify_sms, notify_email, notify_dashboard, notify_email_address, auto_send_ai_replies, scheduling_provider, hcp_api_key, jobber_refresh_token, agent_voice_id, agent_prompt_override, address, website, website_blurb, booking_url, callback_form_url, sms_consent_text, default_hello_script, cal_url, calendly_url, scheduling_enabled, observed_holidays")
+      .select("id, business_name, contractor_type, owner_phone, business_phone, avg_job_value, notify_sms, notify_email, notify_dashboard, notify_email_address, auto_send_ai_replies, sms_auto_response_mode, scheduling_provider, hcp_api_key, jobber_refresh_token, agent_voice_id, agent_prompt_override, address, website, website_blurb, booking_url, callback_form_url, sms_consent_text, default_hello_script, cal_url, calendly_url, scheduling_enabled, observed_holidays")
       .eq("owner_id", user.id).maybeSingle().then(({ data }) => {
         if (!data) return;
         const d = data as unknown as Biz;
-        setBiz({ ...d, observed_holidays: Array.isArray(d.observed_holidays) ? d.observed_holidays : [] });
+        setBiz({
+          ...d,
+          sms_auto_response_mode: d.sms_auto_response_mode ?? "off",
+          observed_holidays: Array.isArray(d.observed_holidays) ? d.observed_holidays : [],
+        });
       });
   }, [user]);
 
@@ -130,6 +135,7 @@ function Settings() {
       notify_dashboard: biz.notify_dashboard,
       notify_email_address: biz.notify_email_address,
       auto_send_ai_replies: biz.auto_send_ai_replies,
+      sms_auto_response_mode: biz.sms_auto_response_mode,
       scheduling_provider: biz.scheduling_provider,
       hcp_api_key: biz.hcp_api_key,
       jobber_refresh_token: biz.jobber_refresh_token,
@@ -370,7 +376,30 @@ function Settings() {
       </Card>
       <Card className="space-y-5 p-6">
         <h2 className="text-lg font-semibold">AI replies</h2>
-        <Row label="Auto-send AI follow-ups" hint="After SMS double opt-in, CallRecover can send short qualifying replies to customer texts before your team responds." checked={biz.auto_send_ai_replies} onChange={(v) => setBiz({ ...biz, auto_send_ai_replies: v })} />
+        <Row label="Automatic text response" hint="After SMS double opt-in, CallRecover can send one approved next-step response when customers text the system number." checked={biz.auto_send_ai_replies} onChange={(v) => setBiz({ ...biz, auto_send_ai_replies: v, sms_auto_response_mode: v ? (biz.sms_auto_response_mode === "off" ? "call" : biz.sms_auto_response_mode) : "off" })} />
+        <div className="space-y-1.5">
+          <Label>Response direction</Label>
+          <Select
+            value={biz.sms_auto_response_mode}
+            onValueChange={(v) => setBiz({ ...biz, sms_auto_response_mode: v as Biz["sms_auto_response_mode"], auto_send_ai_replies: v !== "off" })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="off">Off</SelectItem>
+              <SelectItem value="call">Tell them to wait for a call</SelectItem>
+              <SelectItem value="website">Direct them to the website</SelectItem>
+              <SelectItem value="both">Call back + website</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            This only responds after the caller has confirmed SMS opt-in. Direct customer texting still happens from the assigned team member's own phone.
+          </p>
+          {(biz.sms_auto_response_mode === "website" || biz.sms_auto_response_mode === "both") && !biz.website && (
+            <p className="text-xs text-amber-700">Add a website under Business so the website response has somewhere to send callers.</p>
+          )}
+        </div>
       </Card>
         </TabsContent>
 

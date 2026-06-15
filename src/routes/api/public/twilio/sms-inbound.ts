@@ -225,6 +225,48 @@ async function buildOptInReply(businessId: string, callerNumber: string) {
   return "Classroom Panda LLC dba CallRecover: Thanks, you are confirmed for SMS updates. The business received your message and will call you back. Reply STOP to opt out, HELP for help. Msg & data rates may apply.";
 }
 
+async function hasActiveSmsConsent(businessId: string, callerNumber: string) {
+  const { data } = await supabaseAdmin
+    .from("sms_consents" as any)
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("caller_number", callerNumber)
+    .eq("status", "opted_in")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return Boolean((data as any)?.id);
+}
+
+function normalizedWebsite(raw: string | null | undefined) {
+  const trimmed = (raw ?? "").trim();
+  if (!trimmed) return "";
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+function buildConfiguredInboundReply(business: any) {
+  if (!business?.auto_send_ai_replies) return null;
+  const mode = business.sms_auto_response_mode as "off" | "call" | "website" | "both" | undefined;
+  if (!mode || mode === "off") return null;
+
+  const name = (business.business_name as string | undefined)?.trim() || "The business";
+  const website = normalizedWebsite(business.website);
+  const callReply = `${name}: Thanks for the update. The team has your message and will call you back.`;
+  const websiteReply = website
+    ? `${name}: Thanks for the update. You can visit ${website} for service details.`
+    : callReply;
+
+  if (mode === "call") return callReply;
+  if (mode === "website") return websiteReply;
+  if (mode === "both") {
+    return website
+      ? `${name}: Thanks for the update. The team has your message and will call you back. You can also visit ${website} for service details.`
+      : callReply;
+  }
+
+  return null;
+}
+
 export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
   server: {
     handlers: {
@@ -327,8 +369,20 @@ export const Route = createFileRoute("/api/public/twilio/sms-inbound")({
           return twiml(HELP_REPLY);
         }
 
-        // Regular inbound — already logged. No auto-reply here; the operator
-        // (or downstream automation) handles conversational replies.
+        const { data: business } = await supabaseAdmin
+          .from("businesses")
+          .select("business_name, website, auto_send_ai_replies, sms_auto_response_mode")
+          .eq("id", businessId)
+          .maybeSingle();
+        const reply = (await hasActiveSmsConsent(businessId, from))
+          ? buildConfiguredInboundReply(business)
+          : null;
+        if (reply) {
+          await recordOutboundReply(threadId, reply);
+          return twiml(reply);
+        }
+
+        // Regular inbound without an approved auto-response is logged only.
         return twiml();
       },
     },

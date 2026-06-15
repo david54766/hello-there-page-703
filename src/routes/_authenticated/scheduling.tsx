@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ChevronLeft, ChevronRight, Trash2, Plus, CalendarDays } from "lucide-react";
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, isToday, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { toast } from "sonner";
@@ -273,7 +274,25 @@ function SchedulingPage() {
                       <div className="truncate text-xs text-muted-foreground">{a.customer_name ?? ""} {a.customer_phone ? `· ${a.customer_phone}` : ""} {a.service ? `· ${a.service}` : ""} · {a.status} · {a.source}</div>
                     </div>
                     {a.status !== "cancelled" && (
-                      <Button variant="ghost" size="sm" onClick={async () => { await cancel({ data: { id: a.id } }); await reload(month); }}>Cancel</Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">Cancel</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This marks the appointment as cancelled and removes it from active scheduling views.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep appointment</AlertDialogCancel>
+                            <AlertDialogAction onClick={async () => { await cancel({ data: { id: a.id } }); await reload(month); }}>
+                              Yes, cancel appointment
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </div>
                 );
