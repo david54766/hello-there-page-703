@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,7 +16,7 @@ import { listMyFactors, enrollFactor, verifyEnrollment, disableFactor } from "@/
 import { scanSetupWebsite } from "@/lib/setup-scan.functions";
 import { CONTRACTOR_TYPES, type ContractorType } from "@/lib/contractor-data";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, ShieldCheck, Mail, Smartphone, Sparkles, Play, Loader2 } from "lucide-react";
+import { Trash2, ShieldCheck, Mail, Smartphone, Sparkles, Play, Loader2, Square } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { WEB_FORM_SMS_CONSENT_TEXT } from "@/lib/sms-consent-copy";
@@ -61,6 +61,31 @@ function Settings() {
   const [saving, setSaving] = useState(false);
   const [scanningWebsite, setScanningWebsite] = useState(false);
   const [voicePreviewing, setVoicePreviewing] = useState(false);
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const previewRunRef = useRef(0);
+
+  const releasePreviewAudio = () => {
+    const audio = previewAudioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.src = "";
+    previewAudioRef.current = null;
+  };
+
+  const stopPreview = () => {
+    previewRunRef.current += 1;
+    releasePreviewAudio();
+    setPlayingVoiceId(null);
+    setVoicePreviewing(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      previewRunRef.current += 1;
+      releasePreviewAudio();
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -188,7 +213,19 @@ function Settings() {
   async function previewVoice() {
     if (!biz) return;
     const voiceId = biz.agent_voice_id || DEFAULT_VOICE_ID;
+    if (playingVoiceId === voiceId) {
+      stopPreview();
+      return;
+    }
+    if (voicePreviewing) {
+      stopPreview();
+      return;
+    }
     const voice = getVoice(voiceId);
+    const runId = previewRunRef.current + 1;
+    previewRunRef.current = runId;
+    releasePreviewAudio();
+    setPlayingVoiceId(null);
     setVoicePreviewing(true);
     try {
       const { data } = await supabase.auth.getSession();
@@ -207,11 +244,25 @@ function Settings() {
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(body?.error ?? "Voice preview failed");
-      await new Audio(`data:${body.mimeType};base64,${body.audioBase64}`).play();
+      if (previewRunRef.current !== runId) return;
+      const audio = new Audio(`data:${body.mimeType};base64,${body.audioBase64}`);
+      previewAudioRef.current = audio;
+      audio.onended = () => {
+        if (previewRunRef.current !== runId) return;
+        previewAudioRef.current = null;
+        setPlayingVoiceId(null);
+      };
+      audio.onerror = () => {
+        if (previewRunRef.current !== runId) return;
+        previewAudioRef.current = null;
+        setPlayingVoiceId(null);
+      };
+      setPlayingVoiceId(voiceId);
+      await audio.play();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Voice preview failed");
     } finally {
-      setVoicePreviewing(false);
+      if (previewRunRef.current === runId) setVoicePreviewing(false);
     }
   }
 
@@ -286,6 +337,9 @@ function Settings() {
         <div className="space-y-1.5">
           <Label>Booking URL ({"{book_consult}"})</Label>
           <Input value={biz.booking_url ?? ""} onChange={(e) => setBiz({ ...biz, booking_url: e.target.value })} placeholder="https://" />
+          <p className="text-xs text-muted-foreground">
+            Cal.com, Calendly, or a public booking page can fill this now. Native Jobber and Housecall Pro booking-link setup is coming soon; provider sync is handled server-side when connected.
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label>Callback form URL ({"{callback_form}"})</Label>
@@ -334,7 +388,7 @@ function Settings() {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            CallRecover books locally first. If Housecall Pro or Jobber is connected, it also attempts to sync the appointment externally and keeps the local booking even if the provider rejects the sync.
+            CallRecover books locally first. If Housecall Pro or Jobber is connected, it also attempts to sync the appointment externally and keeps the local booking even if the provider rejects the sync. Native provider booking links are coming soon and will be enabled server-side.
           </p>
         </div>
         {biz.scheduling_provider === "hcp" && (
@@ -424,7 +478,7 @@ function Settings() {
         <div className="space-y-1.5">
           <Label>Voice</Label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
-            <Select value={biz.agent_voice_id || DEFAULT_VOICE_ID} onValueChange={(v) => setBiz({ ...biz, agent_voice_id: v })}>
+            <Select value={biz.agent_voice_id || DEFAULT_VOICE_ID} onValueChange={(v) => { stopPreview(); setBiz({ ...biz, agent_voice_id: v }); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {VOICE_OPTIONS.map((voice) => (
@@ -432,9 +486,15 @@ function Settings() {
                 ))}
               </SelectContent>
             </Select>
-            <Button type="button" variant="outline" onClick={previewVoice} disabled={voicePreviewing}>
-              {voicePreviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Preview
+            <Button type="button" variant="outline" onClick={previewVoice}>
+              {voicePreviewing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : playingVoiceId === (biz.agent_voice_id || DEFAULT_VOICE_ID) ? (
+                <Square className="h-4 w-4" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+              {playingVoiceId === (biz.agent_voice_id || DEFAULT_VOICE_ID) ? "Stop" : voicePreviewing ? "Cancel" : "Preview"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">

@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Phone, Loader2, RefreshCw, ChevronDown, ChevronRight, Sparkles, Play } from "lucide-react";
+import { Phone, Loader2, RefreshCw, ChevronDown, ChevronRight, Sparkles, Play, Square } from "lucide-react";
 import { toast } from "sonner";
 import { CONTRACTOR_TYPES, DEFAULT_AGENT_NAME } from "@/lib/contractor-data";
 import { DEFAULT_VOICE_ID, VOICE_OPTIONS, getVoice } from "@/lib/voices";
@@ -477,7 +477,27 @@ function NumberRow({
   const [voiceId, setVoiceId] = useState(businessVoiceId || DEFAULT_VOICE_ID);
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const previewRunRef = useRef(0);
+
+  const releasePreviewAudio = () => {
+    const audio = previewAudioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.src = "";
+    previewAudioRef.current = null;
+  };
+
+  const stopPreview = () => {
+    previewRunRef.current += 1;
+    releasePreviewAudio();
+    setPlayingVoiceId(null);
+    setPreviewing(false);
+  };
+
   useEffect(() => {
+    stopPreview();
     setName(row?.assistant_name ?? "");
     setFirst(row?.custom_first_message ?? "");
     setPrompt(row?.custom_prompt ?? "");
@@ -485,9 +505,28 @@ function NumberRow({
     setVoiceId(businessVoiceId || DEFAULT_VOICE_ID);
   }, [row, businessVoiceId]);
 
+  useEffect(() => {
+    return () => {
+      previewRunRef.current += 1;
+      releasePreviewAudio();
+    };
+  }, []);
+
   const selectedVoice = getVoice(voiceId);
 
   const playPreview = async () => {
+    if (playingVoiceId === voiceId) {
+      stopPreview();
+      return;
+    }
+    if (previewing) {
+      stopPreview();
+      return;
+    }
+    const runId = previewRunRef.current + 1;
+    previewRunRef.current = runId;
+    releasePreviewAudio();
+    setPlayingVoiceId(null);
     setPreviewing(true);
     try {
       const { data } = await supabase.auth.getSession();
@@ -506,12 +545,25 @@ function NumberRow({
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.error ?? "Voice preview failed");
+      if (previewRunRef.current !== runId) return;
       const audio = new Audio(`data:${body.mimeType};base64,${body.audioBase64}`);
+      previewAudioRef.current = audio;
+      audio.onended = () => {
+        if (previewRunRef.current !== runId) return;
+        previewAudioRef.current = null;
+        setPlayingVoiceId(null);
+      };
+      audio.onerror = () => {
+        if (previewRunRef.current !== runId) return;
+        previewAudioRef.current = null;
+        setPlayingVoiceId(null);
+      };
+      setPlayingVoiceId(voiceId);
       await audio.play();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Voice preview failed");
     } finally {
-      setPreviewing(false);
+      if (previewRunRef.current === runId) setPreviewing(false);
     }
   };
 
@@ -534,7 +586,7 @@ function NumberRow({
       <div>
         <Label className="text-xs">Voice</Label>
         <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
-          <Select value={voiceId} onValueChange={setVoiceId}>
+          <Select value={voiceId} onValueChange={(value) => { stopPreview(); setVoiceId(value); }}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {VOICE_OPTIONS.map((voice) => (
@@ -544,9 +596,15 @@ function NumberRow({
               ))}
             </SelectContent>
           </Select>
-          <Button type="button" variant="outline" onClick={playPreview} disabled={previewing}>
-            {previewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            Preview
+          <Button type="button" variant="outline" onClick={playPreview}>
+            {previewing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : playingVoiceId === voiceId ? (
+              <Square className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            {playingVoiceId === voiceId ? "Stop" : previewing ? "Cancel" : "Preview"}
           </Button>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">{selectedVoice.label}: {selectedVoice.description}</p>

@@ -178,7 +178,12 @@ function SchedulingPage() {
       ) : (
         <>
           <Card className="space-y-3 p-5">
-            <div className="text-sm font-semibold">Booking links (used for <code>{"{book_consult}"}</code>)</div>
+            <div>
+              <div className="text-sm font-semibold">Booking links (<code>{"{book_consult}"}</code>)</div>
+              <p className="text-xs text-muted-foreground">
+                Cal.com and Calendly links work now. Native Jobber and Housecall Pro booking links are coming soon; connected provider sync is handled by CallRecover without a mobile app update.
+              </p>
+            </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label className="text-xs">Cal.com URL</Label>
@@ -189,7 +194,11 @@ function SchedulingPage() {
                 <Input defaultValue={business?.calendly_url ?? ""} onBlur={(e) => updateTags({ data: { calendly_url: e.target.value } })} placeholder="https://calendly.com/you" />
               </div>
             </div>
+            {/*
             <p className="text-xs text-muted-foreground">Google Calendar 2-way sync coming in a follow-up — uses per-agent OAuth.</p>
+          </Card>
+
+            */}
           </Card>
 
           <div className="flex flex-wrap justify-end gap-2">
