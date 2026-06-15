@@ -1,11 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { syncExternalAppointment } from "@/lib/external-scheduling.server";
 
 /**
- * Provider-agnostic scheduling. For now, all bookings land in the local
- * `appointments` table. When HCP/Jobber API keys are present on the business,
- * we also push to the provider (stubbed — wire up once keys are configured).
+ * Provider-agnostic scheduling. All bookings land in the local
+ * `appointments` table first, then CallRecover tries to sync to the selected
+ * external provider.
  */
 export const createAppointment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -23,19 +24,10 @@ export const createAppointment = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: biz } = await supabase
       .from("businesses")
-      .select("scheduling_provider, hcp_api_key, jobber_refresh_token")
+      .select("business_name,business_phone,scheduling_provider,hcp_api_key,jobber_refresh_token")
       .eq("id", data.businessId)
       .single();
     const provider = (biz?.scheduling_provider ?? "internal") as "hcp" | "jobber" | "internal";
-
-    let providerRef: string | null = null;
-    if (provider === "hcp" && biz?.hcp_api_key) {
-      // TODO: POST to https://api.housecallpro.com/jobs
-      providerRef = `hcp_stub_${Date.now()}`;
-    } else if (provider === "jobber" && biz?.jobber_refresh_token) {
-      // TODO: Jobber GraphQL createRequest mutation
-      providerRef = `jobber_stub_${Date.now()}`;
-    }
 
     const { data: appt, error } = await supabase
       .from("appointments")
@@ -43,7 +35,6 @@ export const createAppointment = createServerFn({ method: "POST" })
         business_id: data.businessId,
         call_id: data.callId ?? null,
         provider,
-        provider_ref: providerRef,
         scheduled_for: data.scheduledFor,
         customer_name: data.customerName ?? null,
         customer_phone: data.customerPhone ?? null,
@@ -54,10 +45,32 @@ export const createAppointment = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
+    const providerSync = await syncExternalAppointment({
+      supabase,
+      businessId: data.businessId,
+      business: biz as any,
+      appointment: appt as any,
+    });
+    if (providerSync.ok && providerSync.providerRef) {
+      await supabase
+        .from("appointments")
+        .update({
+          provider: providerSync.provider,
+          provider_ref: providerSync.providerRef,
+          external_provider: providerSync.provider,
+          external_event_id: providerSync.providerRef,
+        } as any)
+        .eq("id", (appt as any).id);
+      (appt as any).provider = providerSync.provider;
+      (appt as any).provider_ref = providerSync.providerRef;
+      (appt as any).external_provider = providerSync.provider;
+      (appt as any).external_event_id = providerSync.providerRef;
+    }
+
     if (data.callId) {
       await supabase.from("calls").update({ lead_status: "scheduled" }).eq("id", data.callId);
     }
-    return { appointment: appt };
+    return { appointment: appt, providerSync };
   });
 
 export const listAppointments = createServerFn({ method: "POST" })

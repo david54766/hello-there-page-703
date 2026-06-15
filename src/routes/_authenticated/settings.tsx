@@ -334,7 +334,7 @@ function Settings() {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            In-app scheduling is live. Housecall Pro and Jobber are optional future external syncs and are not required for CallRecover bookings.
+            CallRecover books locally first. If Housecall Pro or Jobber is connected, it also attempts to sync the appointment externally and keeps the local booking even if the provider rejects the sync.
           </p>
         </div>
         {biz.scheduling_provider === "hcp" && (

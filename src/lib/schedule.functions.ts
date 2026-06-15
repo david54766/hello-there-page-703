@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { syncExternalAppointment } from "@/lib/external-scheduling.server";
 import { sendSmsForCall } from "@/lib/sms-send.server";
 import { syncVapiAssistantsForBusiness } from "@/lib/vapi.functions";
 
@@ -120,7 +121,7 @@ export const bookAppointment = createServerFn({ method: "POST" })
     const end = new Date(start.getTime() + data.durationMinutes * 60_000);
     const { data: business } = await context.supabase
       .from("businesses")
-      .select("business_hours")
+      .select("business_hours,business_name,business_phone,scheduling_provider,hcp_api_key,jobber_refresh_token")
       .eq("id", businessId)
       .maybeSingle();
 
@@ -151,6 +152,7 @@ export const bookAppointment = createServerFn({ method: "POST" })
     });
     if (blocked) throw new Error("That slot is blacked out");
 
+    const provider = (business as any)?.scheduling_provider ?? "internal";
     const { data: appt, error } = await context.supabase
       .from("appointments")
       .insert({
@@ -165,11 +167,40 @@ export const bookAppointment = createServerFn({ method: "POST" })
         notes: data.notes ?? null,
         source: data.callId ? "vapi_call" : "manual",
         status: "booked",
-        provider: "internal",
+        provider,
       } as any)
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    const { data: teamMember } = await context.supabase
+      .from("team_members")
+      .select("name")
+      .eq("id", data.teamMemberId)
+      .maybeSingle();
+
+    const providerSync = await syncExternalAppointment({
+      supabase: context.supabase,
+      businessId,
+      business: business as any,
+      appointment: appt as any,
+      teamMemberName: (teamMember as any)?.name,
+    });
+    if (providerSync.ok && providerSync.providerRef) {
+      await context.supabase
+        .from("appointments")
+        .update({
+          provider: providerSync.provider,
+          provider_ref: providerSync.providerRef,
+          external_provider: providerSync.provider,
+          external_event_id: providerSync.providerRef,
+        } as any)
+        .eq("id", (appt as any).id);
+      (appt as any).provider = providerSync.provider;
+      (appt as any).provider_ref = providerSync.providerRef;
+      (appt as any).external_provider = providerSync.provider;
+      (appt as any).external_event_id = providerSync.providerRef;
+    }
 
     if (data.callId) {
       await context.supabase
@@ -180,11 +211,6 @@ export const bookAppointment = createServerFn({ method: "POST" })
 
     let smsConfirmation: { sent: boolean; sid?: string | null; error?: string } | null = null;
     if (data.callId) {
-      const { data: teamMember } = await context.supabase
-        .from("team_members")
-        .select("name")
-        .eq("id", data.teamMemberId)
-        .maybeSingle();
       const body = buildAppointmentConfirmation({
         scheduledFor: data.scheduledFor,
         timeZone: businessTimeZone(business),
@@ -202,7 +228,7 @@ export const bookAppointment = createServerFn({ method: "POST" })
       }
     }
 
-    return { appointment: appt, smsConfirmation };
+    return { appointment: appt, smsConfirmation, providerSync };
   });
 
 export const cancelAppointment = createServerFn({ method: "POST" })
