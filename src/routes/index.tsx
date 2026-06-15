@@ -511,7 +511,7 @@ function Landing() {
                 minutes: "150 AI minutes",
                 sms: "400 SMS segments",
                 fit: "For a single busy contractor line.",
-                features: ["AI missed-call answering", "Lead inbox and transcripts", "SMS double opt-in", "One Vapi phone number"],
+                features: ["AI missed-call answering", "Lead inbox and transcripts", "SMS double opt-in", "One assigned phone number"],
               },
               {
                 name: "Pro",

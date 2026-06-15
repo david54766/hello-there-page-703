@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TagPicker } from "@/components/tag-picker";
 import { CONTRACTOR_TYPES } from "@/lib/contractor-data";
 import { Plus, Trash2, Loader2 } from "lucide-react";
@@ -43,6 +44,7 @@ function ScriptsPage() {
   const [kindFilter, setKindFilter] = useState("all");
   const [draft, setDraft] = useState<{ contractor_type: string; kind: "system" | "first_message"; label: string; body: string }>({ contractor_type: "any", kind: "first_message", label: "", body: "" });
   const [saving, setSaving] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
 
   const reload = async (filters = { contractorType: contractorFilter, kind: kindFilter }) => {
     const { templates } = await fetchTemplates({
@@ -80,6 +82,7 @@ function ScriptsPage() {
       await upsert({ data: { contractorType: draft.contractor_type === "any" ? undefined : draft.contractor_type, kind: draft.kind, label: draft.label, body: draft.body } });
       setDraft({ contractor_type: contractorFilter === "all" ? "any" : contractorFilter, kind: "first_message", label: "", body: "" });
       await reload();
+      setTemplateOpen(false);
       toast.success("Template saved");
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
@@ -87,11 +90,23 @@ function ScriptsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Script library</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Reusable first messages and internal virtual agent behavior. Your profile trade is selected automatically.</p>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Script library</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Reusable first messages and internal virtual agent behavior. Your profile trade is selected automatically.</p>
+        </div>
+        <Button onClick={() => setTemplateOpen(true)} className="sm:mt-1">
+          <Plus className="h-4 w-4" /> New template
+        </Button>
+      </div>
 
-      <Card className="mb-6 space-y-3 p-5">
-        <div className="text-sm font-semibold">New template</div>
+      <Dialog open={templateOpen} onOpenChange={setTemplateOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>New template</DialogTitle>
+            <DialogDescription>Create a caller-facing first message or internal virtual agent behavior.</DialogDescription>
+          </DialogHeader>
+        <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <Label className="text-xs">Contractor Type</Label>
@@ -136,7 +151,9 @@ function ScriptsPage() {
         <Button onClick={save} disabled={saving} size="sm">
           {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />} Save Template
         </Button>
-      </Card>
+        </div>
+        </DialogContent>
+      </Dialog>
 
       <Card className="mb-4 grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
         <div>

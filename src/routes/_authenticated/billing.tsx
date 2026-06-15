@@ -148,7 +148,7 @@ function Billing() {
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">Subscription</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Choose the plan that matches call volume. Usage estimates include Vapi AI minutes, Twilio SMS, phone number cost, and a platform buffer.
+            Choose the plan that matches call volume. Usage estimates include AI voice minutes, Twilio SMS, phone number cost, and a platform buffer.
           </p>
         </div>
       </div>

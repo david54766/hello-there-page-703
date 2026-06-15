@@ -53,7 +53,7 @@ async function syncBusinessAssistant(supabase: any, businessId: string) {
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Could not sync Vapi assistant",
+      error: error instanceof Error ? error.message : "Could not sync assistant",
     };
   }
 }

@@ -90,7 +90,7 @@ function Revenue() {
 
       <Card className="mt-6 p-4 sm:p-6">
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          <Trophy className="h-4 w-4" /> Team leaderboard
+          <Trophy className="h-4 w-4" /> Team Response leaderboard
         </h2>
         {leaders.length === 0 ? (
           <p className="text-sm text-muted-foreground">No assignments yet. Add team members in Settings → Team.</p>

@@ -443,7 +443,7 @@ async function assertVapiPhoneNumberAvailable(phoneNumberId: string, businessId:
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (data) {
-    throw new Error("That Vapi number is already assigned to another account.");
+    throw new Error("That phone number is already assigned to another account.");
   }
 }
 
@@ -777,7 +777,7 @@ export const updateAssistantForNumber = createServerFn({ method: "POST" })
     const existing = await loadAccountAssistantRow(context.supabase, businessId);
     if (!existing?.assistant_id) throw new Error("Assistant not provisioned yet for this number");
     if (existing.phone_number_id !== data.phoneNumberId) {
-      throw new Error("This account already has one Vapi number assigned");
+      throw new Error("This account already has one phone number assigned");
     }
     const tags = mergeTagDefaults(business);
     const agentName = data.assistantName?.trim() || existing.assistant_name || DEFAULT_AGENT_NAME;

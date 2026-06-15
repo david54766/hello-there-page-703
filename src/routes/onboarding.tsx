@@ -200,7 +200,7 @@ function Onboarding() {
   const provisionedNumber = agentRows.find((r) => r.assistantId)?.number ?? agentRows[0]?.number ?? twilioNumber;
   const fwd = state.carrier ? getForwardingInstructions(state.carrier as Carrier, provisionedNumber) : null;
 
-  // Provision Vapi assistants when entering the AI agent step
+  // Provision assistants when entering the AI agent step
   useEffect(() => {
     if (step !== 5 || agentRan || agentLoading) return;
     setAgentLoading(true);
@@ -509,7 +509,7 @@ function AgentStep({ loading, rows }: { loading: boolean; rows: { number: string
         <h2 className="text-xl font-semibold tracking-tight">Your AI agent</h2>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        We're assigning a Vapi assistant to your number with trade-aware defaults. You can customize the name, greeting, and script anytime from the <span className="font-medium">AI agent</span> tab.
+        We're assigning an assistant to your number with trade-aware defaults. You can customize the name, greeting, and script anytime from the <span className="font-medium">AI agent</span> tab.
       </p>
       <div className="mt-5 space-y-2">
         {loading ? (
@@ -518,7 +518,7 @@ function AgentStep({ loading, rows }: { loading: boolean; rows: { number: string
           </div>
         ) : rows.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
-            No Vapi number yet — we'll finish this the first time you visit the AI agent tab.
+            No assistant number yet — we'll finish this the first time you visit the AI agent tab.
           </div>
         ) : rows.map((r) => (
           <div key={r.number} className="flex items-center justify-between rounded-md border border-border p-3 text-sm">

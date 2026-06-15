@@ -72,7 +72,7 @@ export const upsertScriptTemplate = createServerFn({ method: "POST" })
     } catch (syncError) {
       vapiSync = {
         ok: false,
-        error: syncError instanceof Error ? syncError.message : "Could not sync Vapi assistant",
+        error: syncError instanceof Error ? syncError.message : "Could not sync assistant",
       };
     }
 

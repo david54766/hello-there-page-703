@@ -851,8 +851,18 @@ export type Database = {
           custom_first_message: string | null
           custom_prompt: string | null
           id: string
+          call_count_at_reclaim: number
+          last_reclaim_checked_at: string | null
+          number_provider: string
+          number_status: string
           phone_number: string | null
           phone_number_id: string
+          provisioned_at: string
+          quarantine_until: string | null
+          reclaim_after: string | null
+          release_reason: string | null
+          released_at: string | null
+          released_by: string | null
           updated_at: string
         }
         Insert: {
@@ -864,8 +874,18 @@ export type Database = {
           custom_first_message?: string | null
           custom_prompt?: string | null
           id?: string
+          call_count_at_reclaim?: number
+          last_reclaim_checked_at?: string | null
+          number_provider?: string
+          number_status?: string
           phone_number?: string | null
           phone_number_id: string
+          provisioned_at?: string
+          quarantine_until?: string | null
+          reclaim_after?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -877,8 +897,18 @@ export type Database = {
           custom_first_message?: string | null
           custom_prompt?: string | null
           id?: string
+          call_count_at_reclaim?: number
+          last_reclaim_checked_at?: string | null
+          number_provider?: string
+          number_status?: string
           phone_number?: string | null
           phone_number_id?: string
+          provisioned_at?: string
+          quarantine_until?: string | null
+          reclaim_after?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
           updated_at?: string
         }
         Relationships: []

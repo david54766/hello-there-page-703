@@ -16,10 +16,11 @@ import { listMyFactors, enrollFactor, verifyEnrollment, disableFactor } from "@/
 import { scanSetupWebsite } from "@/lib/setup-scan.functions";
 import { CONTRACTOR_TYPES, type ContractorType } from "@/lib/contractor-data";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, ShieldCheck, Mail, Smartphone, Sparkles } from "lucide-react";
+import { Trash2, ShieldCheck, Mail, Smartphone, Sparkles, Play, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { WEB_FORM_SMS_CONSENT_TEXT } from "@/lib/sms-consent-copy";
+import { DEFAULT_VOICE_ID, VOICE_OPTIONS, getVoice } from "@/lib/voices";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: Settings });
 
@@ -59,6 +60,7 @@ function Settings() {
   const [biz, setBiz] = useState<Biz | null>(null);
   const [saving, setSaving] = useState(false);
   const [scanningWebsite, setScanningWebsite] = useState(false);
+  const [voicePreviewing, setVoicePreviewing] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -183,6 +185,36 @@ function Settings() {
     }
   }
 
+  async function previewVoice() {
+    if (!biz) return;
+    const voiceId = biz.agent_voice_id || DEFAULT_VOICE_ID;
+    const voice = getVoice(voiceId);
+    setVoicePreviewing(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Sign in again to preview voices.");
+      const res = await fetch("/api/mobile/voice-preview", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          voiceId,
+          text: `Thanks for calling. My name is ${voice.label}, and I can take the details so the team can follow up quickly.`,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body?.error ?? "Voice preview failed");
+      await new Audio(`data:${body.mimeType};base64,${body.audioBase64}`).play();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Voice preview failed");
+    } finally {
+      setVoicePreviewing(false);
+    }
+  }
+
   if (!biz) return <div className="p-10 text-muted-foreground">Loading…</div>;
 
   return (
@@ -266,10 +298,6 @@ function Settings() {
             This compliance wording is managed by CallRecover and cannot be edited per client.
           </p>
         </div>
-        <div className="space-y-1.5">
-          <Label>Default greeting ({"{hello_script}"})</Label>
-          <Textarea rows={2} value={biz.default_hello_script ?? ""} onChange={(e) => setBiz({ ...biz, default_hello_script: e.target.value })} placeholder="Hello, thanks for calling {business}…" />
-        </div>
       </Card>
         </TabsContent>
 
@@ -288,7 +316,7 @@ function Settings() {
       </Card>
       <Card className="space-y-5 p-6">
         <h2 className="text-lg font-semibold">AI replies</h2>
-        <Row label="Auto-send AI follow-ups" hint="AI replies to customer texts to qualify the lead before you respond" checked={biz.auto_send_ai_replies} onChange={(v) => setBiz({ ...biz, auto_send_ai_replies: v })} />
+        <Row label="Auto-send AI follow-ups" hint="After SMS double opt-in, CallRecover can send short qualifying replies to customer texts before your team responds." checked={biz.auto_send_ai_replies} onChange={(v) => setBiz({ ...biz, auto_send_ai_replies: v })} />
       </Card>
         </TabsContent>
 
@@ -305,6 +333,9 @@ function Settings() {
               <SelectItem value="jobber">Jobber</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            In-app scheduling is live. Housecall Pro and Jobber are optional future external syncs and are not required for CallRecover bookings.
+          </p>
         </div>
         {biz.scheduling_provider === "hcp" && (
           <div className="space-y-1.5">
@@ -391,8 +422,24 @@ function Settings() {
       <Card className="space-y-5 p-6">
         <h2 className="text-lg font-semibold">Voice agent</h2>
         <div className="space-y-1.5">
-          <Label>Voice ID (optional)</Label>
-          <Input value={biz.agent_voice_id ?? ""} onChange={(e) => setBiz({ ...biz, agent_voice_id: e.target.value })} placeholder="JBFqnCBsd6RMkjVDRZzb" />
+          <Label>Voice</Label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+            <Select value={biz.agent_voice_id || DEFAULT_VOICE_ID} onValueChange={(v) => setBiz({ ...biz, agent_voice_id: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {VOICE_OPTIONS.map((voice) => (
+                  <SelectItem key={voice.id} value={voice.id}>{voice.label} - {voice.description}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button type="button" variant="outline" onClick={previewVoice} disabled={voicePreviewing}>
+              {voicePreviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              Preview
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {getVoice(biz.agent_voice_id).label}: {getVoice(biz.agent_voice_id).description}
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label>Custom agent prompt (optional)</Label>

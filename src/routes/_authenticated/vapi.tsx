@@ -21,9 +21,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Phone, Loader2, RefreshCw, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { Phone, Loader2, RefreshCw, ChevronDown, ChevronRight, Sparkles, Play } from "lucide-react";
 import { toast } from "sonner";
 import { CONTRACTOR_TYPES, DEFAULT_AGENT_NAME } from "@/lib/contractor-data";
+import { DEFAULT_VOICE_ID, VOICE_OPTIONS, getVoice } from "@/lib/voices";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/vapi")({ component: VapiPage });
 
@@ -195,39 +197,21 @@ function VapiPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">Outbound Test Call</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Trigger a real phone call, manage the one assistant assigned to this account's number, and review transcripts. Use <code className="rounded bg-muted px-1 text-xs">{"{tags}"}</code> in scripts - they're filled from your business profile at call time.</p>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:text-3xl">AI Agent</h1>
+      <p className="mb-6 text-sm text-muted-foreground">Manage the one assistant assigned to this account's number, place test calls, and review transcripts. Use <code className="rounded bg-muted px-1 text-xs">{"{tags}"}</code> in scripts - they're filled from your business profile at call time.</p>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading phone resources...</p>
       ) : (
-        <Tabs defaultValue="call">
+        <Tabs defaultValue="numbers">
           <TabsList className="mb-4">
-            <TabsTrigger value="call">Place Call</TabsTrigger>
             <TabsTrigger value="numbers">Account Assistant</TabsTrigger>
+            <TabsTrigger value="call">Place Call</TabsTrigger>
             <TabsTrigger value="recent">Recent Calls</TabsTrigger>
           </TabsList>
 
           <TabsContent value="call">
         <Card className="space-y-4 p-5">
-          <div className="rounded-lg border bg-muted/30 p-4">
-            <Label>Account assistant</Label>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-semibold">{accountNumber?.number ?? accountAssistant?.phone_number ?? "No Vapi number assigned"}</div>
-                <div className="text-xs text-muted-foreground">
-                  {accountAssistant?.assistant_name ?? "One assistant answers for this account"}
-                </div>
-              </div>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${accountAssistant?.assistant_id ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
-                {accountAssistant?.assistant_id ? "Connected" : "Pending"}
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              CallRecover uses this assigned assistant automatically; users cannot switch to another assistant for this account.
-            </p>
-          </div>
-
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="cust-name">Customer name (optional)</Label>
@@ -348,12 +332,14 @@ function VapiPage() {
             <NumbersTab
               numbers={numbers}
               rows={numberRows}
+              businessVoiceId={business?.agent_voice_id ?? null}
               onProvision={provisionMissing}
               onUpdate={async (phoneNumberId, payload) => {
                 try {
                   await updateAssistant({ data: { phoneNumberId, ...payload } });
                   const fresh = await fetchNumberAssistants();
                   setNumberRows(fresh.rows);
+                  if (payload.voiceId) setBusiness((prev: any) => prev ? { ...prev, agent_voice_id: payload.voiceId } : prev);
                   toast.success("Saved");
                 } catch (e: any) { toast.error(e.message); }
               }}
@@ -419,19 +405,40 @@ function VapiPage() {
 function NumbersTab({
   numbers,
   rows,
+  businessVoiceId,
   onUpdate,
   onProvision,
 }: {
   numbers: { id: string; number: string; name: string }[];
   rows: any[];
-  onUpdate: (phoneNumberId: string, payload: { assistantName?: string; systemPrompt?: string; firstMessage?: string; contractorType?: string }) => Promise<void>;
+  businessVoiceId: string | null;
+  onUpdate: (phoneNumberId: string, payload: { assistantName?: string; systemPrompt?: string; firstMessage?: string; contractorType?: string; voiceId?: string }) => Promise<void>;
   onProvision: (phoneNumberId: string, phoneNumber: string) => Promise<void>;
 }) {
   const byId = new Map(rows.map((r) => [r.phone_number_id, r]));
+  const accountNumber = numbers[0] ?? null;
+  const accountAssistant = rows[0] ?? null;
   return (
     <div className="space-y-4">
+      <Card className="space-y-3 p-4">
+        <Label>Account assistant</Label>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold">{accountNumber?.number ?? accountAssistant?.phone_number ?? "No number assigned"}</div>
+            <div className="text-xs text-muted-foreground">
+              {accountAssistant?.assistant_name ?? "One assistant answers for this account"}
+            </div>
+          </div>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${accountAssistant?.assistant_id ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+            {accountAssistant?.assistant_id ? "Connected" : "Pending"}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          CallRecover uses this assigned assistant automatically; users cannot switch to another assistant for this account.
+        </p>
+      </Card>
       {numbers.length === 0 && (
-        <Card className="p-4 text-sm text-muted-foreground">No Vapi numbers configured yet.</Card>
+        <Card className="p-4 text-sm text-muted-foreground">No phone numbers configured yet.</Card>
       )}
       {numbers.map((n) => {
         const row = byId.get(n.id);
@@ -446,24 +453,68 @@ function NumbersTab({
             </Card>
           );
         }
-        return <NumberRow key={n.id} number={n} row={row} onSave={(p) => onUpdate(n.id, p)} />;
+        return <NumberRow key={n.id} number={n} row={row} businessVoiceId={businessVoiceId} onSave={(p) => onUpdate(n.id, p)} />;
       })}
     </div>
   );
 }
 
-function NumberRow({ number, row, onSave }: { number: { id: string; number: string; name: string }; row: any; onSave: (p: any) => Promise<void> }) {
+function NumberRow({
+  number,
+  row,
+  businessVoiceId,
+  onSave,
+}: {
+  number: { id: string; number: string; name: string };
+  row: any;
+  businessVoiceId: string | null;
+  onSave: (p: any) => Promise<void>;
+}) {
   const [name, setName] = useState(row?.assistant_name ?? "");
   const [first, setFirst] = useState(row?.custom_first_message ?? "");
   const [prompt, setPrompt] = useState(row?.custom_prompt ?? "");
   const [type, setType] = useState(row?.contractor_type_preset ?? "");
+  const [voiceId, setVoiceId] = useState(businessVoiceId || DEFAULT_VOICE_ID);
   const [saving, setSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   useEffect(() => {
     setName(row?.assistant_name ?? "");
     setFirst(row?.custom_first_message ?? "");
     setPrompt(row?.custom_prompt ?? "");
     setType(row?.contractor_type_preset ?? "");
-  }, [row]);
+    setVoiceId(businessVoiceId || DEFAULT_VOICE_ID);
+  }, [row, businessVoiceId]);
+
+  const selectedVoice = getVoice(voiceId);
+
+  const playPreview = async () => {
+    setPreviewing(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Sign in again to preview voices.");
+      const response = await fetch("/api/mobile/voice-preview", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          voiceId,
+          text: `Thanks for calling. My name is ${selectedVoice.label}, and I can take the details so the team can follow up quickly.`,
+        }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error ?? "Voice preview failed");
+      const audio = new Audio(`data:${body.mimeType};base64,${body.audioBase64}`);
+      await audio.play();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Voice preview failed");
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
   return (
     <Card className="space-y-3 p-4">
       <div className="flex items-center justify-between gap-2">
@@ -479,6 +530,26 @@ function NumberRow({ number, row, onSave }: { number: { id: string; number: stri
             {CONTRACTOR_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
           </SelectContent>
         </Select>
+      </div>
+      <div>
+        <Label className="text-xs">Voice</Label>
+        <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+          <Select value={voiceId} onValueChange={setVoiceId}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {VOICE_OPTIONS.map((voice) => (
+                <SelectItem key={voice.id} value={voice.id}>
+                  {voice.label} - {voice.description}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button type="button" variant="outline" onClick={playPreview} disabled={previewing}>
+            {previewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            Preview
+          </Button>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">{selectedVoice.label}: {selectedVoice.description}</p>
       </div>
       <div>
         <Label className="text-xs">Agent name callers hear</Label>
@@ -515,7 +586,7 @@ function NumberRow({ number, row, onSave }: { number: { id: string; number: stri
         onClick={async () => {
           setSaving(true);
           try {
-            await onSave({ assistantName: name, firstMessage: first, systemPrompt: prompt, contractorType: type || undefined });
+            await onSave({ assistantName: name, firstMessage: first, systemPrompt: prompt, contractorType: type || undefined, voiceId });
           } finally { setSaving(false); }
         }}
       >

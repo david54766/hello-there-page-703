@@ -360,7 +360,7 @@ function PlatformAdmin() {
                   <TableHead className="text-right">Leads</TableHead>
                   <TableHead className="text-right">Recovered</TableHead>
                   <TableHead className="text-right">Revenue</TableHead>
-                  <TableHead>Vapi</TableHead>
+                  <TableHead>Assistant number</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
               </TableHeader>
