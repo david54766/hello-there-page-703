@@ -11,7 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { upsertTeamMember, deleteTeamMember } from "@/lib/dispatch.functions";
-import { Plus, Trash2, Edit3, Shield, Headphones, DollarSign, Users, Wrench } from "lucide-react";
+import { inviteTeamMemberLogin } from "@/lib/team-invites.functions";
+import { loadViewerAccess, type ViewerAccess } from "@/lib/viewer-access";
+import { Plus, Trash2, Edit3, Shield, Headphones, DollarSign, Users, Wrench, MailPlus, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/team")({ component: Team });
@@ -21,6 +23,7 @@ type Member = {
   name: string;
   phone: string | null;
   email: string | null;
+  user_id: string | null;
   role: "all" | "emergency" | "office" | "sales" | "service";
   active: boolean;
 };
@@ -37,10 +40,12 @@ const roleLabel = {
 function Team() {
   const { user } = useAuth();
   const [bizId, setBizId] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<ViewerAccess | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [editing, setEditing] = useState<Partial<Member> | null>(null);
   const upsertFn = useServerFn(upsertTeamMember);
   const delFn = useServerFn(deleteTeamMember);
+  const inviteFn = useServerFn(inviteTeamMemberLogin);
 
   async function load(b: string) {
     const { data } = await supabase.from("team_members").select("*").eq("business_id", b).order("created_at");
@@ -49,12 +54,17 @@ function Team() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("businesses").select("id").eq("owner_id", user.id).maybeSingle().then(({ data }) => {
-      if (!data) return;
-      setBizId(data.id);
-      load(data.id);
-    });
+    loadViewerAccess(supabase, user.id)
+      .then((access) => {
+        setViewer(access);
+        if (!access?.businessId) return;
+        setBizId(access.businessId);
+        load(access.businessId);
+      })
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Could not load team access"));
   }, [user]);
+
+  const canManageTeam = !!viewer?.canManageTenant;
 
   async function save() {
     if (!editing || !bizId) return;
@@ -80,19 +90,47 @@ function Team() {
     catch (e: any) { toast.error(e.message); }
   }
 
+  async function invite(member: Member) {
+    if (!member.email) {
+      toast.error("Add an email before inviting this team member.");
+      return;
+    }
+    try {
+      const result = await inviteFn({ data: { teamMemberId: member.id } });
+      if (result.alreadyLinked) {
+        toast.success("This team member already has login access.");
+        return;
+      }
+      if (result.emailSent) {
+        toast.success(`Invite sent to ${member.email}`);
+        return;
+      }
+      if (result.inviteUrl) {
+        await navigator.clipboard?.writeText(result.inviteUrl).catch(() => undefined);
+        toast.success("Invite link created and copied.");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send invite");
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Team & dispatch</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Leads route round-robin to active members in each role.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {canManageTeam ? "Leads route round-robin to active members in each role." : "Your team's routing list. Only admins can make changes."}
+          </p>
         </div>
         <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditing({ role: "office", active: true })}>
-              <Plus className="h-4 w-4" /> Add
-            </Button>
-          </DialogTrigger>
+          {canManageTeam && (
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditing({ role: "office", active: true })}>
+                <Plus className="h-4 w-4" /> Add
+              </Button>
+            </DialogTrigger>
+          )}
           <DialogContent>
             <DialogHeader><DialogTitle>{editing?.id ? "Edit member" : "Add team member"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
@@ -145,8 +183,21 @@ function Team() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => setEditing(m)}><Edit3 className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(m.id)}><Trash2 className="h-4 w-4" /></Button>
+                  {canManageTeam ? (
+                    <>
+                      {!m.user_id && (
+                        <Button variant="ghost" size="icon" onClick={() => invite(m)} title="Invite login">
+                          <MailPlus className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" onClick={() => setEditing(m)}><Edit3 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => remove(m.id)}><Trash2 className="h-4 w-4" /></Button>
+                    </>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+                      <Lock className="h-3 w-3" /> Read only
+                    </span>
+                  )}
                 </div>
               </Card>
             );

@@ -23,6 +23,27 @@ data class AuthErrorResponse(
 data class SupabaseUser(val id: String, val email: String? = null)
 
 @Serializable
+data class BusinessMember(
+    @SerialName("business_id") val businessId: String
+)
+
+@Serializable
+data class UserRoleRecord(
+    @SerialName("business_id") val businessId: String,
+    val role: String
+)
+
+data class ViewerProfile(
+    val businessId: String,
+    val role: String,
+    val teamMember: TeamMember? = null
+) {
+    val isAgent: Boolean get() = role == "agent"
+    val canManageTenant: Boolean get() = role == "admin" || role == "staff"
+    val teamMemberId: String? get() = teamMember?.id
+}
+
+@Serializable
 data class CallRecord(
     val id: String,
     @SerialName("business_id") val businessId: String? = null,
@@ -189,6 +210,7 @@ data class BusinessUpdateBody(
 data class TeamMember(
     val id: String? = null,
     @SerialName("business_id") val businessId: String? = null,
+    @SerialName("user_id") val userId: String? = null,
     val name: String,
     val phone: String? = null,
     val email: String? = null,

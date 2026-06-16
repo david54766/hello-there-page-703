@@ -16,6 +16,7 @@ import ai.easyfill.callrecover.data.SessionStore
 import ai.easyfill.callrecover.data.SetupScanResult
 import ai.easyfill.callrecover.data.SmsMessage
 import ai.easyfill.callrecover.data.TeamMember
+import ai.easyfill.callrecover.data.ViewerProfile
 import ai.easyfill.callrecover.ui.theme.CallRecoverTheme
 import android.Manifest
 import android.content.ClipData
@@ -82,6 +83,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SettingsPhone
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Tune
@@ -283,6 +285,7 @@ class MainActivity : ComponentActivity() {
 
 class CallRecoverViewModel(private val api: CallRecoverApi, private val store: SessionStore) : ViewModel() {
     var isSignedIn by mutableStateOf(store.accessToken != null)
+    var viewer by mutableStateOf<ViewerProfile?>(null)
     var business by mutableStateOf<BusinessProfile?>(null)
     var calls by mutableStateOf<List<CallRecord>>(emptyList())
     var selectedCall by mutableStateOf<CallRecord?>(null)
@@ -301,6 +304,18 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
     var loadWarnings by mutableStateOf<List<String>>(emptyList())
     var pushTokenPreview by mutableStateOf<String?>(null)
     var isLoading by mutableStateOf(false)
+
+    val isAgent: Boolean
+        get() = viewer?.isAgent == true
+
+    val canManageTenant: Boolean
+        get() = viewer?.canManageTenant == true
+
+    val agentTeamMember: TeamMember?
+        get() = viewer?.teamMember ?: teamMembers.firstOrNull { it.id == viewer?.teamMemberId }
+
+    val assignableTeamMembers: List<TeamMember>
+        get() = if (isAgent) agentTeamMember?.let { listOf(it) } ?: emptyList() else teamMembers
 
     val recoveredCount: Int
         get() = calls.count { it.isRecoveredLead() }
@@ -349,16 +364,33 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
         }
 
         loadWarnings = emptyList()
+        viewer = runCatching { withTimeout(15_000) { api.viewerProfile() } }
+            .onFailure {
+                if ((it.message ?: "").contains("Session expired", ignoreCase = true)) {
+                    isSignedIn = false
+                    error = "Please sign in again to refresh your session."
+                } else if (it !is CancellationException) {
+                    loadWarnings = loadWarnings + it.toLoadWarning("Access")
+                }
+            }
+            .getOrNull()
         coroutineScope {
-            launch { loadSection("Business", { api.businessProfile() }) { business = it } }
+            launch { loadSection("Business", { api.businessProfile(viewer?.businessId) }) { business = it } }
             launch {
                 loadSection("Calls", { api.recentCalls() }) { loadedCalls ->
                     calls = loadedCalls
                     selectedCall = loadedCalls.firstOrNull { !it.isArchivedLead() }
                 }
             }
-            launch { loadSection("Scripts", { api.scriptTemplates() }) { scripts = it; selectedScript = it.firstOrNull() } }
-            launch { loadSection("Agents", { api.assistantNumbers() }) { assistants = it; selectedAssistant = it.firstOrNull() } }
+            if (!isAgent) {
+                launch { loadSection("Scripts", { api.scriptTemplates() }) { scripts = it; selectedScript = it.firstOrNull() } }
+                launch { loadSection("Agents", { api.assistantNumbers() }) { assistants = it; selectedAssistant = it.firstOrNull() } }
+            } else {
+                scripts = emptyList()
+                selectedScript = null
+                assistants = emptyList()
+                selectedAssistant = null
+            }
             launch { loadSection("Team", { api.teamMembers() }) { teamMembers = it } }
             launch { loadSection("Appointments", { api.appointments() }) { appointments = it } }
             launch { loadSection("Blackouts", { api.blackouts() }) { blackouts = it } }
@@ -440,6 +472,7 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
     }
 
     suspend fun saveAssistant(row: AssistantNumber, name: String, first: String, prompt: String) = run {
+        if (!canManageTenant) error("Team member logins cannot edit the AI agent.")
         api.updateAssistant(row, name, first, bookingAwarePrompt(prompt, business))
         api.syncVapiAgent(forceRefresh = false)
         assistants = api.assistantNumbers()
@@ -447,6 +480,7 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
     }
 
     suspend fun saveScript(row: ScriptTemplate, label: String, body: String, isDefault: Boolean) = run {
+        if (!canManageTenant) error("Team member logins cannot edit scripts.")
         api.updateScript(row, label, bookingAwarePrompt(body, business), isDefault)
         api.syncVapiAgent(forceRefresh = true)
         scripts = api.scriptTemplates()
@@ -454,8 +488,9 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
     }
 
     suspend fun saveBusiness(next: BusinessProfile) = run {
+        if (!canManageTenant) error("Team member logins cannot edit business settings.")
         api.updateBusiness(next)
-        business = api.businessProfile()
+        business = api.businessProfile(viewer?.businessId)
         scripts = api.scriptTemplates()
         selectedScript = pickScriptForBusiness(scripts, business, selectedScript?.id)
         business?.takeIf { !it.schedulingEnabled }?.let { currentBusiness ->
@@ -479,10 +514,11 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
     }
 
     suspend fun saveObservedHolidays(next: List<HolidaySelection>) = run {
+        if (!canManageTenant) error("Team member logins cannot edit holiday closures.")
         val current = business ?: return@run
         business = current.copy(observedHolidays = next)
         api.updateBusiness(current.copy(observedHolidays = next))
-        business = api.businessProfile() ?: business
+        business = api.businessProfile(viewer?.businessId) ?: business
 
         api.blackouts()
             .filter { it.reason?.startsWith("Holiday: ") == true }
@@ -521,6 +557,7 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
     }
 
     suspend fun saveTeamMember(member: TeamMember) = run {
+        if (!canManageTenant) error("Team member logins cannot edit the team.")
         val businessId = business?.id ?: return@run
         api.upsertTeamMember(member, businessId)
         teamMembers = api.teamMembers()
@@ -536,10 +573,15 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
         notes: String
     ) = run {
         val businessId = business?.id ?: return@run
+        val safeTeamMemberId = if (isAgent) {
+            agentTeamMember?.id ?: error("Your team login is not linked to a team member yet.")
+        } else {
+            teamMemberId
+        }
         api.createAppointment(
             AppointmentBody(
                 businessId = businessId,
-                teamMemberId = teamMemberId,
+                teamMemberId = safeTeamMemberId,
                 scheduledFor = scheduledFor,
                 durationMinutes = durationMinutes,
                 customerName = customerName.ifBlank { null },
@@ -558,10 +600,15 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
 
     suspend fun createBlackout(teamMemberId: String?, startAt: String, endAt: String, reason: String) = run {
         val businessId = business?.id ?: return@run
+        val safeTeamMemberId = if (isAgent) {
+            agentTeamMember?.id ?: error("Your team login is not linked to a team member yet.")
+        } else {
+            teamMemberId
+        }
         api.createBlackout(
             ScheduleBlackoutBody(
                 businessId = businessId,
-                teamMemberId = teamMemberId,
+                teamMemberId = safeTeamMemberId,
                 startAt = startAt,
                 endAt = endAt,
                 reason = reason.ifBlank { null }
@@ -612,6 +659,7 @@ class CallRecoverViewModel(private val api: CallRecoverApi, private val store: S
     fun signOut() {
         api.signOut()
         isSignedIn = false
+        viewer = null
         business = null
         calls = emptyList()
         selectedCall = null
@@ -891,8 +939,8 @@ fun HomeScreen(vm: CallRecoverViewModel) {
                 NavigationBarItem(
                     selected = tab == 4,
                     onClick = { tab = 4 },
-                    icon = { Icon(Icons.Default.MoreHoriz, null) },
-                    label = { Text("More", fontWeight = if (tab == 4) FontWeight.Bold else FontWeight.SemiBold) },
+                    icon = { Icon(if (vm.isAgent) Icons.Default.Settings else Icons.Default.MoreHoriz, null) },
+                    label = { Text(if (vm.isAgent) "Settings" else "More", fontWeight = if (tab == 4) FontWeight.Bold else FontWeight.SemiBold) },
                     colors = premiumNavColors()
                 )
             }
@@ -911,7 +959,7 @@ fun HomeScreen(vm: CallRecoverViewModel) {
                     1 -> InboxScreen(vm)
                     2 -> BookingScreen(vm)
                     3 -> TeamScreen(vm)
-                    4 -> MoreScreen(vm)
+                    4 -> if (vm.isAgent) AgentSettingsScreen(vm) else MoreScreen(vm)
                 }
             }
         }
@@ -920,9 +968,54 @@ fun HomeScreen(vm: CallRecoverViewModel) {
 
 @Composable
 fun DashboardScreen(vm: CallRecoverViewModel) {
+    if (vm.viewer == null) {
+        EmptyCard("Loading access", "Your CallRecover workspace is syncing.")
+        return
+    }
+    if (vm.isAgent) {
+        AgentDashboardScreen(vm)
+        return
+    }
     DashboardActionsCard(vm)
     Spacer(Modifier.height(12.dp))
     RecoveredRevenueCard(vm)
+}
+
+@Composable
+fun AgentDashboardScreen(vm: CallRecoverViewModel) {
+    val activeCalls = vm.calls.filterNot { it.isArchivedLead() }
+    val responseRate = if (vm.calls.isEmpty()) 0 else ((vm.recoveredCount.toFloat() / vm.calls.size.toFloat()) * 100).toInt()
+
+    SectionHeader("Assigned calls", vm.agentTeamMember?.name ?: "Team member")
+    Spacer(Modifier.height(10.dp))
+    AppCard {
+        Text("Agent dashboard", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink)
+        Text("Your assigned recovered calls and follow-up work.", color = Slate)
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            MetricTile("${vm.recoveredCount}", "recovered", SoftIndigo, Modifier.weight(1f))
+            MetricTile("${responseRate}%", "response", SoftTeal, Modifier.weight(1f))
+            MetricTile("${vm.openLeadCount}", "open", SoftSky, Modifier.weight(1f))
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+    AppCard {
+        Text("Live activity", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink)
+        Spacer(Modifier.height(8.dp))
+        if (activeCalls.isEmpty()) {
+            Text("No assigned leads yet.", color = Slate)
+        } else {
+            activeCalls.take(5).forEachIndexed { index, call ->
+                Text(call.callerName ?: call.callerNumber ?: "Unknown caller", fontWeight = FontWeight.SemiBold, color = Ink)
+                Text(call.aiSummaryShort ?: call.aiSummary ?: "Lead details will appear here.", color = Slate, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (index != activeCalls.take(5).lastIndex) {
+                    Spacer(Modifier.height(8.dp))
+                    HorizontalDivider(color = PanelStroke)
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -2388,31 +2481,33 @@ fun BookingScreen(vm: CallRecoverViewModel) {
         }
     }
     Spacer(Modifier.height(12.dp))
-    AppCard {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.weight(1f)) {
-                Text("Booking availability", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink)
-                Text("Control whether CallRecover can set appointments.", color = Slate)
-            }
-            Switch(
-                checked = business.schedulingEnabled,
-                colors = appSwitchColors(),
-                onCheckedChange = { enabled ->
-                    scope.launch { vm.saveBusiness(business.copy(schedulingEnabled = enabled)) }
+    if (vm.canManageTenant) {
+        AppCard {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)) {
+                    Text("Booking availability", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink)
+                    Text("Control whether CallRecover can set appointments.", color = Slate)
                 }
+                Switch(
+                    checked = business.schedulingEnabled,
+                    colors = appSwitchColors(),
+                    onCheckedChange = { enabled ->
+                        scope.launch { vm.saveBusiness(business.copy(schedulingEnabled = enabled)) }
+                    }
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Text("Booking link", fontWeight = FontWeight.SemiBold, color = Ink)
+            Text(
+                "Cal.com and Calendly links work now. Provider-native booking links are coming soon and will appear here once connected.",
+                color = Slate,
+                style = MaterialTheme.typography.bodySmall
             )
+            Spacer(Modifier.height(6.dp))
+            Text(bookingLinkDisplay(business), color = Slate)
         }
         Spacer(Modifier.height(12.dp))
-        Text("Booking link", fontWeight = FontWeight.SemiBold, color = Ink)
-        Text(
-            "Cal.com and Calendly links work now. Provider-native booking links are coming soon and will appear here once connected.",
-            color = Slate,
-            style = MaterialTheme.typography.bodySmall
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(bookingLinkDisplay(business), color = Slate)
     }
-    Spacer(Modifier.height(12.dp))
     AppCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -2436,7 +2531,7 @@ fun BookingScreen(vm: CallRecoverViewModel) {
         }
     }
     Spacer(Modifier.height(12.dp))
-    HolidayClosuresSection(vm)
+    if (vm.canManageTenant) HolidayClosuresSection(vm)
 
     if (showAppointment) {
         AppointmentDialog(vm = vm, onDismiss = { showAppointment = false })
@@ -2632,7 +2727,8 @@ fun HolidayClosuresControls(vm: CallRecoverViewModel) {
 @Composable
 fun AppointmentDialog(vm: CallRecoverViewModel, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var selectedTeamId by remember { mutableStateOf<String?>(vm.teamMembers.firstOrNull { it.active }?.id ?: vm.teamMembers.firstOrNull()?.id) }
+    val assignableTeam = vm.assignableTeamMembers
+    var selectedTeamId by remember { mutableStateOf<String?>(assignableTeam.firstOrNull { it.active }?.id ?: assignableTeam.firstOrNull()?.id) }
     var scheduledFor by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("60") }
     var customerName by remember { mutableStateOf("") }
@@ -2645,7 +2741,7 @@ fun AppointmentDialog(vm: CallRecoverViewModel, onDismiss: () -> Unit) {
         subtitle = "Create a booking for a recovered lead or walk-in customer.",
         onDismiss = onDismiss
     ) {
-        TeamPicker(vm.teamMembers, selectedTeamId) { selectedTeamId = it }
+        TeamPicker(assignableTeam, selectedTeamId) { selectedTeamId = it }
         Spacer(Modifier.height(10.dp))
         DateTimePickerField(scheduledFor, { scheduledFor = it }, "Appointment time")
         Spacer(Modifier.height(10.dp))
@@ -2696,7 +2792,8 @@ fun AppointmentDialog(vm: CallRecoverViewModel, onDismiss: () -> Unit) {
 @Composable
 fun BlackoutDialog(vm: CallRecoverViewModel, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var blackoutTeamId by remember { mutableStateOf<String?>(null) }
+    val assignableTeam = vm.assignableTeamMembers
+    var blackoutTeamId by remember { mutableStateOf<String?>(if (vm.isAgent) assignableTeam.firstOrNull()?.id else null) }
     var blackoutAllDay by remember { mutableStateOf(false) }
     var blackoutDate by remember { mutableStateOf("") }
     var blackoutStart by remember { mutableStateOf("") }
@@ -2708,7 +2805,7 @@ fun BlackoutDialog(vm: CallRecoverViewModel, onDismiss: () -> Unit) {
         subtitle = "Choose the whole business or one agent. Pick start and end times for a partial-day block.",
         onDismiss = onDismiss
     ) {
-        TeamPicker(vm.teamMembers, blackoutTeamId, allowWholeBusiness = true) { blackoutTeamId = it }
+        TeamPicker(assignableTeam, blackoutTeamId, allowWholeBusiness = vm.canManageTenant) { blackoutTeamId = it }
         Spacer(Modifier.height(10.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -2972,6 +3069,7 @@ fun TeamScreen(vm: CallRecoverViewModel) {
     var editing by remember { mutableStateOf<TeamMember?>(null) }
     var adding by remember { mutableStateOf(false) }
     val members = vm.teamMembers.sortedWith(compareByDescending<TeamMember> { it.active }.thenBy { it.name })
+    val canEditTeam = vm.canManageTenant
 
     SectionHeader("Team routing", "${vm.teamMembers.count { it.active }} active")
     Spacer(Modifier.height(10.dp))
@@ -2981,10 +3079,14 @@ fun TeamScreen(vm: CallRecoverViewModel) {
                 Text("Assigned members", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink)
                 Text("People who receive recovered lead routing.", color = Slate)
             }
-            Button(onClick = { adding = true }, shape = RoundedCornerShape(16.dp)) {
-                Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Add")
+            if (canEditTeam) {
+                Button(onClick = { adding = true }, shape = RoundedCornerShape(16.dp)) {
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Add")
+                }
+            } else {
+                StatusChip("read only")
             }
         }
         Spacer(Modifier.height(10.dp))
@@ -2997,7 +3099,7 @@ fun TeamScreen(vm: CallRecoverViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .clickable { editing = member }
+                        .then(if (canEditTeam) Modifier.clickable { editing = member } else Modifier)
                         .padding(vertical = 10.dp)
                 ) {
                     Box(
@@ -3020,11 +3122,64 @@ fun TeamScreen(vm: CallRecoverViewModel) {
         }
     }
 
-    if (adding) {
+    if (canEditTeam && adding) {
         TeamMemberDialog(vm = vm, member = null, onDismiss = { adding = false })
     }
-    editing?.let { member ->
+    if (canEditTeam) editing?.let { member ->
         TeamMemberDialog(vm = vm, member = member, onDismiss = { editing = null })
+    }
+}
+
+@Composable
+fun AgentSettingsScreen(vm: CallRecoverViewModel) {
+    val member = vm.agentTeamMember
+    val business = vm.business
+
+    SectionHeader("Settings", "Team member access")
+    Spacer(Modifier.height(10.dp))
+    AppCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(46.dp)
+                    .background(CompleteSurface, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Group, null, tint = CompleteInk)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Assigned team login", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink)
+                Text("Limited to assigned leads, scheduling, and read-only team details.", color = Slate)
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        DetailLine("Business", business?.businessName ?: "Loading")
+        DetailLine("Role", "Team Member")
+        DetailLine("Team profile", member?.name ?: "Not linked yet")
+        DetailLine("Routing", member?.role?.let(::roleDisplay) ?: "Not assigned")
+    }
+    Spacer(Modifier.height(12.dp))
+    AppCard {
+        Text("Support", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink)
+        Spacer(Modifier.height(8.dp))
+        Text("support@callrecover.net", color = Slate)
+        Text("(701) 203-1073", color = Slate)
+    }
+}
+
+@Composable
+fun DetailLine(label: String, value: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp)
+    ) {
+        Text(label, color = Slate, style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.width(10.dp))
+        Text(value, color = Ink, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

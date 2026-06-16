@@ -26,6 +26,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as AccountDeletionRouteImport } from './routes/account-deletion'
+import { Route as AcceptTeamInviteRouteImport } from './routes/accept-team-invite'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVapiRouteImport } from './routes/_authenticated/vapi'
@@ -137,6 +138,11 @@ const ComplianceRoute = ComplianceRouteImport.update({
 const AccountDeletionRoute = AccountDeletionRouteImport.update({
   id: '/account-deletion',
   path: '/account-deletion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcceptTeamInviteRoute = AcceptTeamInviteRouteImport.update({
+  id: '/accept-team-invite',
+  path: '/accept-team-invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -279,6 +285,7 @@ const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/accept-team-invite': typeof AcceptTeamInviteRoute
   '/account-deletion': typeof AccountDeletionRoute
   '/compliance': typeof ComplianceRoute
   '/cookies': typeof CookiesRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/accept-team-invite': typeof AcceptTeamInviteRoute
   '/account-deletion': typeof AccountDeletionRoute
   '/compliance': typeof ComplianceRoute
   '/cookies': typeof CookiesRoute
@@ -371,6 +379,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/accept-team-invite': typeof AcceptTeamInviteRoute
   '/account-deletion': typeof AccountDeletionRoute
   '/compliance': typeof ComplianceRoute
   '/cookies': typeof CookiesRoute
@@ -418,6 +427,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accept-team-invite'
     | '/account-deletion'
     | '/compliance'
     | '/cookies'
@@ -463,6 +473,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/accept-team-invite'
     | '/account-deletion'
     | '/compliance'
     | '/cookies'
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/accept-team-invite'
     | '/account-deletion'
     | '/compliance'
     | '/cookies'
@@ -556,6 +568,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AcceptTeamInviteRoute: typeof AcceptTeamInviteRoute
   AccountDeletionRoute: typeof AccountDeletionRoute
   ComplianceRoute: typeof ComplianceRoute
   CookiesRoute: typeof CookiesRoute
@@ -710,6 +723,13 @@ declare module '@tanstack/react-router' {
       path: '/account-deletion'
       fullPath: '/account-deletion'
       preLoaderRoute: typeof AccountDeletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accept-team-invite': {
+      id: '/accept-team-invite'
+      path: '/accept-team-invite'
+      fullPath: '/accept-team-invite'
+      preLoaderRoute: typeof AcceptTeamInviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -935,6 +955,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AcceptTeamInviteRoute: AcceptTeamInviteRoute,
   AccountDeletionRoute: AccountDeletionRoute,
   ComplianceRoute: ComplianceRoute,
   CookiesRoute: CookiesRoute,

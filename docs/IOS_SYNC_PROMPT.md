@@ -156,3 +156,30 @@ Sync these recent Android/web changes into iOS:
 - `src/routes/api/mobile/setup-scan.ts`
 - `src/routes/api/mobile/sync-vapi-agent.ts`
 - `src/routes/api/public/password-reset.ts`
+
+## Role-Based Team Member Mode To Mirror
+
+Implement this in the same iOS app, not a separate app.
+
+- Add support for user role `agent` in addition to `admin` and `staff`.
+- On login, load viewer access from:
+  - `business_members` by current `user_id`
+  - `user_roles` by current `user_id` and accessible `business_id`
+  - `team_members` by current `user_id`
+- Pick role priority: `admin`, then `staff`, then `agent`.
+- Admin/staff experience remains the normal full tenant app.
+- Agent/team-member experience is restricted:
+  - Tabs visible: Dashboard/Home, Leads, Booking/Scheduling, Team, Settings.
+  - Team tab is read-only.
+  - No AI Agent, Scripts, Revenue, Billing, Admin, account assistant editing, or tenant business-profile editing.
+  - Dashboard shows only assigned recovered calls, response rate, open leads, and live activity.
+  - Leads list should only show calls assigned to that team member through `lead_assignments`.
+  - Agents can update their assigned lead status/contact/resolved state only.
+  - Agents can create appointments for themselves/assigned leads and create their own blackout windows.
+  - Agents cannot create whole-business blackout dates or change booking availability globally.
+- If an agent is not linked to a `team_members.user_id`, show a clean locked/settings message explaining that the tenant admin needs to link their team member account.
+- Keep customer direct SMS reply disabled; use status-update actions only.
+- Use the Android files as the behavioral reference:
+  - `android/app/src/main/java/ai/easyfill/callrecover/data/Models.kt`
+  - `android/app/src/main/java/ai/easyfill/callrecover/data/CallRecoverApi.kt`
+  - `android/app/src/main/java/ai/easyfill/callrecover/MainActivity.kt`

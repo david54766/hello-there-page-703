@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { LeadDrawer } from "@/components/lead-drawer";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { sendLeadStatusText } from "@/lib/leads.functions";
+import { loadViewerAccess, type ViewerAccess } from "@/lib/viewer-access";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({ component: Dashboard });
 
@@ -75,6 +76,7 @@ function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [business, setBusiness] = useState<Business | null>(null);
+  const [viewer, setViewer] = useState<ViewerAccess | null>(null);
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Call | null>(null);
@@ -83,25 +85,25 @@ function Dashboard() {
   const loadDashboard = useCallback(async (showSpinner = false) => {
     if (!user) return;
     if (showSpinner) setLoading(true);
-    const { data: biz, error: bizError } = await supabase
-      .from("businesses")
-      .select("id, business_name, avg_job_value, onboarding_complete")
-      .eq("owner_id", user.id)
-      .maybeSingle();
-    if (bizError) {
-      console.warn("Dashboard business refresh failed", bizError);
+    let access: ViewerAccess | null = null;
+    try {
+      access = await loadViewerAccess(supabase, user.id);
+      setViewer(access);
+    } catch (error) {
+      console.warn("Dashboard access refresh failed", error);
       setLoading(false);
       return;
     }
-    if (!biz) {
+    if (!access?.business) {
       setBusiness(null);
       setCalls([]);
       setLoading(false);
       return;
     }
 
+    const biz = access.business as Business;
     setBusiness(biz);
-    if (!biz.onboarding_complete) {
+    if (!biz.onboarding_complete && access.canManageTenant) {
       navigate({ to: "/onboarding" });
       return;
     }
@@ -219,6 +221,12 @@ function Dashboard() {
   const openLeads = activeCalls.filter((c) => c.lead_status === "open").length;
   const revenue = recovered * (business?.avg_job_value ?? 500);
   const responseRate = calls.length ? Math.round((recovered / calls.length) * 100) : 0;
+  const metricCards = [
+    { icon: PhoneCall, label: "Recovered Calls", value: recovered },
+    ...(viewer?.isAgent ? [] : [{ icon: TrendingUp, label: "Revenue Saved", value: `$${revenue.toLocaleString()}` }]),
+    { icon: Activity, label: "Response Rate", value: `${responseRate}%` },
+    { icon: Inbox, label: "Open Leads", value: openLeads },
+  ];
 
   const sorted = [...activeCalls].sort((a, b) => {
     if (a.priority !== b.priority) return a.priority === "high" ? -1 : 1;
@@ -233,18 +241,17 @@ function Dashboard() {
       <div className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Here's what CallRecover caught for {business?.business_name}.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {viewer?.isAgent
+              ? `Your assigned CallRecover leads for ${business?.business_name}.`
+              : `Here's what CallRecover caught for ${business?.business_name}.`}
+          </p>
         </div>
         <NotificationsBell businessId={business?.id ?? null} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {[
-          { icon: PhoneCall, label: "Recovered Calls", value: recovered },
-          { icon: TrendingUp, label: "Revenue Saved", value: `$${revenue.toLocaleString()}` },
-          { icon: Activity, label: "Response Rate", value: `${responseRate}%` },
-          { icon: Inbox, label: "Open Leads", value: openLeads },
-        ].map((s, i) => (
+      <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${viewer?.isAgent ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
+        {metricCards.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <Card className="p-4 shadow-[var(--shadow-card)] sm:p-5">
               <div className="flex items-center justify-between">

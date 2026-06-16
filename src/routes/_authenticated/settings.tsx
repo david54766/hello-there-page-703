@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { WEB_FORM_SMS_CONSENT_TEXT } from "@/lib/sms-consent-copy";
 import { DEFAULT_VOICE_ID, VOICE_OPTIONS, getVoice } from "@/lib/voices";
+import { loadViewerAccess, type ViewerAccess } from "@/lib/viewer-access";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: Settings });
 
@@ -57,6 +58,7 @@ type Biz = {
 function Settings() {
   const { user } = useAuth();
   const scanWebsite = useServerFn(scanSetupWebsite);
+  const [viewer, setViewer] = useState<ViewerAccess | null>(null);
   const [biz, setBiz] = useState<Biz | null>(null);
   const [saving, setSaving] = useState(false);
   const [scanningWebsite, setScanningWebsite] = useState(false);
@@ -89,11 +91,10 @@ function Settings() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("businesses")
-      .select("id, business_name, contractor_type, owner_phone, business_phone, avg_job_value, notify_sms, notify_email, notify_dashboard, notify_email_address, auto_send_ai_replies, sms_auto_response_mode, scheduling_provider, hcp_api_key, jobber_refresh_token, agent_voice_id, agent_prompt_override, address, website, website_blurb, booking_url, callback_form_url, sms_consent_text, cal_url, calendly_url, scheduling_enabled, observed_holidays")
-      .eq("owner_id", user.id).maybeSingle().then(({ data }) => {
-        if (!data) return;
-        const d = data as unknown as Biz;
+    loadViewerAccess(supabase, user.id).then((access) => {
+      setViewer(access);
+      if (!access?.business) return;
+      const d = access.business as unknown as Biz;
         setBiz({
           ...d,
           sms_auto_response_mode: d.sms_auto_response_mode ?? "off",
@@ -269,7 +270,8 @@ function Settings() {
     }
   }
 
-  if (!biz) return <div className="p-10 text-muted-foreground">Loading…</div>;
+  if (!biz) return <div className="p-10 text-muted-foreground">Loading...</div>;
+  if (viewer?.isAgent) return <AgentSettingsView userEmail={user?.email ?? ""} viewer={viewer} />;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8 sm:px-6 sm:py-10 pb-24 md:pb-10">
@@ -544,6 +546,48 @@ function Settings() {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
       </div>
+    </div>
+  );
+}
+
+function AgentSettingsView({ userEmail, viewer }: { userEmail: string; viewer: ViewerAccess }) {
+  return (
+    <div className="mx-auto max-w-2xl space-y-6 px-4 py-8 pb-24 sm:px-6 sm:py-10 md:pb-10">
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Your team-member access for assigned CallRecover work.</p>
+      </div>
+
+      <Card className="space-y-4 p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Account access</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{viewer.business?.business_name ?? "CallRecover workspace"}</p>
+          </div>
+          <Badge variant="secondary">Team member</Badge>
+        </div>
+        <div className="grid gap-3 text-sm sm:grid-cols-2">
+          <div className="rounded-md border border-border p-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Signed in as</div>
+            <div className="mt-1 truncate font-medium">{userEmail || "Signed-in user"}</div>
+          </div>
+          <div className="rounded-md border border-border p-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Assigned member</div>
+            <div className="mt-1 truncate font-medium">{viewer.teamMember?.name ?? "Linked team member"}</div>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Admins manage AI agent setup, scripts, billing, revenue, and tenant settings. This login is limited to assigned leads, scheduling, and read-only team visibility.
+        </p>
+      </Card>
+
+      <Card className="space-y-3 p-6">
+        <h2 className="text-lg font-semibold">Support</h2>
+        <div className="space-y-1 text-sm">
+          <p>Email: <a className="font-medium text-primary" href="mailto:support@callrecover.net">support@callrecover.net</a></p>
+          <p>Phone: <a className="font-medium text-primary" href="tel:+17012031073">(701) 203-1073</a></p>
+        </div>
+      </Card>
     </div>
   );
 }

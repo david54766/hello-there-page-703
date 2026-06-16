@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getSchedule, bookAppointment, cancelAppointment, upsertBlackout, deleteBlackout, setSchedulingEnabled, updateBusinessTags } from "@/lib/schedule.functions";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { loadViewerAccess, type ViewerAccess } from "@/lib/viewer-access";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +59,7 @@ function localDayBounds(date: string) {
 }
 
 function SchedulingPage() {
+  const { user } = useAuth();
   const fetchSchedule = useServerFn(getSchedule);
   const book = useServerFn(bookAppointment);
   const cancel = useServerFn(cancelAppointment);
@@ -70,6 +74,7 @@ function SchedulingPage() {
   const [blackouts, setBlackouts] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [business, setBusiness] = useState<any>(null);
+  const [viewer, setViewer] = useState<ViewerAccess | null>(null);
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
 
   const [newAppt, setNewAppt] = useState({ teamMemberId: "", scheduledFor: "", customerName: "", customerPhone: "", service: "", durationMinutes: 60 });
@@ -92,6 +97,11 @@ function SchedulingPage() {
     /* eslint-disable-next-line */
   }, [month]);
 
+  useEffect(() => {
+    if (!user) return;
+    loadViewerAccess(supabase, user.id).then(setViewer).catch(() => setViewer(null));
+  }, [user]);
+
   if (loading) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
 
   const days = eachDayOfInterval({
@@ -99,6 +109,8 @@ function SchedulingPage() {
     end: endOfWeek(endOfMonth(month)),
   });
   const teamById = new Map(team.map((member) => [member.id, member]));
+  const canManageScheduling = viewer?.canManageTenant !== false;
+  const agentTeam = viewer?.isAgent && viewer.teamMemberId ? team.filter((member) => member.id === viewer.teamMemberId) : team;
   const apptsByDay = new Map<string, any[]>();
   appts.forEach((appt) => {
     const key = dayKey(new Date(appt.scheduled_for));
@@ -112,10 +124,16 @@ function SchedulingPage() {
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Scheduling</h1>
           <p className="text-sm text-muted-foreground">Multi-agent calendar with appointments, agent blackouts, and business closures.</p>
         </div>
-        <div className="flex items-center gap-2 rounded-md border border-border p-2">
-          <Switch checked={enabled} onCheckedChange={async (v) => { await setEnabled({ data: { enabled: v } }); setEnabledState(v); toast.success(v ? "Scheduling enabled" : "Scheduling disabled"); }} />
-          <span className="text-xs">Enabled</span>
-        </div>
+        {canManageScheduling ? (
+          <div className="flex items-center gap-2 rounded-md border border-border p-2">
+            <Switch checked={enabled} onCheckedChange={async (v) => { await setEnabled({ data: { enabled: v } }); setEnabledState(v); toast.success(v ? "Scheduling enabled" : "Scheduling disabled"); }} />
+            <span className="text-xs">Enabled</span>
+          </div>
+        ) : (
+          <div className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground">
+            {enabled ? "Scheduling enabled" : "Scheduling disabled"}
+          </div>
+        )}
       </div>
 
       <Card className="overflow-hidden p-0">
@@ -178,6 +196,7 @@ function SchedulingPage() {
         <Card className="p-5 text-sm text-muted-foreground">Scheduling is off. Toggle it on above to manage appointments and blackouts.</Card>
       ) : (
         <>
+          {canManageScheduling && (
           <Card className="space-y-3 p-5">
             <div>
               <div className="text-sm font-semibold">Booking links (<code>{"{book_consult}"}</code>)</div>
@@ -201,12 +220,16 @@ function SchedulingPage() {
 
             */}
           </Card>
+          )}
 
           <div className="flex flex-wrap justify-end gap-2">
             <Button size="sm" onClick={() => setAppointmentOpen(true)}>
               <Plus className="h-3 w-3" /> New appointment
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setBlackoutOpen(true)}>
+            <Button size="sm" variant="outline" onClick={() => {
+              setNewBlack({ ...newBlack, teamMemberId: viewer?.isAgent && viewer.teamMemberId ? viewer.teamMemberId : WHOLE_BUSINESS });
+              setBlackoutOpen(true);
+            }}>
               <Plus className="h-3 w-3" /> Agent blackout
             </Button>
           </div>
@@ -221,9 +244,9 @@ function SchedulingPage() {
                 <div>
                   <Label className="text-xs">Agent</Label>
                   <Select value={newAppt.teamMemberId} onValueChange={(v) => setNewAppt({ ...newAppt, teamMemberId: v })}>
-                    <SelectTrigger><SelectValue placeholder={team.length ? "Pick agent" : "Add team members first"} /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={agentTeam.length ? "Pick agent" : "Add team members first"} /></SelectTrigger>
                     <SelectContent>
-                      {team.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                      {agentTeam.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -312,8 +335,8 @@ function SchedulingPage() {
                   <Select value={newBlack.teamMemberId} onValueChange={(v) => setNewBlack({ ...newBlack, teamMemberId: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={WHOLE_BUSINESS}>Whole business</SelectItem>
-                      {team.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                      {canManageScheduling && <SelectItem value={WHOLE_BUSINESS}>Whole business</SelectItem>}
+                      {agentTeam.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -344,7 +367,9 @@ function SchedulingPage() {
                   const window = newBlack.allDay
                     ? localDayBounds(newBlack.date)
                     : { startAt: new Date(newBlack.startAt).toISOString(), endAt: new Date(newBlack.endAt).toISOString() };
-                  await upBlackout({ data: { teamMemberId: newBlack.teamMemberId === WHOLE_BUSINESS ? null : newBlack.teamMemberId, startAt: window.startAt, endAt: window.endAt, reason: newBlack.reason || undefined } });
+                  const scopedTeamId = viewer?.isAgent ? viewer.teamMemberId : newBlack.teamMemberId === WHOLE_BUSINESS ? null : newBlack.teamMemberId;
+                  if (viewer?.isAgent && !scopedTeamId) { toast.error("Your team login is not linked to a schedulable member yet."); return; }
+                  await upBlackout({ data: { teamMemberId: scopedTeamId, startAt: window.startAt, endAt: window.endAt, reason: newBlack.reason || undefined } });
                   setNewBlack({ teamMemberId: WHOLE_BUSINESS, allDay: false, date: "", startAt: "", endAt: "", reason: "" });
                   setBlackoutOpen(false);
                   await reload(month); toast.success("Blackout added");

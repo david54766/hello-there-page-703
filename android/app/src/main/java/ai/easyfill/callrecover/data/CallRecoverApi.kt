@@ -77,9 +77,44 @@ class CallRecoverApi(private val sessionStore: SessionStore) {
         }.body()
     }
 
-    suspend fun businessProfile(): BusinessProfile? {
+    suspend fun viewerProfile(): ViewerProfile? {
+        val userId = currentUserId() ?: return null
+        val memberships: List<BusinessMember> = supabaseGet("/rest/v1/business_members") {
+            parameter("select", "business_id")
+            parameter("user_id", "eq.$userId")
+        }.body()
+        val businessIds = memberships.map { it.businessId }.distinct()
+        if (businessIds.isEmpty()) return null
+
+        val roles: List<UserRoleRecord> = supabaseGet("/rest/v1/user_roles") {
+            parameter("select", "business_id,role")
+            parameter("user_id", "eq.$userId")
+            parameter("business_id", "in.(${businessIds.joinToString(",")})")
+        }.body()
+        val businessId =
+            roles.firstOrNull { it.role == "admin" }?.businessId
+                ?: roles.firstOrNull { it.role == "staff" }?.businessId
+                ?: roles.firstOrNull { it.role == "agent" }?.businessId
+                ?: businessIds.first()
+        val role = pickRole(roles.filter { it.businessId == businessId }.map { it.role })
+        val linkedTeam: List<TeamMember> = supabaseGet("/rest/v1/team_members") {
+            parameter("select", "id,business_id,user_id,name,phone,email,role,active,color,created_at")
+            parameter("business_id", "eq.$businessId")
+            parameter("user_id", "eq.$userId")
+            parameter("limit", "1")
+        }.body()
+
+        return ViewerProfile(
+            businessId = businessId,
+            role = role,
+            teamMember = linkedTeam.firstOrNull()
+        )
+    }
+
+    suspend fun businessProfile(businessId: String? = null): BusinessProfile? {
         val rows: List<BusinessProfile> = supabaseGet("/rest/v1/businesses") {
             parameter("select", "id,business_name,contractor_type,business_phone,owner_phone,carrier,twilio_number,avg_job_value,onboarding_complete,notify_sms,notify_email,notify_dashboard,notify_email_address,auto_send_ai_replies,sms_auto_response_mode,scheduling_enabled,scheduling_provider,website,website_blurb,address,booking_url,callback_form_url,sms_consent_text,cal_url,calendly_url,agent_voice_id,agent_prompt_override,observed_holidays")
+            businessId?.let { parameter("id", "eq.$it") }
             parameter("limit", "1")
         }.body()
         return rows.firstOrNull()
@@ -172,7 +207,7 @@ class CallRecoverApi(private val sessionStore: SessionStore) {
 
     suspend fun teamMembers(): List<TeamMember> {
         return supabaseGet("/rest/v1/team_members") {
-            parameter("select", "id,business_id,name,phone,email,role,active,color,created_at")
+            parameter("select", "id,business_id,user_id,name,phone,email,role,active,color,created_at")
             parameter("order", "created_at.asc")
         }.body()
     }
@@ -430,6 +465,24 @@ class CallRecoverApi(private val sessionStore: SessionStore) {
             val exp = Regex("\"exp\"\\s*:\\s*(\\d+)").find(jsonPayload)?.groupValues?.getOrNull(1)?.toLongOrNull()
             exp == null || exp <= (System.currentTimeMillis() / 1000L) + 60L
         }.getOrDefault(true)
+    }
+
+    private fun currentUserId(): String? {
+        return runCatching {
+            val token = sessionStore.accessToken ?: return null
+            val payload = token.split(".").getOrNull(1) ?: return null
+            val paddedPayload = payload.padEnd(((payload.length + 3) / 4) * 4, '=')
+            val jsonPayload = String(Base64.getUrlDecoder().decode(paddedPayload), Charsets.UTF_8)
+            Regex("\"sub\"\\s*:\\s*\"([^\"]+)\"").find(jsonPayload)?.groupValues?.getOrNull(1)
+        }.getOrNull()
+    }
+
+    private fun pickRole(roles: List<String>): String {
+        return when {
+            roles.contains("admin") -> "admin"
+            roles.contains("staff") -> "staff"
+            else -> "agent"
+        }
     }
 
     private fun io.ktor.client.request.HttpRequestBuilder.bearer() {
