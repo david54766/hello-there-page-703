@@ -3256,6 +3256,37 @@ fun SettingsScreen(vm: CallRecoverViewModel) {
                 Text("Delete account", maxLines = 1)
             }
         }
+        Spacer(Modifier.height(14.dp))
+        Text("Support", fontWeight = FontWeight.SemiBold, color = Ink)
+        Spacer(Modifier.height(6.dp))
+        Text("Need help with your account or service?", color = Slate, style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = {
+                    context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:support@callrecover.net")))
+                },
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Default.Message, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Email", maxLines = 1)
+            }
+            OutlinedButton(
+                onClick = {
+                    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:7012031073")))
+                },
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Default.Call, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Call", maxLines = 1)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text("support@callrecover.net · (701) 203-1073", color = Slate, style = MaterialTheme.typography.bodySmall)
     }
     Spacer(Modifier.height(12.dp))
     Button(

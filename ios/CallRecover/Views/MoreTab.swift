@@ -386,6 +386,33 @@ struct AccountSheet: View {
                     }
                 }
 
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Support")
+                            .font(.title2.weight(.bold))
+                        Text("Need help with your account or service?")
+                            .foregroundStyle(CRTheme.slate)
+
+                        HStack(spacing: 12) {
+                            Link(destination: URL(string: "mailto:support@callrecover.net")!) {
+                                Label("Email", systemImage: "envelope.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+
+                            Link(destination: URL(string: "tel:7012031073")!) {
+                                Label("Call", systemImage: "phone.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+
+                        Text("support@callrecover.net · (701) 203-1073")
+                            .font(.footnote)
+                            .foregroundStyle(CRTheme.slate)
+                    }
+                }
+
                 PrimaryButton(title: "Sign out", systemImage: "rectangle.portrait.and.arrow.right") {
                     vm.signOut()
                     dismiss()
