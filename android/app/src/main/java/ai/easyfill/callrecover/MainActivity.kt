@@ -85,6 +85,8 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SettingsPhone
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -133,6 +135,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -4135,12 +4138,32 @@ fun PremiumTextField(
     label: String,
     isPassword: Boolean = false,
 ) {
+    var passwordVisible by remember { mutableStateOf(false) }
+    val visualTransformation = when {
+        !isPassword -> VisualTransformation.None
+        passwordVisible -> VisualTransformation.None
+        else -> PasswordVisualTransformation()
+    }
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = true,
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+        visualTransformation = visualTransformation,
+        trailingIcon = if (isPassword) {
+            {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                        tint = Slate
+                    )
+                }
+            }
+        } else {
+            null
+        },
         shape = RoundedCornerShape(18.dp),
         colors = premiumFieldColors(),
         modifier = Modifier.fillMaxWidth()
