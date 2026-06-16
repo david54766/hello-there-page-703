@@ -2,19 +2,25 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+const PUBLIC_SUPABASE_URL = 'https://czvsgemkmvkyfypearuj.supabase.co';
+const PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_VfmxsBcKdQpT1xcj0BIIAw_i-ecttmv';
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
+  const runtimeEnv = typeof process !== 'undefined' ? process.env : {};
   const SUPABASE_URL =
     import.meta.env.VITE_SUPABASE_URL ||
-    process.env.CALLRECOVER_URL ||
-    process.env.CALLRECOVER_SUPABASE_URL ||
-    process.env.SUPABASE_URL;
+    runtimeEnv.CALLRECOVER_URL ||
+    runtimeEnv.CALLRECOVER_SUPABASE_URL ||
+    runtimeEnv.SUPABASE_URL ||
+    PUBLIC_SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY =
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.CALLRECOVER_PUBLISHABLE_KEY ||
-    process.env.CALLRECOVER_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY;
+    runtimeEnv.CALLRECOVER_PUBLISHABLE_KEY ||
+    runtimeEnv.CALLRECOVER_SUPABASE_PUBLISHABLE_KEY ||
+    runtimeEnv.SUPABASE_PUBLISHABLE_KEY ||
+    PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
