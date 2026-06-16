@@ -29,7 +29,7 @@ function TermsPage() {
         <h1 className="text-3xl font-semibold tracking-tight">Terms & Conditions</h1>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
-        Effective date: May 27, 2026 · Classroom Panda LLC dba CallRecover (David@callrecover.net · (878) 234-0176)
+        Effective date: May 27, 2026 · Classroom Panda LLC dba CallRecover (support@callrecover.net · (701) 203-1073)
       </p>
 
       <Card className="space-y-6 p-6">
@@ -72,8 +72,8 @@ function TermsPage() {
             For assistance, reply <strong>HELP</strong> or <strong>INFO</strong> to any message, or contact us directly:
           </p>
           <ul className="list-disc space-y-1 pl-5">
-            <li>Email: David@callrecover.net</li>
-            <li>Phone: (878) 234-0176</li>
+            <li>Email: support@callrecover.net</li>
+            <li>Phone: (701) 203-1073</li>
             <li>Business: Classroom Panda LLC dba CallRecover</li>
           </ul>
         </Section>
@@ -119,7 +119,7 @@ function TermsPage() {
 
         <Section title="10. Contact">
           <p>
-            Questions about these terms? Contact us at David@callrecover.net or (878) 234-0176.
+            Questions about these terms? Contact us at support@callrecover.net or (701) 203-1073.
           </p>
         </Section>
       </Card>

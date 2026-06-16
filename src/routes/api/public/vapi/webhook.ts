@@ -3,7 +3,7 @@ import { handleVapiWebhookPayload } from "@/lib/vapi-webhook.server";
 
 function authorized(request: Request) {
   const secret = process.env.VAPI_WEBHOOK_SECRET?.trim();
-  if (!secret) return true;
+  if (!secret) return false;
 
   const authorization = request.headers.get("authorization") ?? "";
   const vapiSecret = request.headers.get("x-vapi-secret") ?? "";
@@ -20,6 +20,11 @@ export const Route = createFileRoute("/api/public/vapi/webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        if (!process.env.VAPI_WEBHOOK_SECRET?.trim()) {
+          console.error("[Vapi webhook] VAPI_WEBHOOK_SECRET is not configured");
+          return new Response("Webhook secret not configured", { status: 500 });
+        }
+
         if (!authorized(request)) {
           return new Response("Unauthorized", { status: 401 });
         }

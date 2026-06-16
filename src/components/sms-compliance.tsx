@@ -112,8 +112,8 @@ export function CampaignRegistrationCard() {
           <li><strong>DBA / Product Name:</strong> CallRecover</li>
           <li><strong>Brand Type:</strong> Private (non-publicly traded)</li>
           <li><strong>Legal Entity Type:</strong> LLC</li>
-          <li><strong>Business Phone:</strong> (878) 234-0176</li>
-          <li><strong>Business Email:</strong> David@callrecover.net</li>
+          <li><strong>Business Phone:</strong> (701) 203-1073</li>
+          <li><strong>Business Email:</strong> support@callrecover.net</li>
         </ul>
       </Section>
 

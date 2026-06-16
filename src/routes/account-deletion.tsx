@@ -40,8 +40,8 @@ function AccountDeletionPage() {
           <p className="text-sm leading-relaxed text-muted-foreground">
             CallRecover users can request deletion of their account and business
             workspace by emailing{" "}
-            <a className="underline text-primary" href="mailto:David@callrecover.net">
-              David@callrecover.net
+            <a className="underline text-primary" href="mailto:support@callrecover.net">
+              support@callrecover.net
             </a>{" "}
             from the email address used to sign in.
           </p>
@@ -69,7 +69,7 @@ function AccountDeletionPage() {
 
         <div className="flex flex-wrap gap-3">
           <Button asChild>
-            <a href="mailto:David@callrecover.net?subject=CallRecover%20account%20deletion%20request">
+            <a href="mailto:support@callrecover.net?subject=CallRecover%20account%20deletion%20request">
               Request account deletion
             </a>
           </Button>

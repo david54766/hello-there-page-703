@@ -73,7 +73,7 @@ function CookiePolicyPage() {
 
         <Section title="7. Contact us">
           <p>
-            If you have any questions about our Cookie Policy, please contact us at David@callrecover.net or (878) 234-0176.
+            If you have any questions about our Cookie Policy, please contact us at support@callrecover.net or (701) 203-1073.
           </p>
         </Section>
       </Card>

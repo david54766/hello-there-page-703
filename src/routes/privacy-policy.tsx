@@ -30,7 +30,7 @@ function PrivacyPage() {
         <h1 className="text-3xl font-semibold tracking-tight">Privacy Policy</h1>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
-        Effective date: May 27, 2026 · Classroom Panda LLC dba CallRecover (David@callrecover.net · (878) 234-0176)
+        Effective date: May 27, 2026 · Classroom Panda LLC dba CallRecover (support@callrecover.net · (701) 203-1073)
       </p>
 
       <Card className="space-y-6 p-6">
@@ -77,7 +77,7 @@ function PrivacyPage() {
 
         <Section title="6. Data retention and deletion">
           <p>
-            Your data is retained for as long as necessary to complete your service request and satisfy legal or business record requirements. You may request deletion of your personal data at any time by contacting us at David@callrecover.net. Deletion permanently removes transcripts, SMS history, and recordings.
+            Your data is retained for as long as necessary to complete your service request and satisfy legal or business record requirements. You may request deletion of your personal data at any time by contacting us at support@callrecover.net. Deletion permanently removes transcripts, SMS history, and recordings.
           </p>
         </Section>
 
@@ -115,8 +115,8 @@ function PrivacyPage() {
             For questions about this privacy policy or your data, contact:
           </p>
           <ul className="list-disc space-y-1 pl-5">
-            <li>Email: David@callrecover.net</li>
-            <li>Phone: (878) 234-0176</li>
+            <li>Email: support@callrecover.net</li>
+            <li>Phone: (701) 203-1073</li>
             <li>Business: Classroom Panda LLC dba CallRecover</li>
           </ul>
         </Section>

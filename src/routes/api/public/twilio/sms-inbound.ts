@@ -7,7 +7,7 @@ const OPT_IN = new Set(["START", "SUBSCRIBE", "JOIN", "YES", "OPTIN", "BEGIN", "
 const HELP = new Set(["HELP", "INFO"]);
 
 const HELP_REPLY =
-  "Classroom Panda LLC dba CallRecover: Reply STOP to opt out. Msg & data rates may apply. Support: David@callrecover.net or (878) 234-0176. Privacy: https://callrecover.net/privacy-policy";
+  "Classroom Panda LLC dba CallRecover: Reply STOP to opt out. Msg & data rates may apply. Support: support@callrecover.net or (701) 203-1073. Privacy: https://callrecover.net/privacy-policy";
 const OPT_IN_REPLY =
   "Classroom Panda LLC dba CallRecover: You are confirmed for transactional SMS updates about your request. Reply STOP to opt out, HELP for help. Msg & data rates may apply. Consent is not a condition of service.";
 const OPT_OUT_REPLY =
