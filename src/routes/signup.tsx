@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { PasswordInput } from "@/components/password-input";
 import { toast } from "sonner";
 import { AppIcon } from "@/components/app-icon";
 import { Globe2, TimerReset } from "lucide-react";
@@ -83,7 +84,7 @@ export function Signup() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="website">Website URL</Label>
+              <Label htmlFor="website">Website URL <span className="text-muted-foreground">(optional)</span></Label>
               <div className="relative">
                 <Globe2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -92,7 +93,6 @@ export function Signup() {
                   onChange={(e) => setWebsite(e.target.value)}
                   placeholder="https://yourcompany.com"
                   className="pl-9"
-                  required
                 />
               </div>
             </div>
@@ -102,7 +102,7 @@ export function Signup() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+              <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Create free account"}
