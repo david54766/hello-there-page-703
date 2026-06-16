@@ -15,6 +15,7 @@ import { Route as TermsAndConditionsRouteImport } from './routes/terms-and-condi
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SmsOptInRouteImport } from './routes/sms-opt-in'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
@@ -81,6 +82,11 @@ const SmsOptInRoute = SmsOptInRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -283,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sign-in': typeof SignInRoute
   '/signup': typeof SignupRoute
   '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
@@ -327,6 +334,7 @@ export interface FileRoutesByTo {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sign-in': typeof SignInRoute
   '/signup': typeof SignupRoute
   '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
@@ -373,6 +381,7 @@ export interface FileRoutesById {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sign-in': typeof SignInRoute
   '/signup': typeof SignupRoute
   '/sms-opt-in': typeof SmsOptInRoute
   '/terms': typeof TermsRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/register'
     | '/reset-password'
+    | '/sign-in'
     | '/signup'
     | '/sms-opt-in'
     | '/terms'
@@ -463,6 +473,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/register'
     | '/reset-password'
+    | '/sign-in'
     | '/signup'
     | '/sms-opt-in'
     | '/terms'
@@ -508,6 +519,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/register'
     | '/reset-password'
+    | '/sign-in'
     | '/signup'
     | '/sms-opt-in'
     | '/terms'
@@ -554,6 +566,7 @@ export interface RootRouteChildren {
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SignInRoute: typeof SignInRoute
   SignupRoute: typeof SignupRoute
   SmsOptInRoute: typeof SmsOptInRoute
   TermsRoute: typeof TermsRoute
@@ -620,6 +633,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -925,6 +945,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SignInRoute: SignInRoute,
   SignupRoute: SignupRoute,
   SmsOptInRoute: SmsOptInRoute,
   TermsRoute: TermsRoute,
