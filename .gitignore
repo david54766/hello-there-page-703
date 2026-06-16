@@ -15,10 +15,33 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.env
+.env.*
+!.env.example
 
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
+
+# Native app local files
+android/.gradle/
+android/.kotlin/
+android/.idea/
+android/build/
+android/app/build/
+android/local.properties
+android/keystore.properties
+android/keystore/
+android/*.jks
+android/*.keystore
+android/app/google-services.json
+ios/Config/CallRecover.xcconfig
+ios/DerivedData/
+ios/build/
+ios/*.xcuserstate
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
 
 # Editor directories and files
 .vscode/*

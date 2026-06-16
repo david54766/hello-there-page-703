@@ -322,7 +322,6 @@ export const updateBusinessTags = createServerFn({ method: "POST" })
       website_blurb: z.string().max(1000).optional(),
       booking_url: z.string().max(500).optional(),
       callback_form_url: z.string().max(500).optional(),
-      default_hello_script: z.string().max(1000).optional(),
       cal_url: z.string().max(500).optional(),
       calendly_url: z.string().max(500).optional(),
       address: z.string().max(500).optional(),

@@ -13,7 +13,7 @@ export const listScriptTemplates = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
       contractorType: z.string().max(50).optional(),
-      kind: z.enum(["hello", "system", "first_message"]).optional(),
+      kind: z.enum(["system", "first_message"]).optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -23,11 +23,11 @@ export const listScriptTemplates = createServerFn({ method: "POST" })
       .from("script_templates")
       .select("*")
       .eq("business_id", businessId)
+      .neq("kind", "hello")
       .order("contractor_type", { ascending: true })
       .order("label", { ascending: true });
     if (data.contractorType) q = q.eq("contractor_type", data.contractorType);
-    if (data.kind === "first_message") q = q.in("kind", ["first_message", "hello"]);
-    else if (data.kind) q = q.eq("kind", data.kind);
+    if (data.kind) q = q.eq("kind", data.kind);
     const { data: rows } = await q;
     return { templates: rows ?? [] };
   });
@@ -38,7 +38,7 @@ export const upsertScriptTemplate = createServerFn({ method: "POST" })
     z.object({
       id: z.string().uuid().optional(),
       contractorType: z.string().max(50).nullable().optional(),
-      kind: z.enum(["hello", "system", "first_message"]),
+      kind: z.enum(["system", "first_message"]),
       label: z.string().min(1).max(120),
       body: z.string().min(1).max(8000),
       isDefault: z.boolean().optional(),

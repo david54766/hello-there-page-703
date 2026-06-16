@@ -18,7 +18,6 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/scripts")({ component: ScriptsPage });
 
 const KIND_LABELS: Record<string, string> = {
-  hello: "First Message",
   first_message: "First Message",
   system: "Virtual Agent Behavior",
 };

@@ -1,0 +1,8 @@
+Config/CallRecover.xcconfig
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+build/
+

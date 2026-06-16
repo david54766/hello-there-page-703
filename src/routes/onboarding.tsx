@@ -137,7 +137,6 @@ function Onboarding() {
         if (result.websiteBlurb) patch.website_blurb = result.websiteBlurb;
         if (result.bookingUrl) patch.booking_url = result.bookingUrl;
         if (result.callbackFormUrl) patch.callback_form_url = result.callbackFormUrl;
-        if (result.defaultGreeting) patch.default_hello_script = result.defaultGreeting;
 
         const { error } = await supabase.from("businesses").update(patch).eq("id", bizId);
         if (error) throw error;

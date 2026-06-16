@@ -12,8 +12,7 @@ export type TagKey =
   | "website_info"
   | "book_consult"
   | "callback_form"
-  | "sms_consent"
-  | "hello_script";
+  | "sms_consent";
 
 export const TAG_DEFS: { key: TagKey; label: string; hint: string }[] = [
   { key: "name", label: "{name}", hint: "Customer name (per-call)" },
@@ -24,7 +23,6 @@ export const TAG_DEFS: { key: TagKey; label: string; hint: string }[] = [
   { key: "book_consult", label: "{book_consult}", hint: "Booking / consultation link" },
   { key: "callback_form", label: "{callback_form}", hint: "Callback request form URL" },
   { key: "sms_consent", label: "{sms_consent}", hint: "SMS opt-in confirmation language" },
-  { key: "hello_script", label: "{hello_script}", hint: "Default greeting" },
 ];
 
 export type TagValues = Partial<Record<TagKey, string>>;
@@ -51,7 +49,6 @@ export function mergeTagDefaults(
     book_consult: get("booking_url") ?? get("cal_url") ?? get("calendly_url"),
     callback_form: get("callback_form_url"),
     sms_consent: WEB_FORM_SMS_CONSENT_TEXT,
-    hello_script: get("default_hello_script"),
   };
   const safeOverrides = Object.fromEntries(
     Object.entries(overrides).filter(([key, v]) => key !== "sms_consent" && v && v.length > 0),
