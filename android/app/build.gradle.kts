@@ -23,8 +23,12 @@ val signingProperties = Properties().apply {
 val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
     .all { signingProperties.getProperty(it).isNullOrBlank().not() }
 
-val appVersionCode = 45
-val appVersionName = "0.6.1"
+val appVersionCode = 46
+val appVersionName = "0.6.2"
+
+val defaultSupabaseUrl = "https://czvsgemkmvkyfypearuj.supabase.co"
+val defaultSupabaseAnonKey = "sb_publishable_VfmxsBcKdQpT1xcj0BIIAw_i-ecttmv"
+val defaultApiBaseUrl = "https://callrecover.net"
 
 fun localString(name: String, fallback: String = ""): String {
     return (localProperties.getProperty(name) ?: fallback).replace("\\", "\\\\").replace("\"", "\\\"")
@@ -47,9 +51,9 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
 
-        buildConfigField("String", "SUPABASE_URL", "\"${localString("SUPABASE_URL")}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localString("SUPABASE_ANON_KEY")}\"")
-        buildConfigField("String", "API_BASE_URL", "\"${localString("API_BASE_URL", "https://callrecover.net")}\"")
+        buildConfigField("String", "SUPABASE_URL", "\"${localString("SUPABASE_URL", defaultSupabaseUrl)}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localString("SUPABASE_ANON_KEY", defaultSupabaseAnonKey)}\"")
+        buildConfigField("String", "API_BASE_URL", "\"${localString("API_BASE_URL", defaultApiBaseUrl)}\"")
     }
 
     signingConfigs {
@@ -111,11 +115,6 @@ tasks.register("copyDebugApkToDrive") {
     description = "Copies the universal debug APK to Google Drive when Drive is mounted."
 
     doLast {
-        if (!rootProject.file("local.properties").exists()) {
-            logger.lifecycle("local.properties missing; skipping APK copy to Drive.")
-            return@doLast
-        }
-
         val targetDir = googleDriveApkDir()
         if (targetDir == null) {
             logger.lifecycle("Google Drive not mounted; skipping APK copy.")
