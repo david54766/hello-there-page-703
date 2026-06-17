@@ -1,15 +1,23 @@
-import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AppIcon } from "@/components/app-icon";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   CalendarDays,
   CreditCard,
   FileText,
   LayoutDashboard,
   LogOut,
+  MoreHorizontal,
   Phone,
   Settings as SettingsIcon,
   ShieldCheck,
@@ -25,6 +33,7 @@ const AGENT_RESTRICTED_PREFIXES = ["/revenue", "/billing", "/vapi", "/scripts", 
 function Layout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [checkingSetup, setCheckingSetup] = useState(true);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [viewer, setViewer] = useState<ViewerAccess | null>(null);
@@ -99,6 +108,13 @@ function Layout() {
     ...(!viewer?.isAgent && isPlatformAdmin ? [{ to: "/admin", icon: ShieldCheck, label: "Admin" }] : []),
     { to: "/settings", icon: SettingsIcon, label: "Settings" },
   ];
+  const mobilePrimaryLabels = viewer?.isAgent
+    ? ["Dashboard", "Team", "Scheduling", "Settings"]
+    : ["Dashboard", "Revenue", "Team", "Scheduling"];
+  const mobilePrimaryItems = navItems.filter((item) => mobilePrimaryLabels.includes(item.label));
+  const mobileMoreItems = navItems.filter((item) => !mobilePrimaryLabels.includes(item.label));
+  const mobileMoreActive = mobileMoreItems.some((item) => location.pathname.startsWith(item.to));
+  const mobileNavItems = mobileMoreItems.length ? mobilePrimaryItems : navItems;
 
   return (
     <div className="flex min-h-screen bg-[image:var(--gradient-subtle)]">
@@ -137,18 +153,49 @@ function Layout() {
       <main className="flex-1 overflow-auto pb-16 md:pb-0">
         <Outlet />
       </main>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-border bg-card/95 backdrop-blur md:hidden">
-        {navItems.map((item) => (
+      <nav
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-50 grid border-t border-border bg-card/95 backdrop-blur md:hidden",
+          mobileMoreItems.length ? "grid-cols-5" : "grid-cols-4",
+        )}
+      >
+        {mobileNavItems.map((item) => (
           <Link
             key={item.to}
             to={item.to}
-            className="flex flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[10px] text-muted-foreground [&.active]:text-primary"
+            className="flex min-w-0 flex-col items-center gap-0.5 px-1 py-2 text-[10px] leading-tight text-muted-foreground [&.active]:text-primary"
             activeProps={{ className: "active" }}
           >
             <item.icon className="h-5 w-5" />
-            {item.label}
+            <span className="max-w-full truncate">{item.label}</span>
           </Link>
         ))}
+        {mobileMoreItems.length ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "flex min-w-0 flex-col items-center gap-0.5 px-1 py-2 text-[10px] leading-tight text-muted-foreground",
+                  mobileMoreActive && "text-primary",
+                )}
+              >
+                <MoreHorizontal className="h-5 w-5" />
+                <span>More</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="end" sideOffset={10} className="mb-1 w-52 p-2 md:hidden">
+              {mobileMoreItems.map((item) => (
+                <DropdownMenuItem key={item.to} asChild className="cursor-pointer rounded-md px-3 py-3">
+                  <Link to={item.to} className="flex w-full items-center gap-3 text-sm">
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
       </nav>
     </div>
   );
