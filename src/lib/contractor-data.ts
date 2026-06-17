@@ -5,6 +5,7 @@ export const CONTRACTOR_TYPES = [
   { value: "plumbing", label: "Plumbing" },
   { value: "hvac", label: "HVAC" },
   { value: "electrical", label: "Electrical" },
+  { value: "information_technology", label: "Information Technology (IT)" },
   { value: "landscaping", label: "Landscaping" },
   { value: "pest_control", label: "Pest Control" },
   { value: "restoration", label: "Restoration" },
@@ -138,6 +139,8 @@ export function getSmsTemplate(contractorType: string | null | undefined, busine
       return `Thanks for calling ${businessName}. Are you currently without heating or cooling?`;
     case "electrical":
       return `Thanks for calling ${businessName}. Is this an electrical emergency or a scheduled job?`;
+    case "information_technology":
+      return `Thanks for calling ${businessName}. Is this an urgent IT outage or a support request we can schedule?`;
     default:
       return `Thanks for calling ${businessName}. We missed your call — would you like an immediate callback or to schedule a time?`;
   }
@@ -152,6 +155,7 @@ const TRADE_QUALIFIER: Record<string, string> = {
   plumbing: "Is water actively running, or contained?",
   hvac: "Are you currently without heat or cooling?",
   electrical: "Is there a safety concern like sparks or smell of burning?",
+  information_technology: "Is this an outage, device issue, network issue, or software support request?",
   landscaping: "Is this for ongoing maintenance or a one-time job?",
   pest_control: "What kind of pest are you dealing with?",
   restoration: "Is there active water, smoke, or mold damage right now?",
@@ -166,6 +170,7 @@ const TRADE_ASSESSMENT_WORDS: Record<string, string> = {
   plumbing: "plumbing assessment",
   hvac: "HVAC assessment",
   electrical: "electrical assessment",
+  information_technology: "IT support request",
   landscaping: "landscaping request",
   pest_control: "pest control request",
   restoration: "restoration assessment",
@@ -186,6 +191,7 @@ const TRADE_SCHEDULING_WORDS: Record<string, string> = {
   plumbing: "plumbing appointments and estimates",
   hvac: "HVAC appointments and estimates",
   electrical: "electrical appointments and estimates",
+  information_technology: "IT support appointments and consultations",
   landscaping: "landscaping appointments and estimates",
   pest_control: "pest control appointments",
   restoration: "restoration appointments and estimates",

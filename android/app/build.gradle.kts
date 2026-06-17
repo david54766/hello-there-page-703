@@ -23,8 +23,8 @@ val signingProperties = Properties().apply {
 val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
     .all { signingProperties.getProperty(it).isNullOrBlank().not() }
 
-val appVersionCode = 46
-val appVersionName = "0.6.2"
+val appVersionCode = 47
+val appVersionName = "0.6.3"
 
 val defaultSupabaseUrl = "https://czvsgemkmvkyfypearuj.supabase.co"
 val defaultSupabaseAnonKey = "sb_publishable_VfmxsBcKdQpT1xcj0BIIAw_i-ecttmv"

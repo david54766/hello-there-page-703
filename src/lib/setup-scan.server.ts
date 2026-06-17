@@ -17,6 +17,7 @@ const CONTRACTOR_TYPES = [
   "plumbing",
   "hvac",
   "electrical",
+  "information_technology",
   "landscaping",
   "pest_control",
   "restoration",

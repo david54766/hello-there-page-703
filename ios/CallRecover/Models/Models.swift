@@ -280,6 +280,7 @@ enum StaticOptions {
         LabelValue(value: "plumbing", label: "Plumbing"),
         LabelValue(value: "hvac", label: "HVAC"),
         LabelValue(value: "electrical", label: "Electrical"),
+        LabelValue(value: "information_technology", label: "Information Technology (IT)"),
         LabelValue(value: "landscaping", label: "Landscaping"),
         LabelValue(value: "pest_control", label: "Pest Control"),
         LabelValue(value: "restoration", label: "Restoration"),

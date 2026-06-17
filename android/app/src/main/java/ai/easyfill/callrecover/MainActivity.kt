@@ -227,6 +227,7 @@ private val ContractorTypes = listOf(
     LabelValue("plumbing", "Plumbing"),
     LabelValue("hvac", "HVAC"),
     LabelValue("electrical", "Electrical"),
+    LabelValue("information_technology", "Information Technology (IT)"),
     LabelValue("landscaping", "Landscaping"),
     LabelValue("pest_control", "Pest Control"),
     LabelValue("restoration", "Restoration"),
